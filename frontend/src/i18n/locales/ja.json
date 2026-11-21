@@ -1,4 +1,6 @@
 {
+  "Gameplay only": "ゲームプレイのみ",
+  "The AI looks at the frames and keeps only real gameplay. Trailer cuts, face-cams and menus are dropped, and parts with no gameplay are skipped.": "AIがフレームを確認し、実際のゲームプレイだけを残します。トレーラー映像、顔出し、メニュー画面は除外され、ゲームプレイがない部分はスキップされます。",
   "Sign-in link copied.": "ログインリンクをコピーしました。",
   "Someone else signs in": "別の人がログインする",
   "If the channel owner signs in on their own device: send them the link, they sign in, and Google then shows a page that does not open. They copy that page's full address and send it back; paste it here.": "チャンネルの所有者が自分のデバイスでログインする場合:リンクを送ると、所有者がログインした後、Google に開けないページが表示されます。そのページの完全なアドレスをコピーして送り返してもらい、ここに貼り付けてください。",

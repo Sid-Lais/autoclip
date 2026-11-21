@@ -35,6 +35,7 @@ export type ImportRangesFields = {
   recommended_template?: string
   brand_outro_enabled: boolean
   features?: Record<string, unknown>
+  visual_focus?: 'gameplay'
 }
 export type ImportRangesRequest = ImportRangesFields & {
   url: string

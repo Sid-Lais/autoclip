@@ -370,6 +370,7 @@ def _start_clip_project(db: Session, url: str, title: str, options: range_import
         platforms=options.platforms, auto_start=True, portrait_style=options.portrait_style, html_template=options.html_template,
         recommended_template=options.recommended_template, branding={'outro_enabled': options.brand_outro_enabled},
         source_range=source_range.model_dump() if ranged else None,
+        visual_focus=options.visual_focus if ranged else None,
     )
     name = range_import.project_name(title, source_range) if ranged else ((title or 'Smart editing').strip()[:200] or 'Smart editing')
     project = ProjectService(db).create_project(ProjectCreate(

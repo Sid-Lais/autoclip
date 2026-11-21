@@ -16,7 +16,7 @@ from backend.services.studio import range_import
 
 MAX_SEARCH_RESULTS = 25
 SUGGESTED_VIDEOS = 5
-MAX_MOMENTS = 4
+MAX_MOMENTS = 6
 MIN_PEAK_VALUE = 0.55  # replay value (0..1, relative to the video's own most replayed moment)
 CLIP_MIN_SEC = 30.0
 CLIP_MAX_SEC = 90.0

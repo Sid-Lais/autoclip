@@ -1,4 +1,6 @@
 {
+  "Gameplay only": "Только геймплей",
+  "The AI looks at the frames and keeps only real gameplay. Trailer cuts, face-cams and menus are dropped, and parts with no gameplay are skipped.": "ИИ просматривает кадры и оставляет только настоящий геймплей. Нарезки из трейлеров, камера с лицом и меню отбрасываются, а фрагменты без геймплея пропускаются.",
   "Sign-in link copied.": "Ссылка для входа скопирована.",
   "Someone else signs in": "Входит другой человек",
   "If the channel owner signs in on their own device: send them the link, they sign in, and Google then shows a page that does not open. They copy that page's full address and send it back; paste it here.": "Если владелец канала входит на своём устройстве: отправьте ему ссылку, он входит, и Google показывает страницу, которая не открывается. Он копирует её полный адрес и присылает вам; вставьте его сюда.",

@@ -30,6 +30,7 @@ export default function SearchPanel({ browser, fields, busy, onCreated, onPickPa
   const [searching, setSearching] = useState(false)
   const [searched, setSearched] = useState(false)
   const [creating, setCreating] = useState(false)
+  const [gameplayOnly, setGameplayOnly] = useState(true)
   const [error, setError] = useState('')
   const generation = useRef(0)
   const queue = useRef<string[]>([])
@@ -101,7 +102,7 @@ export default function SearchPanel({ browser, fields, busy, onCreated, onPickPa
     setCreating(true)
     setError('')
     try {
-      const result = await studioApi.autoClip({ ...fields, ...(browser ? { browser } : {}), items: plan.slice(0, MAX_APPROVED) })
+      const result = await studioApi.autoClip({ ...fields, ...(gameplayOnly ? { visual_focus: 'gameplay' as const } : {}), ...(browser ? { browser } : {}), items: plan.slice(0, MAX_APPROVED) })
       onCreated(result.projects.map(project => project.project_id), result.skipped.length)
     } catch (failure) {
       setError(t(errorText(failure)))
@@ -113,6 +114,10 @@ export default function SearchPanel({ browser, fields, busy, onCreated, onPickPa
   return (
     <div className="lv sp" data-testid="search-panel">
       <p className="lv-intro">{t('Search YouTube. The most viewed videos are suggested; approve the ones you want and clips are made from the parts viewers replay most.')}</p>
+      <label className="sp-row" style={{ cursor: 'pointer' }}>
+        <input type="checkbox" checked={gameplayOnly} disabled={disabled} onChange={event => setGameplayOnly(event.target.checked)} />
+        <span className="sp-meta"><b>{t('Gameplay only')}</b><span className="studio-muted">{t('The AI looks at the frames and keeps only real gameplay. Trailer cuts, face-cams and menus are dropped, and parts with no gameplay are skipped.')}</span></span>
+      </label>
       <form className="sp-form" onSubmit={event => { event.preventDefault(); void search() }}>
         <input className="lv-label" value={query} maxLength={200} disabled={disabled} aria-label={t('Search query')}
           placeholder={t('For example: AI podcast interview')} onChange={event => setQuery(event.target.value)} />

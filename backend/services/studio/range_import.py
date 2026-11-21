@@ -95,6 +95,7 @@ class ClipOptions(BaseModel):
     recommended_template: Optional[Literal['editorial', 'street', 'classic']] = None
     brand_outro_enabled: bool = True
     features: Optional[dict] = None
+    visual_focus: Optional[Literal['gameplay']] = None
 
 
 class ImportRangesBody(ClipOptions):

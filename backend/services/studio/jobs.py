@@ -875,8 +875,13 @@ def _content_drafts(project_id, plan, video, platforms=()):
         # `exact` (the chosen range) was read above.
         if exact and picked:
             # Long-video mode: the user chose this range, so it is the clip, not a hint for the model's own cut.
-            picked = [(max((item[0] for item in picked), key=_score), 0.0, source_duration)]
-            bounds = [(0.0, source_duration)]
+            focus = (plan.get('overrides') or {}).get('visual_focus')
+            start_at, end_at = 0.0, source_duration
+            if focus == 'gameplay':
+                from backend.services.studio import gameplay
+                start_at, end_at = gameplay.find_span(video, source_duration)  # refuses a part with no gameplay
+            picked = [(max((item[0] for item in picked), key=_score), start_at, end_at)]
+            bounds = [(start_at, end_at)]
         else:
             bounds = _complete_thought_bounds(project_id, [(s, e) for _, s, e in picked])
         window = (plan.get('overrides') or {}).get('source_window')

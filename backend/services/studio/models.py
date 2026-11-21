@@ -342,6 +342,8 @@ class ImportOptions(BaseModel):
     source_window: SourceWindow | None = None
     # Long-video mode: the project's source is one downloaded range of this absolute span (seconds).
     source_range: SourceRange | None = None
+    # Keep only matching footage inside a downloaded range ("gameplay": drop trailer cuts, face-cams, menus).
+    visual_focus: Literal['gameplay'] | None = None
 
     @model_validator(mode='after')
     def unique_platforms(self):

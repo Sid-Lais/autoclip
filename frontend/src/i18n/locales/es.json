@@ -1,4 +1,6 @@
 {
+  "Gameplay only": "Solo gameplay",
+  "The AI looks at the frames and keeps only real gameplay. Trailer cuts, face-cams and menus are dropped, and parts with no gameplay are skipped.": "La IA revisa los fotogramas y conserva solo el gameplay real. Se descartan los cortes de tráiler, las cámaras de cara y los menús, y se omiten las partes sin gameplay.",
   "Sign-in link copied.": "Enlace de inicio de sesión copiado.",
   "Someone else signs in": "Otra persona inicia sesión",
   "If the channel owner signs in on their own device: send them the link, they sign in, and Google then shows a page that does not open. They copy that page's full address and send it back; paste it here.": "Si el propietario del canal inicia sesión en su propio dispositivo: envíale el enlace, inicia sesión y Google muestra una página que no se abre. Copia la dirección completa de esa página y te la envía; pégala aquí.",
