@@ -212,7 +212,7 @@ class LLMManager:
         try:
             configured = ai.load()
         except Exception:
-            raise ValueError('已保存的模型配置需要修复，请到「设置 → 服务商与模型」修复并保存后再生成。') from None
+            raise ValueError('The saved model configuration needs to be fixed. Go to "Settings → Providers & models", fix it and save, then generate again.') from None
         if configured is not None:
             binding = ai.require_analysis(configured)
             connection = ai.connection_for(configured, binding)
@@ -579,7 +579,7 @@ class LLMManager:
             logger.info("LLM 缓存命中")
             return cache_path.read_text(encoding="utf-8")
         if not provider:
-            raise ValueError("未配置LLM提供商，请自备 API Key 并到「设置 → 服务商与模型」填写")
+            raise ValueError('No LLM provider configured. Bring your own API key and fill it in under "Settings → Providers & models"')
 
         saved = str(info.get("model") or getattr(provider, "model_name", "") or "").strip()
         asked = str(override).strip() if isinstance(override, str) and str(override).strip() else saved
@@ -817,7 +817,7 @@ class LLMManager:
     def parse_json_response(self, response: str) -> Any:
         """解析JSON响应（保持与原LLMClient的兼容性）"""
         if not self.current_provider:
-            raise ValueError("未配置LLM提供商")
+            raise ValueError("No LLM provider configured")
         
         # 这里可以复用原LLMClient的JSON解析逻辑
         # 为了保持兼容性，我们创建一个临时的LLMClient实例

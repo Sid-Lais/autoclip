@@ -40,7 +40,7 @@ class AutoPipelineService:
             # 检查项目是否已经在处理中
             if project_id in self.processing_projects:
                 logger.warning(f"项目 {project_id} 已在处理中，跳过")
-                return {"status": "skipped", "message": "项目已在处理中"}
+                return {"status": "skipped", "message": "Project is already processing"}
             
             # 标记项目为处理中
             self.processing_projects.add(project_id)
@@ -50,16 +50,16 @@ class AutoPipelineService:
             try:
                 project = db.query(Project).filter(Project.id == project_id).first()
                 if not project:
-                    raise ValueError(f"项目 {project_id} 不存在")
+                    raise ValueError(f"Project {project_id} not found")
                 
                 # 检查项目状态
                 if project.status != ProjectStatus.PENDING:
                     logger.info(f"项目 {project_id} 状态为 {project.status}，跳过自动启动")
-                    return {"status": "skipped", "message": f"项目状态为 {project.status}"}
+                    return {"status": "skipped", "message": f"Project status is {project.status}"}
                 
                 # 检查项目文件
                 if not project.video_path:
-                    raise ValueError(f"项目 {project_id} 没有视频文件")
+                    raise ValueError(f"Project {project_id} has no video file")
                 
                 # 查找字幕文件
                 srt_file = self._find_srt_file(project_id)
@@ -81,7 +81,7 @@ class AutoPipelineService:
                     # 创建新任务记录
                     task = self._create_processing_task(db, project_id)
                     if not task:
-                        raise ValueError("创建任务记录失败")
+                        raise ValueError("Failed to create task record")
                 
                 # 更新项目状态
                 project.status = ProjectStatus.PROCESSING
@@ -105,7 +105,7 @@ class AutoPipelineService:
             input_srt_path = str(project_dir / "raw" / "input.srt")
 
             if not Path(input_video_path).exists():
-                raise ValueError(f"视频文件不存在: {input_video_path}")
+                raise ValueError(f"Video file not found: {input_video_path}")
 
             logger.info(f"视频文件: {input_video_path}")
             logger.info(f"字幕文件: {input_srt_path if Path(input_srt_path).exists() else '不存在'}")
@@ -117,7 +117,7 @@ class AutoPipelineService:
                 task = db.query(Task).filter(Task.id == task_pk).first()
                 if not task_result.get('success'):
                     error_msg = task_result.get('error', '未知错误')
-                    raise ValueError(f"提交Celery任务失败: {error_msg}")
+                    raise ValueError(f"Failed to submit Celery task: {error_msg}")
 
                 celery_task_id = task_result['task_id']
                 logger.info(f"Celery任务已提交: {celery_task_id}")
@@ -129,7 +129,7 @@ class AutoPipelineService:
 
                 return {
                     "status": "started",
-                    "message": "流水线处理已启动",
+                    "message": "Pipeline processing started",
                     "project_id": project_id,
                     "task_id": task_pk,
                     "celery_task_id": celery_task_id
@@ -143,7 +143,7 @@ class AutoPipelineService:
             # 更新项目状态为失败
             await self._mark_project_failed(project_id, str(e))
             
-            return {"status": "failed", "message": f"启动失败: {str(e)}"}
+            return {"status": "failed", "message": f"Failed to start: {str(e)}"}
     
     def _find_srt_file(self, project_id: str) -> Optional[str]:
         """查找项目的字幕文件"""
@@ -178,7 +178,7 @@ class AutoPipelineService:
                 task_type="video_processing",
                 status=TaskStatus.PENDING,
                 progress=0.0,
-                current_step="初始化",
+                current_step="Initializing",
                 priority=0,
                 metadata={
                     "auto_started": True,

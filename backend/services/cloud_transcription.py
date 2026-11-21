@@ -65,7 +65,7 @@ def _check_status(response):
     except Exception:  # noqa: BLE001 - unreadable body: classify by status alone
         body = None
     status = response.status_code
-    raise CloudTranscriptionError(f'云端转写请求失败（HTTP {status}），请检查密钥、额度和模型权限。',
+    raise CloudTranscriptionError(f'Cloud transcription request failed (HTTP {status}). Check your API key, quota and model permissions.',
                                   http_status=status, upstream_error_type=_upstream_type(status, body))
 
 
@@ -119,7 +119,7 @@ def normalize_segments(items, offset=0.0, milliseconds=False, duration=None, ide
             if duration is not None and end > duration + 1:
                 raise ValueError()
         except (KeyError, TypeError, ValueError) as error:
-            raise _provider_failure('转写服务未返回有效时间戳，无法生成准确字幕；请更换转写模型。',
+            raise _provider_failure('The transcription service did not return valid timestamps, so accurate subtitles cannot be generated. Choose a different transcription model.',
                                     ModelResponseInvalid(type(error).__name__), identity) from None
         result.append({'start': start + offset, 'end': end + offset, 'text': text})
     return result
@@ -131,17 +131,17 @@ def _sse_failure(event: dict) -> CloudTranscriptionError:
     token = re.sub(r'[^a-z0-9]', '', code.lower())
     kind = _upstream_type(None, {'code': code})
     if any(part in token for part in ('throttl', 'toomany', 'ratequota')):
-        return CloudTranscriptionError('云端转写繁忙，请稍后重试。', upstream_error_type='rate_limited')
+        return CloudTranscriptionError('Cloud transcription is busy. Please try again later.', upstream_error_type='rate_limited')
     if any(part in token for part in ('internal', 'unavailable', 'badgateway', 'gateway', 'timeout')):
-        return CloudTranscriptionError('云端转写暂时不可用，请稍后重试。', upstream_error_type='upstream_unavailable')
+        return CloudTranscriptionError('Cloud transcription is temporarily unavailable. Please try again later.', upstream_error_type='upstream_unavailable')
     if any(part in token for part in ('invalidparameter', 'audiolength', 'audioduration')):
         return CloudTranscriptionError(
-            '云端转写拒绝了这段音频（过长、过短或格式不符合该模型）。请更换转写模型，或改用较短的视频。',
+            'Cloud transcription rejected this audio (too long, too short, or in a format this model does not support). Choose a different transcription model or use a shorter video.',
             http_status=400,
             upstream_error_type=kind,
         )
     return CloudTranscriptionError(
-        '云端转写失败，请检查账号权限、额度和模型。',
+        'Cloud transcription failed. Check your account permissions, quota and model.',
         upstream_error_type=kind,
     )
 
@@ -183,7 +183,7 @@ def request_chunk(client, connection, model, audio, language):
                         sentences[(item.get('channel_id', 0), item.get('sentence_id', item.get('begin_time')))] = item
         return list(sentences.values()), True
     if route not in {'openai', 'diarized'}:
-        raise CloudTranscriptionError('该转写模型尚未接入。')
+        raise CloudTranscriptionError('This transcription model is not supported yet.')
     data = {'model': model, 'response_format': 'diarized_json' if route == 'diarized' else 'verbose_json'}
     if route == 'diarized':
         data['chunking_strategy'] = 'auto'
@@ -198,7 +198,7 @@ def request_chunk(client, connection, model, audio, language):
     payload = response.json()
     segments = payload.get('segments')
     if not isinstance(segments, list):
-        raise CloudTranscriptionError('转写服务没有返回字幕时间戳，请使用支持 verbose_json 的模型。')
+        raise CloudTranscriptionError('The transcription service did not return subtitle timestamps. Use a model that supports verbose_json.')
     return segments, False
 
 
@@ -206,7 +206,7 @@ def transcribe(video: Path, output: Path | None, settings, language='auto', time
     selection = settings.transcription
     connection = next(c for c in settings.connections if c.id == selection.connection_id)
     if not connection.api_key and connection.provider != 'compatible':
-        raise CloudTranscriptionError('请先在字幕转写设置中填写 API Key。', upstream_error_type='invalid_key')
+        raise CloudTranscriptionError('Enter your API key in the subtitle transcription settings first.', upstream_error_type='invalid_key')
     output = Path(output) if output else video.with_suffix('.srt')
     from backend.utils.speech_recognizer import SpeechRecognizer, srt_has_cue_text
     if output.exists() and srt_has_cue_text(output):
@@ -219,7 +219,7 @@ def transcribe(video: Path, output: Path | None, settings, language='auto', time
                                     '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', str(audio)],
                                    capture_output=True, timeout=timeout or None)
         if completed.returncode:
-            raise CloudTranscriptionError('无法提取视频音频，请检查视频是否包含音轨。')
+            raise CloudTranscriptionError('Could not extract audio from the video. Check that the video has an audio track.')
         segments = []
         from backend.core.llm_providers import is_local_url
         from backend.services.studio.failure_identity import connection_identity
@@ -273,17 +273,17 @@ def transcribe(video: Path, output: Path | None, settings, language='auto', time
             raise safe from None
         except httpx.HTTPStatusError as exc:
             status = exc.response.status_code
-            safe = _provider_failure(f'云端转写请求失败（HTTP {status}），请检查密钥、额度和模型权限。',
+            safe = _provider_failure(f'Cloud transcription request failed (HTTP {status}). Check your API key, quota and model permissions.',
                                      ProviderTransportError(type(exc).__name__, http_status=status), identity)
             raise safe from None
         except httpx.RequestError as exc:
-            raise _provider_failure('云端转写连接失败或响应格式无效，请稍后重试。',
+            raise _provider_failure('Cloud transcription connection failed or the response was invalid. Please try again later.',
                                     ProviderTransportError(type(exc).__name__, timed_out=isinstance(exc, httpx.TimeoutException)),
                                     identity) from None
         except ValueError as exc:
-            raise _provider_failure('云端转写连接失败或响应格式无效，请稍后重试。', ModelResponseInvalid(type(exc).__name__), identity) from None
+            raise _provider_failure('Cloud transcription connection failed or the response was invalid. Please try again later.', ModelResponseInvalid(type(exc).__name__), identity) from None
         if not segments:
-            raise CloudTranscriptionError('转写结果为空，音频中可能没有可识别的人声。')
+            raise CloudTranscriptionError('The transcription result is empty. The audio may contain no recognizable speech.')
         segments.sort(key=lambda s: (s['start'], s['end']))
         output.parent.mkdir(parents=True, exist_ok=True)
         # Publish only the complete transcript; failed later chunks leave no partial subtitle.

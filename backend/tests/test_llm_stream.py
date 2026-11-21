@@ -155,9 +155,9 @@ def test_stream_notes_existing_progress_without_moving_the_bar(monkeypatch):
     assert store.saved
     assert {item[0] for item in store.saved} == {"ANALYZE"}
     assert {item[1] for item in store.saved} == {45}
-    assert "已接收" in store.row["message"]
-    assert "失败" not in store.row["message"]
-    assert "错误" not in store.row["message"]
+    assert "received" in store.row["message"]
+    assert "failed" not in store.row["message"]
+    assert "error" not in store.row["message"]
 
 
 def test_a_failed_snapshot_and_a_call_without_a_project_are_left_alone(monkeypatch):

@@ -5,7 +5,7 @@
 import os
 
 if os.getenv("AUTOCLIP_DESKTOP_MODE", "").lower() not in {"1", "true", "yes"}:
-    raise RuntimeError("此模块仅在桌面模式下可用")
+    raise RuntimeError("This module is only available in desktop mode")
 
 from celery import Celery
 from pathlib import Path

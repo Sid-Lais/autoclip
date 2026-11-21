@@ -46,7 +46,7 @@ def test_missing_empty_wrong_project_and_invalid_ids_are_rejected(completed):
 
 def test_overlong_export_is_rejected_instead_of_silently_cut(completed, monkeypatch):
     monkeypatch.setattr(exp, '_probe', lambda _: {'duration': 100000, 'width': 1080, 'height': 1920})
-    with pytest.raises(ValueError, match='限制'): exp.export_clip(exp.ExportRequest('p1', CID, preset='shorts'))
+    with pytest.raises(ValueError, match='180 second limit'): exp.export_clip(exp.ExportRequest('p1', CID, preset='shorts'))
 
 def test_cover_uses_packaged_frame_not_original_source(completed, monkeypatch):
     monkeypatch.setattr(cover_svc, 'find_source_video', lambda *_: pytest.fail('must use completed output'))

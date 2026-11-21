@@ -336,7 +336,7 @@ async def fetch_openai_compatible_models(base_url: str, api_key: str) -> List[st
 
     url = normalize_base_url(base_url)
     if not url:
-        raise ValueError("缺少 base_url")
+        raise ValueError("base_url is missing")
     headers = {"Authorization": f"Bearer {api_key or OPENAI_COMPATIBLE_PLACEHOLDER_KEY}"}
     data = await _http_get_json(f"{url}/models", headers=headers, trust_env=not is_local_url(url))
     return _extract_openai_model_ids(data)
@@ -344,7 +344,7 @@ async def fetch_openai_compatible_models(base_url: str, api_key: str) -> List[st
 
 async def fetch_gemini_models(api_key: str) -> List[str]:
     if not api_key:
-        raise ValueError("缺少 Gemini API Key")
+        raise ValueError("Gemini API key is missing")
     names: List[str] = []
     params: dict = {"key": api_key, "pageSize": 200}
     while True:

@@ -875,7 +875,7 @@ def test_each_persisted_reservation_rejection_recovers_without_a_phantom_worker(
         state = project.client.get('/studio/p1').json()
         if public == 'export':
             assert state['jobs'][0]['status'] == 'failed'
-            assert '未能启动' in state['jobs'][0]['error']
+            assert '导出任务未能启动' in state['jobs'][0]['error']
         elif public == 'cover':
             assert state['output_variants'][0]['cover_job']['status'] == 'failed'
         elif public == 'preparation':

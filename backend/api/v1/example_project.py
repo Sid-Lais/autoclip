@@ -26,5 +26,5 @@ def create_example_project(db: Session = Depends(get_db)):
         raise HTTPException(status_code=404, detail=str(exc)) from exc
     except Exception:
         logger.exception('创建示例项目失败')
-        raise HTTPException(status_code=500, detail='创建示例项目失败，请稍后重试')
+        raise HTTPException(status_code=500, detail='Failed to create the example project. Please try again later')
     return {'project_id': project.id, 'name': project.name, 'resolution': 'reused' if existing else 'created', 'example_version': (project.processing_config or {}).get('example_version', 1)}

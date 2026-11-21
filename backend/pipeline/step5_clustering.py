@@ -154,26 +154,26 @@ class ClusteringEngine:
         
         # 主题标题映射
         theme_titles = {
-            '投资理财': '投资理财启示',
-            '职场成长': '职场成长记', 
-            '社会观察': '社会观察笔记',
-            '文化差异': '文化差异趣谈',
-            '直播互动': '直播互动现场',
-            '情感关系': '情感与关系',
-            '健康生活': '健康生活方式',
-            '创作平台': '创作与平台生态'
+            '投资理财': 'Investing and Finance Insights',
+            '职场成长': 'Career Growth Stories',
+            '社会观察': 'Social Observation Notes',
+            '文化差异': 'Fun Takes on Cultural Differences',
+            '直播互动': 'Live Stream Interaction Highlights',
+            '情感关系': 'Emotions and Relationships',
+            '健康生活': 'Healthy Living',
+            '创作平台': 'Creation and Platform Ecosystem'
         }
         
         # 主题简介映射
         theme_summaries = {
-            '投资理财': '通过生活化案例分享投资理念，兼具实用与共鸣。',
-            '职场成长': '探讨职业发展、技能提升与职场心态变化。',
-            '社会观察': '理性点评社会现象与网络乱象，观点鲜明。',
-            '文化差异': '从饮食到语言，展现跨文化交流的趣味视角。',
-            '直播互动': '还原真实直播间互动场景，展现主播临场反应。',
-            '情感关系': '解析恋爱心理、社交困惑与情感共鸣话题。',
-            '健康生活': '分享运动、饮食、心理调适等健康管理经验。',
-            '创作平台': '剖析内容创作困境与平台机制，适合创作者参考。'
+            '投资理财': 'Shares investing ideas through everyday examples, practical and relatable.',
+            '职场成长': 'Explores career development, skill building and workplace mindset shifts.',
+            '社会观察': 'Rational commentary on social phenomena and online chaos, with clear viewpoints.',
+            '文化差异': 'From food to language, a fun look at cross-cultural exchange.',
+            '直播互动': 'Recreates real live stream interactions and the streamer\'s on-the-spot reactions.',
+            '情感关系': 'Breaks down dating psychology, social confusion and emotionally resonant topics.',
+            '健康生活': 'Shares health management tips on exercise, diet and mental well-being.',
+            '创作平台': 'Analyzes content creation challenges and platform mechanics, useful for creators.'
         }
         
         for theme, clip_ids in pre_clusters.items():
@@ -184,7 +184,7 @@ class ClusteringEngine:
             collections.append({
                 'id': str(collection_id),
                 'collection_title': theme_titles.get(theme, theme),
-                'collection_summary': theme_summaries.get(theme, f'{theme}相关精彩片段合集'),
+                'collection_summary': theme_summaries.get(theme, f'Collection of great clips related to {theme}'),
                 'clip_ids': clip_ids
             })
             collection_id += 1
@@ -275,8 +275,8 @@ class ClusteringEngine:
         if len(high_score) >= 2:
             collections.append({
                 'id': '1',
-                'collection_title': '精选高分片段',
-                'collection_summary': '评分最高的精彩片段合集',
+                'collection_title': 'Top-Scoring Clips',
+                'collection_summary': 'A collection of the highest-scoring clips',
                 'clip_ids': [clip['id'] for clip in high_score[:self.max_clips]]
             })
         
@@ -284,8 +284,8 @@ class ClusteringEngine:
         if len(medium_score) >= 2:
             collections.append({
                 'id': '2',
-                'collection_title': '优质内容推荐',
-                'collection_summary': '精选优质内容片段',
+                'collection_title': 'Recommended Quality Content',
+                'collection_summary': 'Selected quality content clips',
                 'clip_ids': [clip['id'] for clip in medium_score[:self.max_clips]]
             })
         

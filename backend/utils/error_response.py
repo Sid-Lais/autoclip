@@ -87,38 +87,38 @@ class ErrorResponse:
     def _get_user_friendly_message(self, error_code: ErrorCode, message: str) -> str:
         """获取用户友好的错误消息"""
         friendly_messages = {
-            ErrorCode.UNKNOWN_ERROR: "发生了未知错误，请稍后重试",
+            ErrorCode.UNKNOWN_ERROR: "An unknown error occurred. Please try again later.",
             ErrorCode.INTERNAL_SERVER_ERROR: "服务器内部错误，请稍后重试",
-            ErrorCode.SERVICE_UNAVAILABLE: "服务暂时不可用，请稍后重试",
+            ErrorCode.SERVICE_UNAVAILABLE: "The service is temporarily unavailable. Please try again later.",
             
-            ErrorCode.INVALID_REQUEST: "请求格式不正确，请检查后重试",
-            ErrorCode.MISSING_PARAMETER: "缺少必要参数，请检查请求",
-            ErrorCode.INVALID_PARAMETER: "参数格式不正确，请检查后重试",
-            ErrorCode.REQUEST_TOO_LARGE: "请求内容过大，请减少数据量后重试",
-            ErrorCode.UNSUPPORTED_MEDIA_TYPE: "不支持的文件格式，请选择支持的文件类型",
+            ErrorCode.INVALID_REQUEST: "The request format is invalid. Please check it and try again.",
+            ErrorCode.MISSING_PARAMETER: "A required parameter is missing. Please check the request.",
+            ErrorCode.INVALID_PARAMETER: "A parameter has an invalid format. Please check it and try again.",
+            ErrorCode.REQUEST_TOO_LARGE: "The request is too large. Please reduce the data size and try again.",
+            ErrorCode.UNSUPPORTED_MEDIA_TYPE: "Unsupported file format. Please choose a supported file type.",
             
-            ErrorCode.UNAUTHORIZED: "未授权访问，请先登录",
-            ErrorCode.FORBIDDEN: "权限不足，无法执行此操作",
-            ErrorCode.TOKEN_EXPIRED: "登录已过期，请重新登录",
-            ErrorCode.INVALID_CREDENTIALS: "认证信息无效，请检查后重试",
+            ErrorCode.UNAUTHORIZED: "Unauthorized access. Please sign in first.",
+            ErrorCode.FORBIDDEN: "Insufficient permissions to perform this action.",
+            ErrorCode.TOKEN_EXPIRED: "Your session has expired. Please sign in again.",
+            ErrorCode.INVALID_CREDENTIALS: "Invalid credentials. Please check them and try again.",
             
-            ErrorCode.RESOURCE_NOT_FOUND: "请求的资源不存在",
-            ErrorCode.RESOURCE_ALREADY_EXISTS: "资源已存在，请使用其他名称",
-            ErrorCode.RESOURCE_CONFLICT: "资源冲突，请检查后重试",
+            ErrorCode.RESOURCE_NOT_FOUND: "The requested resource does not exist.",
+            ErrorCode.RESOURCE_ALREADY_EXISTS: "The resource already exists. Please use a different name.",
+            ErrorCode.RESOURCE_CONFLICT: "Resource conflict. Please check and try again.",
             
-            ErrorCode.VALIDATION_ERROR: "数据验证失败，请检查输入内容",
-            ErrorCode.PROCESSING_ERROR: "处理过程中发生错误，请重试",
-            ErrorCode.QUOTA_EXCEEDED: "超出使用限制，请稍后重试",
-            ErrorCode.RATE_LIMIT_EXCEEDED: "请求过于频繁，请稍后再试",
+            ErrorCode.VALIDATION_ERROR: "Data validation failed. Please check your input.",
+            ErrorCode.PROCESSING_ERROR: "An error occurred during processing. Please try again.",
+            ErrorCode.QUOTA_EXCEEDED: "Usage limit exceeded. Please try again later.",
+            ErrorCode.RATE_LIMIT_EXCEEDED: "Too many requests. Please try again later.",
             
-            ErrorCode.EXTERNAL_API_ERROR: "外部服务暂时不可用，请稍后重试",
+            ErrorCode.EXTERNAL_API_ERROR: "The external service is temporarily unavailable. Please try again later.",
             ErrorCode.NETWORK_ERROR: "网络连接失败，请检查网络连接",
-            ErrorCode.TIMEOUT_ERROR: "请求超时，请重试",
+            ErrorCode.TIMEOUT_ERROR: "The request timed out. Please try again.",
             
-            ErrorCode.FILE_NOT_FOUND: "文件不存在，请检查文件路径",
-            ErrorCode.FILE_TOO_LARGE: "文件过大，请选择较小的文件",
-            ErrorCode.UNSUPPORTED_FILE_FORMAT: "不支持的文件格式，请选择支持的文件类型",
-            ErrorCode.FILE_PROCESSING_ERROR: "文件处理失败，请检查文件内容",
+            ErrorCode.FILE_NOT_FOUND: "File not found. Please check the file path.",
+            ErrorCode.FILE_TOO_LARGE: "The file is too large. Please choose a smaller file.",
+            ErrorCode.UNSUPPORTED_FILE_FORMAT: "Unsupported file format. Please choose a supported file type.",
+            ErrorCode.FILE_PROCESSING_ERROR: "File processing failed. Please check the file content.",
         }
         
         return friendly_messages.get(error_code, message)
@@ -225,7 +225,7 @@ def create_validation_error_response(
     
     return create_error_response(
         error_code=ErrorCode.VALIDATION_ERROR,
-        message="数据验证失败",
+        message="Data validation failed",
         details={"validation_errors": error_details},
         request_id=request_id
     )

@@ -85,7 +85,7 @@ def test_local_selection_has_no_connection_and_validates_model(monkeypatch, tmp_
 def test_cross_process_lock_rejects_uninstall_and_releases(tmp_path, monkeypatch):
     monkeypatch.setattr(runtime, 'root', lambda: tmp_path / 'sensevoice')
     with runtime.operation():
-        with pytest.raises(RuntimeError, match='正在准备或转写'): runtime.uninstall()
+        with pytest.raises(RuntimeError, match='preparing or transcribing'): runtime.uninstall()
     assert runtime.uninstall()['status'] == 'not_installed'
 
 
@@ -242,7 +242,7 @@ def test_missing_bundled_wheel_does_not_compile_or_destroy_ready_data(tmp_path, 
     ready = runtime.root() / 'ready.json'
     ready.write_text('preserve previous model reference')
     monkeypatch.setattr(runtime.subprocess, 'run', lambda *_a, **_k: pytest.fail('must not invoke a compiler or pip'))
-    with pytest.raises(RuntimeError, match='本地组件缺失'):
+    with pytest.raises(RuntimeError, match='local components are missing'):
         runtime.prepare()
     assert ready.read_text() == 'preserve previous model reference'
 
@@ -382,7 +382,7 @@ def test_timeout_keeps_bounded_local_dependency_log_and_releases_state(tmp_path,
     if stage == "pip":
         state = json.loads((runtime.root() / "status.json").read_text(encoding="utf-8"))
         assert state["status"] == "error"
-        assert "组件安装失败" in state["message"]
+        assert "component installation failed" in state["message"]
     with runtime.operation():
         pass
 

@@ -14,7 +14,7 @@ router = APIRouter(prefix="/simple-progress", tags=["simple-progress"])
 
 
 @router.get("/snapshot")
-def get_progress_snapshots(project_ids: List[str] = Query(..., description="项目ID列表")):
+def get_progress_snapshots(project_ids: List[str] = Query(..., description="List of project IDs")):
     """
     批量获取项目进度快照
     
@@ -34,7 +34,7 @@ def get_progress_snapshots(project_ids: List[str] = Query(..., description="项�
         
     except Exception as e:
         logger.error(f"获取进度快照失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取进度快照失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get progress snapshots: {str(e)}")
 
 
 @router.get("/snapshot/{project_id}")
@@ -56,7 +56,7 @@ def get_single_progress_snapshot(project_id: str):
                 "project_id": project_id,
                 "stage": "INGEST",
                 "percent": 0,
-                "message": "等待开始",
+                "message": "Waiting to start",
                 "ts": 0
             }
             
@@ -64,7 +64,7 @@ def get_single_progress_snapshot(project_id: str):
         
     except Exception as e:
         logger.error(f"获取项目进度快照失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取项目进度快照失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get project progress snapshot: {str(e)}")
 
 
 @router.get("/stages")

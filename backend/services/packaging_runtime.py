@@ -250,7 +250,7 @@ def _playwright_importable() -> bool:
         if not missing and not _runtime_import_error:
             logger.warning("包装运行时导入失败: %s", type(exc).__name__)
         _runtime_import_error = "" if missing else (
-            "包装运行时依赖加载失败。请重新安装高级包装组件后重启 AutoClip。"
+            "Failed to load the packaging runtime dependencies. Reinstall the advanced packaging component and restart AutoClip."
         )
         return False
     _runtime_import_error = ""
@@ -449,7 +449,7 @@ def get_status() -> dict[str, Any]:
             logger.exception("包装运行时状态探测失败")
             ready = False
             status["status"] = "error"
-            status["message"] = _public_failure("包装组件状态读取失败。请重新安装高级包装组件。")
+            status["message"] = _public_failure("Failed to read the packaging component status. Reinstall the advanced packaging component.")
         if ready:
             status["status"] = "installed"
             status["progress"] = 100
@@ -639,11 +639,11 @@ def _run_plan(
             attempt_env = env
         if index and failures:
             logger.warning("包装组件 %s 从 %s 失败（%s），改用 %s", kind, plan[index - 1][0], failures[-1], label)
-            _set_state(message="官方源无响应，改用国内镜像…")
+            _set_state(message="Official source not responding; switching to the China mirror…")
         code = _stream(command, attempt_env, progress, timeout=hard, stall_timeout=stall)
         if code == 0:
             return 0, failures
-        reason = "超时" if code == TIMEOUT_EXIT else f"退出码 {code}"
+        reason = "timed out" if code == TIMEOUT_EXIT else f"exit code {code}"
         failures.append(f"{label}: {reason}")
     return code, failures
 
@@ -652,15 +652,15 @@ def _failure_message(kind: str, code: int, failures: list[str]) -> str:
     timed_out = code == TIMEOUT_EXIT
     if len(failures) > 1:
         if kind == "browser":
-            return "浏览器下载失败（官方源无响应，国内镜像也失败）"
-        return "安装失败（官方 PyPI 无响应，国内镜像也失败）"
+            return "Browser download failed (official source not responding, and the China mirror also failed)"
+        return "Install failed (official PyPI not responding, and the China mirror also failed)"
     if kind == "browser":
-        return "浏览器下载失败（超时）" if timed_out else f"浏览器下载失败（退出码 {code}）"
-    return "安装失败（pip 超时）" if timed_out else f"安装失败（pip 退出码 {code}）"
+        return "Browser download failed (timed out)" if timed_out else f"Browser download failed (exit code {code})"
+    return "Install failed (pip timed out)" if timed_out else f"Install failed (pip exit code {code})"
 
 
 def _do_install(index_url: str | None) -> None:
-    _set_state(status="installing", progress=5, message="正在准备高级包装组件…", log_tail="")
+    _set_state(status="installing", progress=5, message="Preparing the advanced packaging component…", log_tail="")
     try:
         env = _child_env()
         if not package_present() or not _playwright_importable():
@@ -673,7 +673,7 @@ def _do_install(index_url: str | None) -> None:
                 return
         plan = browser_plan()
         if plan["needs_download"]:
-            _set_state(progress=65, message="正在下载无头浏览器…")
+            _set_state(progress=65, message="Downloading the headless browser…")
             code, failures = _run_plan("browser", browser_download_plan(), env, (65, 95))
             if code != 0:
                 message = _public_failure(_failure_message("browser", code, failures))
@@ -683,15 +683,15 @@ def _do_install(index_url: str | None) -> None:
                 return
         if is_installed():
             _clear_install_error()
-            _set_state(status="installed", progress=100, message="安装完成")
+            _set_state(status="installed", progress=100, message="Install complete")
             logger.info("高级包装组件安装完成，浏览器模式 %s", browser_plan()["mode"])
         else:
-            message = _public_failure("安装结束，但包装组件仍不可用")
+            message = _public_failure("Install finished, but the packaging component is still unavailable")
             _write_install_error(message)
             _set_state(status="error", message=message)
     except Exception as exc:  # noqa: BLE001
         logger.error("安装高级包装组件异常: %s", exc, exc_info=True)
-        message = _public_failure("安装异常。请稍后重试，或继续使用经典模板出片。")
+        message = _public_failure("Install error. Please try again later, or keep using the classic template for export.")
         _write_install_error(message)
         _set_state(status="error", message=message)
 
@@ -699,8 +699,8 @@ def _do_install(index_url: str | None) -> None:
 def start_install(index_url: str | None = None) -> dict[str, Any]:
     with _state_lock:
         if _state["status"] == "installing":
-            return {"started": False, "message": "正在安装中"}
-        _state.update(status="installing", progress=0, message="正在检查运行时…", log_tail="")
+            return {"started": False, "message": "Installation in progress"}
+        _state.update(status="installing", progress=0, message="Checking the runtime…", log_tail="")
     if is_installed():
         _set_state(status="installed", progress=100, message="已安装")
         return {"started": False, "message": "已安装"}
@@ -721,7 +721,7 @@ def install_blocking(index_url: str | None = None) -> dict[str, Any]:
 def uninstall() -> dict[str, Any]:
     with _state_lock:
         if _state["status"] == "installing":
-            return {"success": False, "message": "正在安装中，无法卸载"}
+            return {"success": False, "message": "Installation in progress; cannot uninstall"}
     root = install_root()
     try:
         shutil.rmtree(root, ignore_errors=True)
@@ -736,7 +736,7 @@ def uninstall() -> dict[str, Any]:
         global _runtime_import_error
         _runtime_import_error = ""
         _set_state(status="not_installed", progress=0, message="已卸载", log_tail="")
-        return {"success": True, "message": "已卸载高级包装组件"}
+        return {"success": True, "message": "Advanced packaging component uninstalled"}
     except Exception as exc:  # noqa: BLE001
         logger.error("卸载高级包装组件失败: %s", type(exc).__name__)
         return {"success": False, "message": "卸载失败"}

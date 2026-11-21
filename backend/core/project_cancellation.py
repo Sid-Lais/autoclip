@@ -43,7 +43,7 @@ _binds: dict[str, int] = {}
 _round_ignored: dict[str, int] = {}
 _current: contextvars.ContextVar[Optional[str]] = contextvars.ContextVar('autoclip_project', default=None)
 _recording_stop: contextvars.ContextVar[bool] = contextvars.ContextVar('autoclip_recording_stop', default=False)
-MESSAGE = '项目已删除，已停止生成'
+MESSAGE = 'Project deleted; generation stopped'
 STOP_MESSAGE = '任务已取消'
 _CREATE_NEW_PROCESS_GROUP = 0x00000200
 _CREATE_NO_WINDOW = 0x08000000

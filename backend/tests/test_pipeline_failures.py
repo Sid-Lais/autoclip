@@ -54,8 +54,8 @@ def test_step1_empty_srt_is_a_subtitle_failure(tmp_path, prompt_files, monkeypat
         extractor.extract_outline(srt)
 
     assert exc.value.stage == "SUBTITLE"
-    assert "为空" in exc.value.message
-    assert "转写" in exc.value.hint
+    assert "subtitle file is empty" in exc.value.message
+    assert "transcribe" in exc.value.hint
 
 
 def test_step1_all_chunks_failing_surfaces_llm_error(tmp_path, prompt_files, monkeypatch):
@@ -71,9 +71,9 @@ def test_step1_all_chunks_failing_surfaces_llm_error(tmp_path, prompt_files, mon
     assert "1/1" in exc.value.message
     assert "未配置LLM提供商" not in exc.value.message  # provider/raw text is logged, never shown (RC156 c5)
     assert exc.value.code == "llm_not_configured"
-    assert "自备" in exc.value.hint
-    assert "设置 → 服务商与模型" in exc.value.hint
-    assert "测试连接" in exc.value.hint
+    assert "bring your own API key" in exc.value.hint
+    assert "Settings → Providers & models" in exc.value.hint
+    assert "Test connection" in exc.value.hint
 
 
 @pytest.mark.parametrize('status', [401, 403])
@@ -92,7 +92,7 @@ def test_auth_failure_survives_outline_and_generation_result(adapter, tmp_path, 
     assert failure.code == 'llm_auth_invalid'
     assert sentry_setup.studio_error_code(failure) == 'llm_auth_invalid'
     assert failure.http_status == status
-    assert '自备' not in failure.user_message()
+    assert 'bring your own' not in failure.user_message()
 
     _fake_manager(monkeypatch, available=True)
     def fail(*args, **kwargs):
@@ -113,7 +113,7 @@ def test_step1_unparseable_response_is_a_failure_not_empty_list(tmp_path, prompt
         extractor.extract_outline(srt)
 
     assert exc.value.stage == "ANALYZE"
-    assert "无法解析" in exc.value.message
+    assert "could not be parsed into an outline" in exc.value.message
     assert exc.value.code == "invalid_response"
 
 
@@ -213,13 +213,13 @@ def test_adapter_fails_fast_when_llm_not_configured(adapter, monkeypatch, tmp_pa
     assert result["stage"] == "ANALYZE"
     assert result["error_code"] == "llm_not_configured"
     assert "Google Gemini · gemini-2.5-flash" in result["error"]
-    assert "设置 → 服务商与模型" in result["error"]
-    assert "自备 API Key" in result["error"]
-    assert "控制台" in result["error"]
+    assert "Settings → Providers & models" in result["error"]
+    assert "bring your own API key" in result["error"]
+    assert "console" in result["error"]
     assert result["message"] == result["error"]
     # 进度事件带着失败阶段，前端失败态 / 反馈对话框能拿到
     assert adapter._events[-1][0] == "ANALYZE"
-    assert adapter._events[-1][1].startswith("处理失败：")
+    assert adapter._events[-1][1].startswith("Processing failed: ")
 
 
 def _whisper_status(monkeypatch, status: str, message: str = ""):
@@ -243,8 +243,8 @@ def test_adapter_fails_when_no_subtitle_and_auto_transcribe_yields_nothing(adapt
     assert result["status"] == "failed"
     assert result["stage"] == "SUBTITLE"
     assert result["error_code"] == "whisper_not_installed"
-    assert "还没安装" in result["error"]
-    assert "设置 → 默认模型 → 语音转字幕" in result["error"]
+    assert "not installed yet" in result["error"]
+    assert "Settings → Default models → Speech to subtitles" in result["error"]
     assert ".srt" in result["error"]
     # 以前会写一个空大纲然后「成功」；现在不该再产出 step1_outline.json
     assert not (tmp_path / "projects" / "proj-1" / "metadata" / "step1_outline.json").exists()
@@ -261,7 +261,7 @@ def test_adapter_distinguishes_install_failure_from_empty_transcript(adapter, mo
     _whisper_status(monkeypatch, "error", "安装失败（pip 退出码 1）")
     failed = asyncio.run(adapter.process_project_sync(str(tmp_path / "in.mp4"), ""))
     assert failed["error_code"] == "whisper_install_failed"
-    assert "上次安装没有成功" in failed["error"]
+    assert "last Whisper installation did not succeed" in failed["error"]
     assert ".srt" in failed["error"]
 
     _whisper_status(monkeypatch, "installed")
@@ -271,7 +271,7 @@ def test_adapter_distinguishes_install_failure_from_empty_transcript(adapter, mo
     )
     empty = asyncio.run(adapter.process_project_sync(str(tmp_path / "in.mp4"), ""))
     assert empty["error_code"] == "transcription_empty"
-    assert "已安装" in empty["error"]
+    assert "Whisper is installed" in empty["error"]
     assert ".srt" in empty["error"]
 
 
@@ -298,7 +298,7 @@ def test_adapter_surfaces_whisper_error_on_the_subtitle_stage(adapter, monkeypat
     assert result["stage"] == "SUBTITLE"
     assert result["error_code"] == "subtitle_setup"
     assert "显卡" in result["error"]
-    assert "设置 → 默认模型 → 语音转字幕" in result["error"]
+    assert "Settings → Default models → Speech to subtitles" in result["error"]
     assert result["message"] == result["error"]
 
 
@@ -341,16 +341,16 @@ def test_adapter_empty_timeline_does_not_send_user_to_model_settings(adapter, mo
     assert result["status"] == "failed"
     assert result["stage"] == "ANALYZE"
     assert result["error_code"] == "timeline_empty"
-    assert "4 个话题" in result["error"]
+    assert "4 topics" in result["error"]
     assert "20" in result["error"]
-    assert "时间戳" in result["error"]
-    assert "最短时长" in result["error"]
-    assert "设置 → 服务商与模型" not in result["error"]
+    assert "timestamps" in result["error"]
+    assert "minimum duration" in result["error"]
+    assert "Settings → Providers & models" not in result["error"]
     assert "API Key" not in result["error"]
-    assert "测试连接" not in result["error"]
+    assert "Test connection" not in result["error"]
     assert result["message"] == result["error"]
     assert adapter._events[-1][0] == "ANALYZE"
-    assert "时间线提取为空" in adapter._events[-1][1]
+    assert "Timeline extraction is empty" in adapter._events[-1][1]
 
 
 def test_empty_timeline_hint_survives_last_error_metadata():
@@ -375,7 +375,7 @@ def test_empty_timeline_hint_survives_last_error_metadata():
     message = svc.latest_error_message(project)
     assert message == failure.user_message()
     assert svc.latest_error_code(project) == "timeline_empty"
-    assert "设置 → 服务商与模型" not in message
+    assert "Settings → Providers & models" not in message
     assert "API Key" not in message
 
 
@@ -393,8 +393,8 @@ def test_adapter_fails_when_scoring_keeps_nothing(adapter, monkeypatch, tmp_path
 
     assert result["status"] == "failed"
     assert result["stage"] == "ANALYZE"
-    assert "2 个候选" in result["error"]
-    assert "最低评分阈值" in result["error"]
+    assert "2 candidates" in result["error"]
+    assert "Minimum score" in result["error"]
 
 
 def test_adapter_fails_when_ffmpeg_produced_no_clip(adapter, monkeypatch, tmp_path):
@@ -479,7 +479,7 @@ def test_adapter_happy_path_still_succeeds(adapter, monkeypatch, tmp_path):
 
     assert result["status"] == "succeeded"
     assert result["result"]["video_result"]["clips_generated"] == 1
-    assert adapter._events[-1] == ("DONE", "处理完成")
+    assert adapter._events[-1] == ("DONE", "处理完成")  # frontend i18n catalog key
 
 
 def test_adapter_replay_mode_skips_llm_preflight(adapter, monkeypatch, tmp_path):
@@ -497,7 +497,7 @@ def test_adapter_replay_mode_skips_llm_preflight(adapter, monkeypatch, tmp_path)
     result = asyncio.run(adapter.process_project_sync(str(tmp_path / "in.mp4"), str(srt)))
 
     # 走过了 preflight，死在评分为空——说明 preflight 确实被跳过
-    assert result["stage"] == "ANALYZE" and "候选" in result["error"]
+    assert result["stage"] == "ANALYZE" and "candidates" in result["error"]
 
 
 # ------------------------------------------------------- error surfacing ---

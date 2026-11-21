@@ -167,19 +167,19 @@ def test_missing_subtitle_failure_roundtrips_with_exc_type(memory_backend, proje
     assert "kind=missing-subtitle" in caplog.text
     assert type(meta["result"]) is ImportSubtitleUnavailable
     message = str(raised)
-    assert "没有字幕可分析" in message
-    assert "设置 → 默认模型 → 语音转字幕" in message
+    assert "No subtitles to analyze" in message
+    assert "Settings → Default models → Speech to subtitles" in message
     assert meta["status"] == "FAILURE"
     assert isinstance(meta["result"], BaseException)
-    assert "没有字幕可分析" in str(meta["result"])
+    assert "No subtitles to analyze" in str(meta["result"])
     # 再读一次：worker 写结果时会解码当前 meta，这里不能再抛 ValueError
     again = memory_backend._get_task_meta_for("task-missing-srt")
     assert again["status"] == "FAILURE"
-    assert "设置 → 默认模型 → 语音转字幕" in str(again["result"])
+    assert "Settings → Default models → Speech to subtitles" in str(again["result"])
 
     assert project_service.project.status == "failed"
     assert project_service.project.project_metadata["last_error_code"] == "whisper_not_installed"
-    assert "设置 → 默认模型 → 语音转字幕" in project_service.project.project_metadata["last_error"]
+    assert "Settings → Default models → Speech to subtitles" in project_service.project.project_metadata["last_error"]
 
 
 def test_speech_error_roundtrips_as_structured_subtitle_failure(memory_backend, project_service, tmp_path, monkeypatch):
@@ -203,12 +203,12 @@ def test_speech_error_roundtrips_as_structured_subtitle_failure(memory_backend, 
 
     assert type(raised) is ImportSubtitleUnavailable
     assert type(meta["result"]) is ImportSubtitleUnavailable
-    assert "还没安装" in str(raised)
-    assert "设置 → 默认模型 → 语音转字幕" in str(raised)
+    assert "not installed yet" in str(raised)
+    assert "Settings → Default models → Speech to subtitles" in str(raised)
     assert meta["status"] == "FAILURE"
     assert project_service.project.status == "failed"
     assert project_service.project.project_metadata["last_error_code"] == "whisper_not_installed"
-    assert "设置 → 默认模型 → 语音转字幕" in project_service.project.project_metadata["last_error"]
+    assert "Settings → Default models → Speech to subtitles" in project_service.project.project_metadata["last_error"]
 
 
 def test_pipeline_submit_error_is_kept_on_the_project(memory_backend, project_service, tmp_path, monkeypatch):
@@ -421,9 +421,9 @@ def test_speech_api_key_is_missing_credential_without_changing_guidance(
     assert type(raised) is ImportMissingCredential
     assert type(meta["result"]) is ImportMissingCredential
     assert "请配置API Key" in str(raised)
-    assert "设置 → 默认模型 → 语音转字幕" in str(raised)
+    assert "Settings → Default models → Speech to subtitles" in str(raised)
     assert project_service.project.project_metadata["last_error_code"] == "subtitle_setup"
-    assert "设置 → 默认模型 → 语音转字幕" in project_service.project.project_metadata["last_error"]
+    assert "Settings → Default models → Speech to subtitles" in project_service.project.project_metadata["last_error"]
     assert "kind=missing-key" in caplog.text
     assert "exc=ImportMissingCredential" in caplog.text
 

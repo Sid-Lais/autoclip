@@ -30,7 +30,7 @@ class DataSyncService:
             projects_dir = data_dir / "projects"
             if not projects_dir.exists():
                 logger.warning(f"项目目录不存在: {projects_dir}")
-                return {"success": False, "error": "项目目录不存在"}
+                return {"success": False, "error": "Project directory does not exist"}
             
             synced_projects = []
             failed_projects = []
@@ -78,7 +78,7 @@ class DataSyncService:
                 if not project_metadata:
                     logger.warning(f"项目 {project_id} 没有元数据文件，创建基础项目记录")
                     project_metadata = {
-                        "project_name": f"项目_{project_id[:8]}",
+                        "project_name": f"Project_{project_id[:8]}",
                         "created_at": datetime.now().isoformat(),
                         "status": "pending"
                     }
@@ -86,7 +86,7 @@ class DataSyncService:
                 # 创建项目记录
                 project = Project(
                     id=project_id,
-                    name=project_metadata.get("project_name", f"项目_{project_id[:8]}"),
+                    name=project_metadata.get("project_name", f"Project_{project_id[:8]}"),
                     description=project_metadata.get("description", ""),
                     project_type=ProjectType.KNOWLEDGE,  # 默认类型
                     status=ProjectStatus.PENDING,

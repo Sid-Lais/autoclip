@@ -32,7 +32,7 @@ class AnalysisPreferences(BaseModel):
         if self.allow_visual_screening is None:
             self.allow_visual_screening = self.analysis_mode != 'subtitle'
         if self.analysis_mode == 'subtitle' and self.allow_visual_screening:
-            raise UserFacingError('字幕分析不能启用视觉初筛')
+            raise UserFacingError('Subtitle analysis cannot enable visual pre-screening')
         return self
 
 
@@ -58,7 +58,7 @@ def load() -> AnalysisPreferences:
         try:
             return AnalysisPreferences.model_validate_json(path.read_text(encoding='utf-8'))
         except (ValueError, UnicodeError) as error:
-            raise UserFacingError('分析偏好无法读取，请重新设置；尚未授权视觉调用') from error
+            raise UserFacingError('Analysis preferences could not be read; please set them again. Visual calls are not yet authorized') from error
 
 
 def _write_json(path: Path, payload: dict) -> None:

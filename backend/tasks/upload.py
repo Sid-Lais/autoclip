@@ -28,12 +28,12 @@ def upload_clip_task(self, record_id: str, clip_id: str):
         try:
             record_id_int = int(record_id)
         except ValueError:
-            raise ValueError(f"无效的record_id格式: {record_id}")
+            raise ValueError(f"Invalid record_id format: {record_id}")
         
         # 获取投稿记录
         upload_record = upload_service.get_upload_record_by_id(record_id_int)
         if not upload_record:
-            raise ValueError(f"投稿记录不存在: {record_id}")
+            raise ValueError(f"Upload record not found: {record_id}")
         
         # 构建视频文件路径
         project_output_dir = get_project_output_directory(str(upload_record.project_id))
@@ -43,7 +43,7 @@ def upload_clip_task(self, record_id: str, clip_id: str):
         from ..models.clip import Clip
         clip = db.query(Clip).filter(Clip.id == clip_id).first()
         if not clip:
-            raise ValueError(f"切片记录不存在: {clip_id}")
+            raise ValueError(f"Clip record not found: {clip_id}")
         
         clip_title = clip.title or clip.generated_title or ""
         logger.info(f"切片标题: {clip_title}")
@@ -105,14 +105,14 @@ def upload_clip_task(self, record_id: str, clip_id: str):
                                 break
         
         if not video_path:
-            raise FileNotFoundError(f"未找到切片视频文件: {clip_id}")
+            raise FileNotFoundError(f"Clip video file not found: {clip_id}")
         
         # 检查文件大小
         file_size = video_path.stat().st_size
         logger.info(f"视频文件大小: {file_size} bytes")
         
         if file_size == 0:
-            raise ValueError("视频文件为空")
+            raise ValueError("Video file is empty")
         
         # 执行上传
         logger.info(f"开始上传视频: {video_path}")
@@ -123,7 +123,7 @@ def upload_clip_task(self, record_id: str, clip_id: str):
             upload_service.update_upload_status(record_id_int, "success")
         else:
             logger.error(f"切片上传失败: {clip_id}")
-            upload_service.update_upload_status(record_id_int, "failed", "上传失败")
+            upload_service.update_upload_status(record_id_int, "failed", "Upload failed")
             
     except Exception as e:
         logger.error(f"上传切片任务失败: {str(e)}")
@@ -147,12 +147,12 @@ def upload_project_task(self, record_id: str, clip_ids: list):
         try:
             record_id_int = int(record_id)
         except ValueError:
-            raise ValueError(f"无效的record_id格式: {record_id}")
+            raise ValueError(f"Invalid record_id format: {record_id}")
         
         # 获取投稿记录
         upload_record = upload_service.get_upload_record_by_id(record_id_int)
         if not upload_record:
-            raise ValueError(f"投稿记录不存在: {record_id}")
+            raise ValueError(f"Upload record not found: {record_id}")
         
         # 构建视频文件路径
         project_output_dir = get_project_output_directory(str(upload_record.project_id))
@@ -161,14 +161,14 @@ def upload_project_task(self, record_id: str, clip_ids: list):
         # 查找所有切片文件
         clips_dir = project_output_dir / "clips"
         if not clips_dir.exists():
-            raise FileNotFoundError(f"clips目录不存在: {clips_dir}")
+            raise FileNotFoundError(f"clips directory does not exist: {clips_dir}")
         
         # 获取所有mp4文件
         mp4_files = list(clips_dir.glob("*.mp4"))
         logger.info(f"找到的mp4文件: {[str(f) for f in mp4_files]}")
         
         if not mp4_files:
-            raise FileNotFoundError("未找到任何mp4文件")
+            raise FileNotFoundError("No mp4 files found")
         
         # 如果只有一个文件，直接上传
         if len(mp4_files) == 1:
@@ -178,7 +178,7 @@ def upload_project_task(self, record_id: str, clip_ids: list):
             # 检查文件大小
             file_size = video_path.stat().st_size
             if file_size == 0:
-                raise ValueError("视频文件为空")
+                raise ValueError("Video file is empty")
             
             # 执行上传
             success = upload_service.upload_clip(record_id_int, str(video_path))
@@ -188,11 +188,11 @@ def upload_project_task(self, record_id: str, clip_ids: list):
                 upload_service.update_upload_status(record_id_int, "success")
             else:
                 logger.error("项目上传失败")
-                upload_service.update_upload_status(record_id_int, "failed", "上传失败")
+                upload_service.update_upload_status(record_id_int, "failed", "Upload failed")
         else:
             # 多个文件的情况，这里可以扩展为合并上传或分别上传
             logger.warning(f"发现多个视频文件，当前只支持单个文件上传: {len(mp4_files)}")
-            upload_service.update_upload_status(record_id_int, "failed", "暂不支持多文件上传")
+            upload_service.update_upload_status(record_id_int, "failed", "Uploading multiple files is not supported yet")
             
     except Exception as e:
         logger.error(f"上传项目任务失败: {str(e)}")

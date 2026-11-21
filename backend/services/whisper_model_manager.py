@@ -506,9 +506,9 @@ class WhisperModelManager:
         The download finishes (or fails) later: callers poll get_model_info (RC156 Win QA #5).
         """
         if model_name not in self.model_configs:
-            raise ValueError(f"不支持的模型: {model_name}")
+            raise ValueError(f"Unsupported model: {model_name}")
         if not whisper_runtime.is_installed():
-            raise RuntimeError("请先安装 Whisper 运行时")
+            raise RuntimeError("Install the Whisper runtime first")
         if self._is_downloaded(model_name):
             # A complete resumed cache must recover a previous download error
             # immediately, without requiring an application restart.
@@ -538,7 +538,7 @@ class WhisperModelManager:
         """
         model_name = canonical_model_name(model_name)
         if model_name not in self.model_configs:
-            raise ValueError(f"不支持的模型: {model_name}")
+            raise ValueError(f"Unsupported model: {model_name}")
         local = self.get_local_model_path(model_name)
         if local is not None:
             return local
@@ -560,7 +560,7 @@ class WhisperModelManager:
         if local is None:
             with self._lock:
                 error = (self._download_state.get(model_name) or {}).get("error")
-            raise RuntimeError(error or f"Whisper 模型 {model_name} 下载未完成")
+            raise RuntimeError(error or f"Whisper model {model_name} download did not complete")
         return local
 
     def _download_blocking(self, model_name: str) -> None:
@@ -587,7 +587,7 @@ class WhisperModelManager:
                                        model_name, source, type(e).__name__, plan[index + 1][0])
                         continue
                     if len(failures) > 1:
-                        raise RuntimeError("；".join(failures)) from e
+                        raise RuntimeError("; ".join(failures)) from e
                     raise
                 with self._lock:
                     self._download_state[model_name] = {

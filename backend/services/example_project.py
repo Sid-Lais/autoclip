@@ -75,7 +75,7 @@ def create(db: Session) -> Project:
     if existing:
         return existing
     if not available():
-        raise FileNotFoundError('示例项目资源缺失')
+        raise FileNotFoundError('Example project assets are missing')
     manifest = load_manifest()
     meta = manifest['project']
     now = datetime.now(timezone.utc)  # completed_at is stored in UTC like every other timestamp

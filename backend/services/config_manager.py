@@ -190,7 +190,7 @@ class ProjectConfigManager:
         # API密钥优先级：项目配置 > 环境变量 > 默认值
         api_key = llm_config.get("api_key") or os.getenv("DASHSCOPE_API_KEY", "")
         if not api_key:
-            raise ValueError("DASHSCOPE_API_KEY 未在项目配置或环境变量中设置")
+            raise ValueError("DASHSCOPE_API_KEY is not set in the project config or environment variables")
         
         return LLMConfig(
             api_key=api_key,
@@ -285,7 +285,7 @@ class ProjectConfigManager:
                 backup_config = yaml.safe_load(f)
             
             if backup_config is None:
-                raise ValueError("备份文件为空")
+                raise ValueError("Backup file is empty")
             
             # 先备份当前配置
             self.backup_config()
@@ -359,31 +359,31 @@ class ProjectConfigManager:
             self.get_llm_config()
         except ValueError as e:
             validation_result["valid"] = False
-            validation_result["errors"].append(f"LLM配置错误: {e}")
+            validation_result["errors"].append(f"LLM config error: {e}")
         
         # 验证prompt文件
         prompt_files = self.get_prompt_files()
         for key, path in prompt_files.items():
             if not path.exists():
-                validation_result["warnings"].append(f"Prompt文件不存在: {key} -> {path}")
+                validation_result["warnings"].append(f"Prompt file does not exist: {key} -> {path}")
                 validation_result["missing_files"].append(str(path))
         
         # 验证项目目录
         project_paths = self.get_project_paths()
         for key, path in project_paths.items():
             if not path.exists():
-                validation_result["warnings"].append(f"项目目录不存在: {key} -> {path}")
+                validation_result["warnings"].append(f"Project directory does not exist: {key} -> {path}")
         
         # 验证处理参数
         try:
             params = self.get_processing_params()
             if params.chunk_size <= 0:
-                validation_result["errors"].append("chunk_size必须大于0")
+                validation_result["errors"].append("chunk_size must be greater than 0")
             if params.min_score_threshold < 0 or params.min_score_threshold > 1:
-                validation_result["errors"].append("min_score_threshold必须在0-1之间")
+                validation_result["errors"].append("min_score_threshold must be between 0 and 1")
         except Exception as e:
             validation_result["valid"] = False
-            validation_result["errors"].append(f"处理参数错误: {e}")
+            validation_result["errors"].append(f"Processing parameter error: {e}")
         
         if validation_result["errors"]:
             validation_result["valid"] = False

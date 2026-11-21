@@ -191,7 +191,7 @@ def find_clips(srt_entries: list[dict[str, Any]], call, *, threshold: float, met
     rows = [{'start': to_seconds(e['start_time']), 'end': to_seconds(e['end_time']), 'text': str(e.get('text') or '').strip()}
             for e in srt_entries if str(e.get('text') or '').strip()]
     if not rows:
-        raise ClipFinderError('字幕为空')
+        raise ClipFinderError('Subtitles are empty')
     profile = short_video_profile(profile_from_srt(srt_entries))
     total = max(rows[-1]['end'] - rows[0]['start'], 1.0)
     window = window or window_size()
@@ -215,7 +215,7 @@ def find_clips(srt_entries: list[dict[str, Any]], call, *, threshold: float, met
 
     results = map_chunks(one, spans)
     if all(r is None for r in results):
-        raise ClipFinderError('模型没有返回可用的片段')
+        raise ClipFinderError('The model returned no usable clips')
     picked = _dedupe([clip for result in results if result for clip in result], rows)
     items = []
     for n, clip in enumerate(picked, 1):
@@ -234,6 +234,6 @@ def find_clips(srt_entries: list[dict[str, Any]], call, *, threshold: float, met
         for name, data in (('step3_all_scored.json', refined), ('step4_titles.json', chosen)):
             (metadata_dir / name).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding='utf-8')
     if not chosen:
-        raise ClipFinderError('没有片段通过评分筛选')
+        raise ClipFinderError('No clips passed the score filter')
     logger.info('Clip finder: %d %s windows, %d picked, %d kept', len(spans), window.kind, len(picked), len(chosen))
     return chosen

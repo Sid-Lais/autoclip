@@ -121,7 +121,7 @@ def test_connection_leaves_fal_run_without_v1():
 
 
 def test_connection_still_refuses_secrets_in_the_url():
-    with pytest.raises(Exception, match='接口地址'):
+    with pytest.raises(Exception, match='endpoint URL'):
         ai.Connection(id='c', name='c', provider='compatible', base_url='https://gw.example/v1?api_key=secret', api_key='k')
 
 

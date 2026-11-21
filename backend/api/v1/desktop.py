@@ -17,7 +17,7 @@ router = APIRouter()
 # 检查桌面模式
 def check_desktop_mode():
     if not is_desktop_mode():
-        raise HTTPException(status_code=400, detail="此端点仅在桌面模式下可用")
+        raise HTTPException(status_code=400, detail="This endpoint is only available in desktop mode")
 
 class SystemInfo(BaseModel):
     """系统信息模型"""
@@ -64,7 +64,7 @@ async def get_system_info():
             app_version=get_desktop_config().app_version
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取系统信息失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get system info: {str(e)}")
 
 @router.get("/service/status", response_model=ServiceStatus)
 async def get_service_status():
@@ -84,7 +84,7 @@ async def get_service_status():
             last_health_check=datetime.now().isoformat()
         )
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取服务状态失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get service status: {str(e)}")
 
 @router.get("/logs")
 async def get_logs(lines: int = 100):
@@ -96,7 +96,7 @@ async def get_logs(lines: int = 100):
         log_file = config.data_dir / "logs" / "autoclip.log"
         
         if not log_file.exists():
-            return {"logs": [], "message": "日志文件不存在"}
+            return {"logs": [], "message": "Log file does not exist"}
         
         # 读取最后N行日志
         with open(log_file, 'r', encoding='utf-8') as f:
@@ -109,7 +109,7 @@ async def get_logs(lines: int = 100):
             "returned_lines": len(recent_lines)
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"读取日志失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to read logs: {str(e)}")
 
 @router.post("/service/restart")
 async def restart_service():
@@ -117,7 +117,7 @@ async def restart_service():
     check_desktop_mode()
     
     return {
-        "message": "服务重启请求已发送",
+        "message": "Service restart request sent",
         "timestamp": datetime.now().isoformat()
     }
 
@@ -137,7 +137,7 @@ async def get_config():
             }
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取配置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get config: {str(e)}")
 
 @router.put("/config")
 async def update_config(config_data: Dict[str, Any]):
@@ -152,12 +152,12 @@ async def update_config(config_data: Dict[str, Any]):
         
         # 保存配置
         if save_desktop_config(config):
-            return {"message": "配置更新成功", "config": config.dict()}
+            return {"message": "Config updated successfully", "config": config.dict()}
         else:
-            raise HTTPException(status_code=500, detail="配置保存失败")
+            raise HTTPException(status_code=500, detail="Failed to save config")
             
     except Exception as e:
-        raise HTTPException(status_code=400, detail=f"配置更新失败: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Failed to update config: {str(e)}")
 
 @router.get("/health/detailed")
 async def detailed_health_check():
@@ -202,4 +202,4 @@ async def detailed_health_check():
             }
         }
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"健康检查失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Health check failed: {str(e)}")

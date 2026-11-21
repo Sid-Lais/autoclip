@@ -80,7 +80,7 @@ def test_tail_recovery_is_bounded_and_never_sends_a_partial_or_stale_set(tmp_pat
             intelligence.sample(video, [0, .5, 1, 1.9], folder, width=160)
         # local frame extraction has its own code (not a vision outage).
         assert caught.value.code == 'frame_extract_failed'
-        assert ('超时' in str(caught.value)) == (failure == 'timeout')
+        assert ('timed out' in str(caught.value)) == (failure == 'timeout')
         assert len(tail_seeks) == (1 if failure == 'timeout' else 2)
         assert 'private-' not in str(caught.value)
         assert not (folder / '3.jpg').exists()
@@ -159,7 +159,7 @@ def test_default_auto_screening_failure_continues_with_the_subtitle_route(client
     assert len(submitted) == 1 and submitted[0][0] == pid
     plan = submitted[0][1]
     assert plan['mode'] == 'fallback' and plan['recommended_analysis'] == 'subtitle' and plan['goal'] == 'content'
-    assert plan['reason'].startswith('快速画面判断未完成')
+    assert plan['reason'].startswith('Quick visual judgment did not complete')
     # S5 covering: a vision request failure records the fixed degrade reason and tells the user;
     # a local ffmpeg failure is not a vision outage and records nothing.
     if isinstance(error, intelligence.VisionRequestError):
@@ -200,7 +200,7 @@ def test_forced_unconfigured_visual_stops_auto_but_default_auto_keeps_subtitles(
     monkeypatch.setattr(intelligence, '_probe', lambda _: {'duration': 45})
     monkeypatch.setattr(intelligence, 'vision_call', lambda *a, **k: pytest.fail('unconfigured model called'))
     video = tmp_path / 'public-game.mp4'
-    with pytest.raises(ValueError, match='视觉模型'):
+    with pytest.raises(ValueError, match='vision model'):
         planning.recommend(video, ImportOptions(auto_start=True))
     # A normal auto/text-only configuration still uses the existing subtitle route.
     mode = 'auto'

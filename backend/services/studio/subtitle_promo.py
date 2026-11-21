@@ -36,7 +36,7 @@ def make_promos(project_id, clips, preferences, source_duration, instruction='')
         if transcript:
             evidence.append({'candidate': i, 'transcript': transcript})
     if not evidence:
-        raise UserFacingError('推广草稿需要可用字幕证据，请检查字幕后重试；原素材已保留')
+        raise UserFacingError('Promo drafts need usable subtitle evidence. Please check the subtitles and try again; the source was kept')
     answer = intelligence.text_json(
         '根据字幕证据选择适合分享推广的完整片段，输出1至3条草稿。'
         '返回 {"drafts":[{"candidate":0,"title":"标题","hook":"简短开头文字"}]}。'
@@ -47,10 +47,10 @@ def make_promos(project_id, clips, preferences, source_duration, instruction='')
     try:
         response = PromoResponse.model_validate(answer)
     except ValueError:  # the model's answer failed the schema
-        raise ModelResponseInvalid('推广方案格式无效，请重试；原稿已保留') from None
+        raise ModelResponseInvalid('The promo plan format is invalid. Please try again; the original draft was kept') from None
     valid = {e['candidate'] for e in evidence}
     if any(choice.candidate not in valid for choice in response.drafts):
-        raise ModelResponseInvalid('推广方案引用了无效片段，请重试；原稿已保留')
+        raise ModelResponseInvalid('The promo plan referenced an invalid clip. Please try again; the original draft was kept')
     output = []
     seen = set()
     for choice in response.drafts:
@@ -58,7 +58,7 @@ def make_promos(project_id, clips, preferences, source_duration, instruction='')
             continue
         seen.add(choice.candidate)
         if not choice.title.strip() or not choice.hook.strip():
-            raise ModelResponseInvalid('推广文案为空，请重试；原稿已保留')
+            raise ModelResponseInvalid('The promo copy is empty. Please try again; the original draft was kept')
         output.append(Draft.model_validate({**candidates[choice.candidate],
             'id': uuid.uuid4().hex, 'title': choice.title.strip(), 'hook': choice.hook.strip(),
             'origin': 'subtitle-promo', 'title_style': 'comic', 'title_template_version': 6}).model_dump())

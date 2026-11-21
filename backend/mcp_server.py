@@ -55,15 +55,15 @@ except ImportError:  # mcp 1.x
     try:
         from mcp.server.fastmcp import FastMCP as _Server, Context  # type: ignore
     except ImportError as e:  # pragma: no cover
-        raise SystemExit("缺少 mcp SDK：pip install mcp") from e
+        raise SystemExit("Missing mcp SDK: pip install mcp") from e
 
-INSTRUCTIONS = """AutoClip 1.5 把长视频自动制作成适合指定平台的视频、封面、发布文案和 ZIP 发布包。
-优先用 start_quick_output + get_quick_output_status；platforms 支持 douyin、xiaohongshu、bilibili、tiktok、reels、shorts、youtube_long。
-共用桌面的模型与片尾设置；没有字幕时自动转写。完成后 export_kits=true 获取发布包。
-需要旧的原始切片 / 合集时，用户给一个本地视频路径 → 调 clip_video（或 start_clip_job + get_job_status 轮询）→
-把返回的切片列表（标题 / 时间段 / 评分 / 文件路径）整理给用户。
-没有字幕时会用本地 Whisper 转写，首次较慢。想省钱或离线：provider="ollama"（需本机装 Ollama）。
-切片为 0 通常是评分阈值过高，用 min_score=0.5 重试。"""
+INSTRUCTIONS = """AutoClip 1.5 automatically turns long videos into videos, covers, post copy and ZIP publish kits tailored to the target platforms.
+Prefer start_quick_output + get_quick_output_status; platforms supports douyin, xiaohongshu, bilibili, tiktok, reels, shorts, youtube_long.
+It shares the desktop app's model and outro settings; subtitles are transcribed automatically when missing. When done, use export_kits=true to get the publish kit.
+When the old raw clips / collections are needed, the user gives a local video path → call clip_video (or start_clip_job + poll get_job_status) →
+then present the returned clip list (title / time range / score / file path) to the user.
+Without subtitles, local Whisper transcribes the video; the first run is slower. To save money or work offline: provider="ollama" (requires Ollama installed locally).
+Zero clips usually means the score threshold is too high; retry with min_score=0.5."""
 
 server = _Server(
     name="autoclip",
@@ -72,12 +72,12 @@ server = _Server(
 )
 
 
-@server.tool(name='get_version', description='读取 AutoClip CLI / MCP 的版本号，核对同事的测试环境。')
+@server.tool(name='get_version', description='Read the AutoClip CLI / MCP version, to check a colleague\'s test environment.')
 def get_version() -> Dict[str, Any]:
     return {'version': __version__}
 
 
-@server.tool(name='start_quick_output', description='一键出片：本地视频或 HTTPS 的 YouTube / B 站链接，按 platforms 自动制作视频、封面和发布文案。template 可选 editorial / street / news / cinema / classic，且只在 mcp_v2_tools 打开时接受；关闭时传了风格返回 disabled。返回的 template 是实际用的风格，requested_template 是请求值。共用桌面 AI 与片尾设置，立即返回 project_id；之后用 get_quick_output_status 查询。')
+@server.tool(name='start_quick_output', description='One-click output: takes a local video or an HTTPS YouTube / Bilibili link and automatically produces videos, covers and post copy for the given platforms. template can be editorial / street / news / cinema / classic, and is only accepted when mcp_v2_tools is on; when it is off, passing a style returns disabled. The returned template is the style actually used, and requested_template is the requested value. Shares the desktop AI and outro settings and returns project_id immediately; query it afterwards with get_quick_output_status.')
 def start_quick_output(source: str, platforms: Optional[List[str]] = None, name: Optional[str] = None,
                        srt_path: Optional[str] = None, instruction: str = '', browser: Optional[str] = None,
                        portrait_style: str = 'auto', template: Optional[str] = None) -> Dict[str, Any]:
@@ -100,7 +100,7 @@ def start_quick_output(source: str, platforms: Optional[List[str]] = None, name:
             **mcp_jobs.progress_fields(status='running', progress=0, stage='screening', started_at=record.get('started_at'))}
 
 
-@server.tool(name='get_quick_output_status', description='查询一键出片状态。返回 progress、stage、eta、poll_after_sec，以及各平台的视频、封面和文案。完成后用 export_kits=true 获取发布包 ZIP 路径。查不到的任务是 unknown，进程不在是 interrupted。此工具不调用模型或启动制作。')
+@server.tool(name='get_quick_output_status', description='Query the status of a one-click output. Returns progress, stage, eta, poll_after_sec, and each platform\'s video, cover and post copy. When complete, use export_kits=true to get the publish kit ZIP path. A job that cannot be found is unknown; a job whose process is gone is interrupted. This tool does not call a model or start production.')
 def get_quick_output_status(project_id: str, export_kits: bool = False) -> Dict[str, Any]:
     from backend.services import mcp_jobs
     from backend.services import quick_output_runner as quick
@@ -151,7 +151,7 @@ def _run_job(req: RunRequest, override: LLMOverride, link: bool) -> Dict[str, An
         try:
             info = configure_llm(override)
             video_in_raw = prepare_project(req, link=link)
-            _job_update(req.project_id, status="running", llm=info, percent=0, stage="INGEST", message="开始")
+            _job_update(req.project_id, status="running", llm=info, percent=0, stage="INGEST", message="Starting")
 
             def on_progress(p: Dict[str, Any]) -> None:
                 _job_update(req.project_id, percent=p.get("percent", 0), stage=p.get("stage"), message=p.get("message"))
@@ -199,9 +199,9 @@ def _make_override(provider: Optional[str], model: Optional[str], base_url: Opti
 @server.tool(
     name="clip_video",
     description=(
-        "把一条本地视频切成高光片段（同步，耗时数分钟到数十分钟，期间会发进度）。"
-        "返回切片列表（标题 / 起止时间 / 评分 / mp4 路径）与合集。"
-        "provider 可选 dashscope / openai / gemini / deepseek / seed / kimi / glm / grok / infistar / api88 / apimart / ollama / lmstudio；不填用桌面应用里已配置的模型。"
+        "Cut a local video into highlight clips (synchronous; takes minutes to tens of minutes, sending progress notifications meanwhile). "
+        "Returns the clip list (title / start-end time / score / mp4 path) and collections. "
+        "provider can be dashscope / openai / gemini / deepseek / seed / kimi / glm / grok / infistar / api88 / apimart / ollama / lmstudio; if omitted, the model configured in the desktop app is used."
     ),
 )
 async def clip_video(
@@ -240,7 +240,7 @@ async def clip_video(
 
 @server.tool(
     name="start_clip_job",
-    description="后台开始出片，立刻返回 project_id；之后用 get_job_status 轮询进度和结果。适合客户端对单次工具调用有超时限制的情况。",
+    description="Start a clip job in the background and return project_id immediately; then poll progress and results with get_job_status. Suited to clients that put a timeout on a single tool call.",
 )
 def start_clip_job(
     video_path: str,
@@ -255,24 +255,24 @@ def start_clip_job(
     from backend.services import mcp_jobs
     req = _make_request(video_path, srt_path, name, category, min_score)
     if not req.video.expanduser().exists():
-        return {"ok": False, "error_code": "invalid_input", "error": f"视频不存在: {req.video}",
+        return {"ok": False, "error_code": "invalid_input", "error": f"Video not found: {req.video}",
                 **mcp_jobs.progress_fields(status="failed")}
     override = _make_override(provider, model, base_url)
     _job_update(req.project_id, status="queued", percent=0, stage="queued", video=str(req.video))
     record = mcp_jobs.read_job(req.project_id) or {}
     t = threading.Thread(target=_run_job, args=(req, override, True), daemon=True, name=f"autoclip-{req.project_id[:8]}")
     t.start()
-    return {"ok": True, "project_id": req.project_id, "hint": "用 get_job_status 轮询，间隔见 poll_after_sec。",
+    return {"ok": True, "project_id": req.project_id, "hint": "Poll with get_job_status at the interval given by poll_after_sec.",
             **mcp_jobs.progress_fields(status="queued", progress=0, stage="queued", started_at=record.get("started_at"))}
 
 
-@server.tool(name="get_job_status", description="查询 start_clip_job 开始的任务。返回 progress、stage、eta、poll_after_sec。没有记录是 unknown，工作进程不在是 interrupted，不会把查不到的项目报成 completed。")
+@server.tool(name="get_job_status", description="Query a job started by start_clip_job. Returns progress, stage, eta, poll_after_sec. No record means unknown; a missing worker process means interrupted. A project that cannot be found is never reported as completed.")
 def get_job_status(project_id: str) -> Dict[str, Any]:
     from backend.services import mcp_jobs
     return mcp_jobs.lookup(project_id)
 
 
-@server.tool(name="get_project", description="读取一个已处理项目的切片（标题 / 时间 / 评分 / 文件）、合集与输出目录。")
+@server.tool(name="get_project", description="Read a processed project's clips (title / time / score / file), collections and output directory.")
 def get_project(project_id: str) -> Dict[str, Any]:
     from backend.services.local_runner import summarize_project
 
@@ -282,14 +282,14 @@ def get_project(project_id: str) -> Dict[str, Any]:
         return {"ok": False, "error": str(e)}
 
 
-@server.tool(name="list_projects", description="列出最近的 AutoClip 项目（与桌面应用共用数据目录）。")
+@server.tool(name="list_projects", description="List recent AutoClip projects (shares the data directory with the desktop app).")
 def list_projects(limit: int = 20) -> List[Dict[str, Any]]:
     from backend.services.local_runner import list_projects as _list
 
     return _list(limit=limit)
 
 
-@server.tool(name="list_providers", description="可用的模型提供商与本地预设（ollama / lmstudio 的默认地址与模型），以及当前正在用的配置。")
+@server.tool(name="list_providers", description="Available model providers and local presets (default address and model for ollama / lmstudio), plus the configuration currently in use.")
 def list_providers() -> Dict[str, Any]:
     from backend.core.llm_manager import get_llm_manager
     from backend.core.local_presets import presets_as_dicts
@@ -304,9 +304,9 @@ def list_providers() -> Dict[str, Any]:
 @server.tool(
     name="export_clip",
     description=(
-        "把一条已切好的片段渲成可直接发布的成片：9:16（抖音/小红书/Shorts）、烧字幕、标题卡。"
-        "preset: douyin / xiaohongshu / shorts / bilibili / original。"
-        "返回成片路径；同参数再导会走缓存。"
+        "Render an already-cut clip into a ready-to-publish video: 9:16 (Douyin/Xiaohongshu/Shorts), burned-in subtitles, title card. "
+        "preset: douyin / xiaohongshu / shorts / bilibili / original. "
+        "Returns the video path; exporting again with the same parameters hits the cache."
     ),
 )
 def export_clip(
@@ -326,12 +326,12 @@ def export_clip(
 @server.tool(
     name="publish_clip",
     description=(
-        "把一条切片经 Upload-Post 发到海外平台（tiktok / instagram / youtube / facebook / linkedin / x / threads / "
-        "pinterest / bluesky …），一次可发多个平台。内部先按预设渲成片（竖屏平台默认 shorts 9:16），再异步提交；"
-        "返回 request_id，用 get_publish_status 查各平台结果。需要先配置 Upload-Post API Key"
-        "（环境变量 UPLOAD_POST_API_KEY，或 autoclip publish --api-key … --save）和 profile（user）。"
-        "extra 可透传平台字段，如 {\"privacy_level\": \"SELF_ONLY\", \"privacyStatus\": \"unlisted\"}；"
-        "scheduled_date（ISO-8601）定时发布。"
+        "Publish a clip to overseas platforms via Upload-Post (tiktok / instagram / youtube / facebook / linkedin / x / threads / "
+        "pinterest / bluesky …); several platforms can be targeted at once. It first renders the video from the preset (vertical-video platforms default to shorts 9:16), then submits asynchronously; "
+        "returns request_id; use get_publish_status to check each platform's result. An Upload-Post API Key must be configured first "
+        "(env var UPLOAD_POST_API_KEY, or autoclip publish --api-key … --save) along with a profile (user). "
+        "extra can pass through platform fields, such as {\"privacy_level\": \"SELF_ONLY\", \"privacyStatus\": \"unlisted\"}; "
+        "scheduled_date (ISO-8601) schedules the post."
     ),
 )
 def publish_clip(
@@ -362,7 +362,7 @@ def publish_clip(
 
 @server.tool(
     name="get_publish_status",
-    description="查询 publish_clip 的结果：status（pending / processing / completed / failed）与每个平台的 success / url / error。processing 时每 10 秒查一次即可。",
+    description="Query the result of publish_clip: status (pending / processing / completed / failed) and each platform's success / url / error. While processing, checking every 10 seconds is enough.",
 )
 def get_publish_status(request_id: str, project_id: Optional[str] = None) -> Dict[str, Any]:
     from backend.services import upload_post_publisher as up
@@ -375,7 +375,7 @@ def get_publish_status(request_id: str, project_id: Optional[str] = None) -> Dic
 
 @server.tool(
     name="list_publish_profiles",
-    description="Upload-Post API Key 下的 profile（user）列表及各自已连接的平台；用户不知道该填哪个 user 时先调这个。同时返回当前配置是否就绪。",
+    description="List the profiles (user) under the Upload-Post API Key and the platforms each has connected; call this first when the user doesn't know which user to fill in. Also returns whether the current configuration is ready.",
 )
 def list_publish_profiles() -> Dict[str, Any]:
     from backend.services import upload_post_publisher as up
@@ -383,7 +383,7 @@ def list_publish_profiles() -> Dict[str, Any]:
     cfg = up.load_config()
     out: Dict[str, Any] = {"configured": cfg.configured, "source": cfg.source, "default_user": cfg.user, "platforms": up.PLATFORMS}
     if not cfg.configured:
-        out["hint"] = "先设置 UPLOAD_POST_API_KEY 或 `autoclip publish --api-key … --user … --save`（https://app.upload-post.com/api-keys）"
+        out["hint"] = "First set UPLOAD_POST_API_KEY or `autoclip publish --api-key … --user … --save` (https://app.upload-post.com/api-keys)"
         return out
     try:
         out["profiles"] = up.list_profiles(cfg)
@@ -394,7 +394,7 @@ def list_publish_profiles() -> Dict[str, Any]:
     return out
 
 
-@server.tool(name="check_environment", description="体检：ffmpeg、Whisper 运行时、模型连接是否就绪。出片前先调一次能少踩坑。")
+@server.tool(name="check_environment", description="Health check: whether ffmpeg, the Whisper runtime and the model connection are ready. Calling it once before producing clips saves trouble.")
 def check_environment(
     provider: Optional[str] = None,
     model: Optional[str] = None,
@@ -445,8 +445,8 @@ def list_styles() -> Dict[str, Any]:
     catalog = (
         {'id': 'editorial', 'name': '杂志风'},
         {'id': 'street', 'name': '街头快剪'},
-        {'id': 'news', 'name': '新闻'},
-        {'id': 'cinema', 'name': '电影'},
+        {'id': 'news', 'name': 'News'},
+        {'id': 'cinema', 'name': 'Cinema'},
         {'id': 'classic', 'name': '经典'},
     )
     return {'ok': True, 'styles': list(catalog)}
@@ -486,8 +486,8 @@ async def _list_tools():
 
 server.list_tools = _list_tools  # type: ignore[method-assign]
 _V2_SPECS = (
-    (cancel_job, 'cancel_job', '取消一条仍在进行的出片或切片任务，停掉它的 ffmpeg。不删除已写出的成片。查不到返回 unknown。'),
-    (list_styles, 'list_styles', '列出剪辑风格 id：editorial（杂志风）、street（街头快剪）、news（新闻）、cinema（电影）、classic（经典）。传给 start_quick_output 的 template 或 CLI 的 --template。'),
+    (cancel_job, 'cancel_job', 'Cancel a running clip or quick-output job and stop its ffmpeg. Videos already written are not deleted. Returns unknown if the job cannot be found.'),
+    (list_styles, 'list_styles', 'List the editing style ids: editorial, street (street cut), news, cinema, classic. Pass one as the template of start_quick_output or the CLI --template.'),
 )
 
 from backend.services import mcp_telemetry

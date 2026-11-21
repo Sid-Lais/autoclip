@@ -11,7 +11,7 @@ export function packagingLabel(packaging: Packaging): string {
 /** Describe actual retained captions, including old drafts with an empty fallback. */
 export function packagingFallbackHint(packaging: Packaging, warnings: string[] = [], subtitlesRequested = true): string {
   if (!packaging.fallback) return ''
-  const hasCaptions = packaging.cues.length > 0 || packaging.burned_captions || warnings.includes('包装未能完整生成，已使用原字幕')
+  const hasCaptions = packaging.cues.length > 0 || packaging.burned_captions || warnings.some(warning => warning === '包装未能完整生成，已使用原字幕' || warning === 'Packaging could not be fully generated; the original subtitles were used')
   // Captions switched off (or caption-free visual highlights): never claim captions were kept.
   if (!subtitlesRequested) return ''
   return hasCaptions ? t('包装未能完整生成，已保留可用字幕') : t('包装未能完整生成，字幕暂不可用')

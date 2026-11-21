@@ -71,7 +71,7 @@ export const QUOTA_RECHARGE_THEN_TEST = '充值后点测试连接再重试。'
 
 /** 「本次已消耗 N 次请求」 — no dollar amount (X3). */
 export function billableCallsLine(count: number): string {
-  return `本次已消耗 ${count} 次请求`
+  return `${count} request${count === 1 ? '' : 's'} used this time`
 }
 
 /** Resolve external recharge / balance URL for a catalog provider id. */
@@ -88,7 +88,7 @@ export function rechargeTarget(provider?: string | null): {
   if (isIn(SPONSOR_PROVIDERS, key) && row.sponsor) {
     const url = (row.sponsor.topup_url || row.sponsor.register_url || '').trim()
     if (!url) return null
-    return { provider: key, url, label: `去 ${row.short_name} 充值`, sponsor: true }
+    return { provider: key, url, label: `Top up at ${row.short_name}`, sponsor: true }
   }
   const url = (row.docs_url || '').trim()
   if (!url) return null

@@ -201,7 +201,7 @@ async def get_speech_config(config: DesktopConfig = Depends(get_desktop_config))
         }
     except Exception as e:
         logger.error(f"获取语音识别配置失败: {e}")
-        raise HTTPException(status_code=500, detail="获取语音识别配置失败")
+        raise HTTPException(status_code=500, detail="Failed to get speech recognition config")
 
 class SpeechConfigUpdateRequest(BaseModel):
     """语音识别配置更新请求"""
@@ -228,14 +228,14 @@ async def update_speech_config(
         try:
             method = SpeechRecognitionMethod(request.method)
         except ValueError:
-            raise HTTPException(status_code=400, detail=f"不支持的语音识别方法: {request.method}")
+            raise HTTPException(status_code=400, detail=f"Unsupported speech recognition method: {request.method}")
         
         # 验证回退方法
         if request.fallback_method:
             try:
                 fallback_method = SpeechRecognitionMethod(request.fallback_method)
             except ValueError:
-                raise HTTPException(status_code=400, detail=f"不支持的回退方法: {request.fallback_method}")
+                raise HTTPException(status_code=400, detail=f"Unsupported fallback method: {request.fallback_method}")
         
         # 更新配置
         speech_config = config.speech_recognition
@@ -286,15 +286,15 @@ async def update_speech_config(
         # 保存配置
         if save_desktop_config(config):
             logger.info(f"语音识别配置已更新: {request.method}")
-            return {"message": "语音识别配置已更新", "success": True}
+            return {"message": "Speech recognition config updated", "success": True}
         else:
-            raise HTTPException(status_code=500, detail="保存配置失败")
+            raise HTTPException(status_code=500, detail="Failed to save config")
         
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"更新语音识别配置失败: {e}")
-        raise HTTPException(status_code=500, detail="更新语音识别配置失败")
+        raise HTTPException(status_code=500, detail="Failed to update speech recognition config")
 
 @router.get("/speech-methods-status", response_model=List[SpeechMethodStatus])
 async def get_speech_methods_status():
@@ -310,13 +310,13 @@ async def get_speech_methods_status():
             
             if not available:
                 if method == SpeechRecognitionMethod.WHISPER_LOCAL:
-                    message = "需要安装Whisper"
+                    message = "Whisper needs to be installed"
                 elif method == SpeechRecognitionMethod.OPENAI_API:
-                    message = "需要配置OpenAI API Key"
+                    message = "OpenAI API Key needs to be configured"
                 elif method == SpeechRecognitionMethod.ALIYUN_SPEECH:
-                    message = "需要配置阿里云API Key"
+                    message = "Aliyun API Key needs to be configured"
                 else:
-                    message = "服务不可用"
+                    message = "Service unavailable"
             
             status_list.append(SpeechMethodStatus(
                 method=method.value,
@@ -328,7 +328,7 @@ async def get_speech_methods_status():
         
     except Exception as e:
         logger.error(f"获取语音识别方法状态失败: {e}")
-        raise HTTPException(status_code=500, detail="获取语音识别方法状态失败")
+        raise HTTPException(status_code=500, detail="Failed to get speech recognition method status")
 
 class WhisperModelSourceRequest(BaseModel):
     source: str
@@ -347,7 +347,7 @@ async def put_whisper_model_source(request: WhisperModelSourceRequest):
     try:
         return {"source": wmm.save_model_source(request.source)}
     except ValueError:
-        raise HTTPException(status_code=422, detail="不支持的模型下载源")
+        raise HTTPException(status_code=422, detail="Unsupported model download source")
 
 
 @router.get("/whisper-models")
@@ -378,7 +378,7 @@ async def get_whisper_models():
         
     except Exception as e:
         logger.error(f"获取Whisper模型信息失败: {e}")
-        raise HTTPException(status_code=500, detail="获取Whisper模型信息失败")
+        raise HTTPException(status_code=500, detail="Failed to get Whisper model info")
 
 @router.post("/test-speech-service", response_model=TestSpeechServiceResponse)
 async def test_speech_service(request: TestSpeechServiceRequest):
@@ -392,18 +392,18 @@ async def test_speech_service(request: TestSpeechServiceRequest):
         except ValueError:
             return TestSpeechServiceResponse(
                 success=False,
-                message=f"不支持的语音识别方法: {request.method}"
+                message=f"Unsupported speech recognition method: {request.method}"
             )
         
         if available_methods.get(method, False):
             return TestSpeechServiceResponse(
                 success=True,
-                message=f"{method.value} 服务可用"
+                message=f"{method.value} service is available"
             )
         else:
             return TestSpeechServiceResponse(
                 success=False,
-                message=f"{method.value} 服务不可用，请检查配置"
+                message=f"{method.value} service is unavailable, please check the configuration"
             )
             
     except Exception as e:
@@ -452,12 +452,12 @@ async def download_whisper_model(request: DownloadModelRequest):
         # the one Studio capture path (consent, scope, tag whitelist); production Sentry has no
         # Starlette integration, so the raised HTTPException alone is never reported. The QA simulation never comes here.
         sentry_setup.capture_studio_exception(e, phase="model_download", http_status=500)
-        raise HTTPException(status_code=500, detail=f"下载Whisper模型失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to download Whisper model: {str(e)}")
     if state == "installed":
-        return {"status": "installed", "model": request.model, "message": f"模型 {request.model} 已存在", "success": True}
+        return {"status": "installed", "model": request.model, "message": f"Model {request.model} already exists", "success": True}
     return JSONResponse(status_code=202, content={
         "status": "downloading", "model": request.model,
-        "message": f"已开始下载模型 {request.model}", "success": True,
+        "message": f"Started downloading model {request.model}", "success": True,
     })
 
 @router.delete("/whisper-models/{model_name}")
@@ -469,15 +469,15 @@ async def delete_whisper_model(model_name: str):
         # 检查模型是否存在
         model_info = model_manager.get_model_info(model_name)
         if not model_info or model_info.status != ModelStatus.DOWNLOADED:
-            raise HTTPException(status_code=404, detail=f"模型 {model_name} 不存在")
+            raise HTTPException(status_code=404, detail=f"Model {model_name} not found")
         
         # 删除模型
         success = model_manager.delete_model(model_name)
         
         if success:
-            return {"message": f"模型 {model_name} 已删除", "success": True}
+            return {"message": f"Model {model_name} deleted", "success": True}
         else:
-            raise HTTPException(status_code=500, detail=f"删除模型 {model_name} 失败")
+            raise HTTPException(status_code=500, detail=f"Failed to delete model {model_name}")
         
     except HTTPException:
         raise
@@ -494,7 +494,7 @@ async def get_model_status(model_name: str):
         model_info = model_manager.get_model_info(model_name)
         
         if not model_info:
-            raise HTTPException(status_code=404, detail=f"模型 {model_name} 不存在")
+            raise HTTPException(status_code=404, detail=f"Model {model_name} not found")
         
         return {
             "name": model_info.name,
@@ -510,7 +510,7 @@ async def get_model_status(model_name: str):
         raise
     except Exception as e:
         logger.error(f"获取模型状态失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取模型状态失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get model status: {str(e)}")
 
 
 @router.post("/whisper-models/{model_name}/cancel-download")
@@ -521,13 +521,13 @@ async def cancel_model_download(model_name: str):
         success = model_manager.cancel_download(model_name)
         
         if success:
-            return {"message": f"已取消模型 {model_name} 的下载", "success": True}
+            return {"message": f"Cancelled download of model {model_name}", "success": True}
         else:
-            return {"message": f"模型 {model_name} 没有正在下载", "success": False}
+            return {"message": f"Model {model_name} is not downloading", "success": False}
         
     except Exception as e:
         logger.error(f"取消模型下载失败: {e}")
-        raise HTTPException(status_code=500, detail=f"取消模型下载失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to cancel model download: {str(e)}")
 
 
 @router.post("/speech-recognition/validate")
@@ -595,7 +595,7 @@ async def validate_speech_config(
         
     except Exception as e:
         logger.error(f"验证语音转写配置失败: {e}")
-        raise HTTPException(status_code=500, detail=f"验证配置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to validate config: {str(e)}")
 
 
 @router.get("/speech-recognition/recommendations")
@@ -604,25 +604,25 @@ async def get_speech_recommendations():
     try:
         recommendations = {
             "scenarios": {
-                "新手用户": {
+                "beginner": {
                     "method": "whisper_local",
                     "model": "base",
-                    "description": "免费离线，平衡准确度和速度"
+                    "description": "Free and offline, balances accuracy and speed"
                 },
-                "专业用户": {
+                "professional": {
                     "method": "openai_api",
                     "model": "whisper-1",
-                    "description": "最高准确度，适合重要内容"
+                    "description": "Highest accuracy, suited to important content"
                 },
-                "中文内容": {
+                "chinese_content": {
                     "method": "aliyun_speech",
                     "model": "default",
-                    "description": "中文识别效果更好"
+                    "description": "Better recognition for Chinese content"
                 },
-                "企业应用": {
+                "enterprise": {
                     "method": "azure_speech",
                     "model": "default",
-                    "description": "企业级服务，稳定可靠"
+                    "description": "Enterprise-grade service, stable and reliable"
                 }
             },
             "model_guide": {
@@ -630,40 +630,40 @@ async def get_speech_recommendations():
                     "size": "39 MB",
                     "speed": "最快",
                     "accuracy": "较低",
-                    "recommended_for": "实时处理、快速预览"
+                    "recommended_for": "Real-time processing, quick previews"
                 },
                 "base": {
                     "size": "74 MB",
                     "speed": "快",
                     "accuracy": "中等",
-                    "recommended_for": "日常使用、平衡选择"
+                    "recommended_for": "Everyday use, balanced choice"
                 },
                 "small": {
                     "size": "244 MB",
                     "speed": "中等",
                     "accuracy": "较好",
-                    "recommended_for": "重要内容、知识类视频"
+                    "recommended_for": "Important content, educational videos"
                 },
                 "medium": {
                     "size": "769 MB",
                     "speed": "较慢",
                     "accuracy": "高",
-                    "recommended_for": "专业用途、演讲内容"
+                    "recommended_for": "Professional use, speeches"
                 },
                 "large": {
                     "size": "1550 MB",
                     "speed": "最慢",
                     "accuracy": "最高",
-                    "recommended_for": "重要项目、最高质量要求"
+                    "recommended_for": "Important projects, highest quality requirements"
                 }
             },
             "tips": [
-                "首次使用建议先下载base模型进行测试",
-                "如果网络不稳定，建议使用本地Whisper模型",
-                "中文内容推荐使用阿里云语音识别服务",
-                "重要项目建议启用回退机制",
-                "说话人分离功能会增加处理时间",
-                "定期检查模型状态，确保服务可用"
+                "For first-time use, download the base model and test with it",
+                "If your network is unstable, use a local Whisper model",
+                "For Chinese content, Aliyun speech recognition is recommended",
+                "For important projects, enable the fallback mechanism",
+                "Speaker diarization increases processing time",
+                "Check model status regularly to make sure the service is available"
             ]
         }
         
@@ -671,4 +671,4 @@ async def get_speech_recommendations():
         
     except Exception as e:
         logger.error(f"获取配置建议失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取建议失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get recommendations: {str(e)}")

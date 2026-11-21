@@ -223,7 +223,7 @@ def test_invalid_binding_does_not_partially_save():
     before = ai.path().read_bytes()
     raw = example().model_dump()
     raw['connections'].pop()
-    with pytest.raises(ValidationError, match='引用的服务'):
+    with pytest.raises(ValidationError, match='service referenced by'):
         ai.ModelSettings.model_validate(raw)
     assert ai.path().read_bytes() == before
 
@@ -314,7 +314,7 @@ def test_no_unselected_ocr_model_is_called():
     config = example()
     config.analysis.capability = 'text'
     ai.save(config)
-    with pytest.raises(cover.ImageError, match='跳过校对'):
+    with pytest.raises(cover.ImageError, match='proofreading'):
         cover.verify_endpoint(cover.load_config())
 
 
@@ -757,9 +757,9 @@ def test_custom_base_url_rejects_console_host_and_embedded_credentials():
         ai.Connection(id='c', name='x', provider='compatible', base_url='https://user:pass@gw.example/v1')
     with pytest.raises(ValidationError):
         ai.Connection(id='c', name='x', provider='compatible', base_url='https://user@gw.example/v1')
-    with pytest.raises(ValidationError, match='控制台或官网'):
+    with pytest.raises(ValidationError, match='console or website'):
         ai.Connection(id='c', name='x', provider='compatible', base_url='https://platform.openai.com/v1')
-    with pytest.raises(ValidationError, match='控制台或官网'):
+    with pytest.raises(ValidationError, match='console or website'):
         ai.Connection(id='c', name='x', provider='compatible', base_url='https://bailian.console.aliyun.com')
     ok = ai.Connection(id='c', name='x', provider='compatible', base_url='https://gw.example/v1', api_key='k')
     assert ok.base_url == 'https://gw.example/v1'

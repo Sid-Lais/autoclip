@@ -67,9 +67,9 @@ def test_saved_missing_connection_blocks_pipeline_start(missing_connection, role
     before = store.read('project')
     dispatched = []
     monkeypatch.setattr(jobs.executor, 'submit', lambda *a, **k: dispatched.append(True))
-    with pytest.raises(ValueError, match='修复'):
+    with pytest.raises(ValueError, match='fix|repair'):
         readiness.ensure_analysis_usable()
-    with pytest.raises(ValueError, match='修复'):
+    with pytest.raises(ValueError, match='fix|repair'):
         jobs.confirm_project('project', ConfirmPlan(plan_id='plan', goals=['highlight'], analysis_mode='visual'))
     assert store.read('project') == before
     assert ai.path().read_bytes() == original
@@ -105,11 +105,11 @@ def test_saved_missing_connection_blocks_pipeline_start(missing_connection, role
                 'plan_id': 'plan', 'goals': ['highlight'], 'analysis_mode': 'visual',
             })
             assert response.status_code == 422
-            assert '修复' in response.json()['detail']
+            assert 'fix' in response.json()['detail'] or 'repair' in response.json()['detail']
             response = client.post('/studio/import', data={'auto_start': 'true'},
                                    files={'video': ('test.mp4', b'test-only', 'video/mp4')})
             assert response.status_code == 422
-            assert '修复' in response.json()['detail']
+            assert 'fix' in response.json()['detail'] or 'repair' in response.json()['detail']
     finally:
         engine.dispose()
     assert store.read('project') == before
@@ -127,14 +127,14 @@ def test_runtime_readers_never_borrow_another_connection(missing_connection, rol
     ai.path().write_text(json.dumps(raw))
     if legacy:
         settings = ai.load()
-        with pytest.raises(ValueError, match='修复'):
+        with pytest.raises(ValueError, match='fix|repair'):
             ai.vision_endpoint(settings)
-    with pytest.raises(ValueError, match='修复'):
+    with pytest.raises(ValueError, match='fix|repair'):
         vision_settings.effective()
     if role == 'analysis' or not legacy:
         from backend.core.llm_manager import LLMManager
         monkeypatch.setattr(LLMManager, '_sync_config_if_needed', lambda self: None)
-        with pytest.raises(ValueError, match='修复'):
+        with pytest.raises(ValueError, match='fix|repair'):
             LLMManager()
     assert calls == []
 
@@ -159,7 +159,7 @@ def test_hot_reload_cannot_keep_using_the_previous_provider(missing_connection, 
     ai.path().write_text(json.dumps(raw))
     # A failed reload must stay blocked on subsequent calls too.
     for _ in range(2):
-        with pytest.raises(ValueError, match='修复'):
+        with pytest.raises(ValueError, match='fix|repair'):
             manager.call('test', 'test')
         assert manager.current_provider is None
     raw['analysis']['connection_id'] = 'a'

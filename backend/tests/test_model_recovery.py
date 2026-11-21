@@ -289,7 +289,7 @@ def test_bailian_ocr_default_is_empty_when_the_list_times_out():
     def refuse(body):
         raise AssertionError("posted")
 
-    with pytest.raises(ImageError, match="跳过校对"):
+    with pytest.raises(ImageError, match="proofreading"):
         read_image_text(
             provider="dashscope", api_key=SECRET, base_url="", model="",
             image=b"\xff\xd8\xff", session=_OcrSession(refuse), http=slow,
@@ -433,7 +433,7 @@ def test_ocr_without_a_vision_model_skips_before_calling_bailian():
         raise AssertionError("posted")
 
     session = _OcrSession(refuse)
-    with pytest.raises(ImageError, match="跳过校对"):
+    with pytest.raises(ImageError, match="proofreading"):
         read_image_text(
             provider="dashscope", api_key=SECRET, base_url="", model="",
             image=b"\xff\xd8\xff", session=session,
@@ -537,7 +537,7 @@ def test_verify_endpoint_keeps_a_saved_ocr_model_and_resolves_only_the_fallback(
         "backend.core.provider_model_fetch._default_http_get",
         _models_http(["qwen-plus"], {"urls": []}),
     )
-    with pytest.raises(cover.ImageError, match="跳过校对"):
+    with pytest.raises(cover.ImageError, match="proofreading"):
         cover.verify_endpoint(cfg)
 
 

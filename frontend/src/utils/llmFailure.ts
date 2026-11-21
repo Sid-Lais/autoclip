@@ -37,18 +37,11 @@ export function classifyLlmKeyFailure(error?: string | null, code?: string | nul
   if (code === 'timeline_empty' || code === LLM_AUTH_INVALID) return false
   const text = error || ''
   if (!text) return false
-  if (text.includes('时间线提取为空') || text.includes('时间线为空')) return false
-  if (text.includes('最低评分')) return false
-  if (
-    text.includes('没有可用的 LLM')
-    || text.includes('缺少 API Key')
-    || text.includes('未配置LLM')
-    || text.includes('未配置 API Key')
-    || text.includes('需要自备 API Key')
-    || text.includes('自备密钥')
-  ) {
+  if (/时间线提取为空|时间线为空|timeline extraction is empty/i.test(text)) return false
+  if (text.includes('最低评分') || /minimum score/i.test(text)) return false
+  if (/没有可用的 LLM|缺少 API Key|未配置LLM|未配置 API Key|需要自备 API Key|自备密钥|no LLM provider|bring your own (API )?key|no API key is configured/i.test(text)) {
     return true
   }
   const mentionsKey = /API Key|API key|密钥/.test(text)
-  return mentionsKey && (text.includes('连接测试失败') || text.includes('API连接测试失败'))
+  return mentionsKey && /连接测试失败|API连接测试失败|connection test failed/i.test(text)
 }

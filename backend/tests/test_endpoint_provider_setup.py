@@ -18,9 +18,9 @@ def test_runtime_endpoint_gate(provider, url, status, ready):
         assert models.connection_for(settings, settings.analysis).id == 'endpoint'
         assert models.chat_endpoint(connection, 'model')['base_url'] == url
     else:
-        with pytest.raises(ValueError, match='接口地址|验证'):
+        with pytest.raises(ValueError, match='endpoint URL|connection check'):
             models.connection_for(settings, settings.analysis)
-        with pytest.raises(ValueError, match='接口地址|验证'):
+        with pytest.raises(ValueError, match='endpoint URL|connection check'):
             models.require_analysis(settings)
 
 
@@ -60,5 +60,5 @@ def test_validation_probes_user_endpoint_and_gates_runtime(provider, succeeds, m
 
 @pytest.mark.parametrize('provider', ENDPOINT_IDS)
 def test_missing_address_rejected_before_any_validation_request(provider):
-    with pytest.raises(ValueError, match='接口地址'):
+    with pytest.raises(ValueError, match='endpoint URL'):
         models.Connection(id='endpoint', name='Endpoint', provider='compatible', catalog_provider_id=provider, api_key='test-only')

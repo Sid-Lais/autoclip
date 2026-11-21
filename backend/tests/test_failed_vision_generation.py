@@ -27,7 +27,7 @@ def test_subtitle_import_screening_ignores_failed_vision(client, source, monkeyp
         analysis_mode='subtitle',
     ))
     original_settings = ai.path().read_bytes()
-    with pytest.raises(ValueError, match='未通过校验'):
+    with pytest.raises(ValueError, match='did not pass validation'):
         intelligence.ready()
 
     class Immediate:
@@ -122,7 +122,7 @@ def test_failed_vision_blocks_generation_api_and_repair_restores_start(tmp_path,
                 responses.append(client.post('/studio/import', data={'auto_start': 'true'}, files={'video': ('fixture.mp4', b'fixture', 'video/mp4')}))
             for response in responses:
                 assert response.status_code == 422
-                assert '未通过校验' in response.json()['detail']
+                assert 'did not pass validation' in response.json()['detail']
                 assert 'fixture' not in response.text
             assert report['ready'] is (mode == 'subtitle')
             visual = report['checks']['visual']

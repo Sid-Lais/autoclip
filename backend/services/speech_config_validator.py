@@ -75,7 +75,7 @@ class SpeechConfigValidator:
         if method not in valid_methods:
             return {
                 "valid": False,
-                "errors": [f"不支持的语音识别方法: {method}"]
+                "errors": [f"Unsupported speech recognition method: {method}"]
             }
         
         return {"valid": True, "errors": []}
@@ -88,39 +88,39 @@ class SpeechConfigValidator:
         valid_models = ["tiny", "base", "small", "medium", "large"]
         if config.model_name not in valid_models:
             result["valid"] = False
-            result["errors"].append(f"不支持的Whisper模型: {config.model_name}")
+            result["errors"].append(f"Unsupported Whisper model: {config.model_name}")
         
         # 检查模型是否已下载
         model_info = self.model_manager.get_model_info(config.model_name)
         if model_info and model_info.status != ModelStatus.DOWNLOADED:
             if model_info.status == ModelStatus.AVAILABLE:
-                result["warnings"].append(f"模型 {config.model_name} 未下载，首次使用时会自动下载")
+                result["warnings"].append(f"Model {config.model_name} is not downloaded and will be downloaded automatically on first use")
             elif model_info.status == ModelStatus.DOWNLOADING:
-                result["warnings"].append(f"模型 {config.model_name} 正在下载中")
+                result["warnings"].append(f"Model {config.model_name} is downloading")
             elif model_info.status == ModelStatus.ERROR:
-                result["errors"].append(f"模型 {config.model_name} 下载失败")
+                result["errors"].append(f"Model {config.model_name} failed to download")
         
         # 验证超时时间
         if config.timeout < 60:
-            result["warnings"].append("超时时间过短，建议至少60秒")
+            result["warnings"].append("Timeout is too short; at least 60 seconds is recommended")
         elif config.timeout > 7200:
-            result["warnings"].append("超时时间过长，建议不超过2小时")
+            result["warnings"].append("Timeout is too long; no more than 2 hours is recommended")
         
         # 验证自定义模型目录
         if config.custom_models_dir:
             custom_dir = Path(config.custom_models_dir)
             if not custom_dir.exists():
-                result["errors"].append(f"自定义模型目录不存在: {config.custom_models_dir}")
+                result["errors"].append(f"Custom model directory does not exist: {config.custom_models_dir}")
             elif not custom_dir.is_dir():
-                result["errors"].append(f"自定义模型目录不是有效目录: {config.custom_models_dir}")
+                result["errors"].append(f"Custom model path is not a valid directory: {config.custom_models_dir}")
         
         # 添加推荐
         if config.model_name == "tiny":
-            result["recommendations"].append("tiny模型速度最快但准确度较低，建议用于实时处理")
+            result["recommendations"].append("The tiny model is the fastest but least accurate; recommended for real-time processing")
         elif config.model_name == "base":
-            result["recommendations"].append("base模型是平衡选择，推荐日常使用")
+            result["recommendations"].append("The base model is a balanced choice; recommended for everyday use")
         elif config.model_name in ["small", "medium", "large"]:
-            result["recommendations"].append(f"{config.model_name}模型准确度高但速度较慢，适合重要内容")
+            result["recommendations"].append(f"The {config.model_name} model is highly accurate but slower; suited to important content")
         
         return result
     
@@ -140,37 +140,37 @@ class SpeechConfigValidator:
         elif method == "custom_api":
             api_config = config.custom_api_config
         else:
-            return {"valid": False, "errors": [f"不支持的API方法: {method}"]}
+            return {"valid": False, "errors": [f"Unsupported API method: {method}"]}
         
         # 验证API密钥
         if not api_config.api_key:
             result["valid"] = False
-            result["errors"].append(f"{method} API密钥不能为空")
+            result["errors"].append(f"{method} API key cannot be empty")
         elif len(api_config.api_key) < 10:
-            result["warnings"].append("API密钥长度过短，请检查是否正确")
+            result["warnings"].append("API key is too short; check that it is correct")
         
         # 验证Azure区域
         if method == "azure_speech" and not api_config.region:
             result["valid"] = False
-            result["errors"].append("Azure Speech服务需要指定区域")
+            result["errors"].append("Azure Speech requires a region to be specified")
         
         # 验证自定义API端点
         if method == "custom_api":
             if not api_config.endpoint:
                 result["valid"] = False
-                result["errors"].append("自定义API需要指定端点URL")
+                result["errors"].append("Custom API requires an endpoint URL")
             elif not api_config.endpoint.startswith(("http://", "https://")):
-                result["errors"].append("API端点必须是有效的HTTP/HTTPS URL")
+                result["errors"].append("API endpoint must be a valid HTTP/HTTPS URL")
         
         # 添加推荐
         if method == "openai_api":
-            result["recommendations"].append("OpenAI API准确度最高，但需要付费")
+            result["recommendations"].append("OpenAI API is the most accurate but requires payment")
         elif method == "azure_speech":
-            result["recommendations"].append("Azure Speech适合企业级应用，支持多种语言")
+            result["recommendations"].append("Azure Speech suits enterprise applications and supports many languages")
         elif method == "google_speech":
-            result["recommendations"].append("Google Speech功能丰富，支持实时识别")
+            result["recommendations"].append("Google Speech is feature-rich and supports real-time recognition")
         elif method == "aliyun_speech":
-            result["recommendations"].append("阿里云语音识别对中文优化较好")
+            result["recommendations"].append("Alibaba Cloud speech recognition is well optimized for Chinese")
         
         return result
     
@@ -180,17 +180,17 @@ class SpeechConfigValidator:
         
         # 检查回退方法是否与主方法相同
         if config.fallback_method == config.method:
-            result["warnings"].append("回退方法与主方法相同，建议选择不同的回退方法")
+            result["warnings"].append("The fallback method is the same as the primary method; choose a different fallback method")
         
         # 检查回退方法是否可用
         if config.fallback_method == "whisper_local":
             model_info = self.model_manager.get_model_info(config.whisper_config.model_name)
             if model_info and model_info.status not in [ModelStatus.DOWNLOADED, ModelStatus.AVAILABLE]:
-                result["warnings"].append("回退方法使用的Whisper模型不可用")
+                result["warnings"].append("The Whisper model used by the fallback method is unavailable")
         
         # 添加推荐
         if config.method != "whisper_local" and config.fallback_method != "whisper_local":
-            result["recommendations"].append("建议将Whisper本地模型作为回退方法，确保离线可用")
+            result["recommendations"].append("Consider using the local Whisper model as a fallback so it works offline")
         
         return result
     
@@ -201,19 +201,19 @@ class SpeechConfigValidator:
         # 根据使用场景推荐
         if config.method == "whisper_local":
             if config.whisper_config.model_name == "tiny":
-                recommendations.append("tiny模型适合快速处理，但准确度较低")
+                recommendations.append("The tiny model suits fast processing but is less accurate")
             elif config.whisper_config.model_name in ["medium", "large"]:
-                recommendations.append("大模型准确度高但处理时间长，适合重要内容")
+                recommendations.append("Large models are highly accurate but slow; suited to important content")
         
         # 网络环境建议
         if config.method != "whisper_local":
-            recommendations.append("使用API服务需要稳定的网络连接")
+            recommendations.append("Using an API service requires a stable network connection")
             if config.enable_fallback and config.fallback_method == "whisper_local":
-                recommendations.append("已配置本地回退，确保离线可用")
+                recommendations.append("Local fallback is configured, so it works offline")
         
         # 性能建议
         if config.whisper_config.enable_speaker_diarization:
-            recommendations.append("说话人分离功能会增加处理时间")
+            recommendations.append("Speaker diarization increases processing time")
         
         return recommendations
 

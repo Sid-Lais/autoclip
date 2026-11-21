@@ -73,14 +73,14 @@ def test_cache_replay_keeps_the_reimport_hint_even_for_a_weak_local_model():
         "parsed": 0, "weak_local_timeline": True,
     })
     text = failure.user_message()
-    assert "本次回放了项目中的模型缓存" in text
+    assert "replayed the project's cached model output" in text
     assert WEAK_LOCAL_TIMELINE_REASON not in text
 
 
 def test_cloud_empty_intervals_keep_the_generic_hint():
     failure = timeline_failure_from_report(82, {"chunks": _chunks(), "parsed": 0, "output": 0})
-    assert empty_interval_hint({}, _chunks()).startswith("请换用能稳定返回结构化时间线的模型")
-    assert "本地模型需支持当前字幕长度" in failure.user_message()
+    assert empty_interval_hint({}, _chunks()).startswith("Retry with a model that reliably returns a structured timeline")
+    assert "a local model must support the current subtitle length" in failure.user_message()
     assert WEAK_LOCAL_TIMELINE_REASON not in failure.user_message()
 
 

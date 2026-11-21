@@ -299,7 +299,7 @@ class TextProcessor:
             ms = int(s_parts[1]) if len(s_parts) > 1 else 0
             return h * 3600 + m * 60 + s + ms / 1000.0
         
-        raise ValueError(f"无效的时间格式: {time_str}")
+        raise ValueError(f"Invalid time format: {time_str}")
     
     @staticmethod
     def seconds_to_time(seconds: float) -> str:

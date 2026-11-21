@@ -236,7 +236,7 @@ class PathManager:
             try:
                 self.project_dir.mkdir(parents=True, exist_ok=True)
             except Exception as e:
-                errors.append(f"无法创建项目目录: {self.project_dir}, 错误: {e}")
+                errors.append(f"Could not create project directory: {self.project_dir}, error: {e}")
         
         # 检查各个子目录
         for dir_name, dir_path in self.directory_structure.items():
@@ -244,9 +244,9 @@ class PathManager:
                 try:
                     dir_path.mkdir(parents=True, exist_ok=True)
                 except Exception as e:
-                    errors.append(f"无法创建目录 {dir_name}: {dir_path}, 错误: {e}")
+                    errors.append(f"Could not create directory {dir_name}: {dir_path}, error: {e}")
             elif not dir_path.is_dir():
-                errors.append(f"路径不是目录: {dir_name} -> {dir_path}")
+                errors.append(f"Path is not a directory: {dir_name} -> {dir_path}")
         
         return errors
     

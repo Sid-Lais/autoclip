@@ -64,7 +64,7 @@ def test_cookie_requires_the_three_fields():
     assert parsed["SESSDATA"] == "a" and parsed["bili_jct"] == "b"
     with pytest.raises(BilibiliError, match="SESSDATA"):
         parse_cookie("bili_jct=b; DedeUserID=9")
-    with pytest.raises(BilibiliError, match="格式"):
+    with pytest.raises(BilibiliError, match="format"):
         parse_cookie("SESSDATA=a\nb; bili_jct=b; DedeUserID=9")
 
 
@@ -239,6 +239,6 @@ def test_publish_rejects_non_bilibili_variant(data_dir, monkeypatch):
                         lambda _p, _v: {"strategy_id": "douyin", "video_path": "/tmp/x.mp4"})
     monkeypatch.setattr("backend.services.publish_export.export_clip",
                         lambda req: pytest.fail("variant publish must not re-export"))
-    with pytest.raises(bili.BilibiliError, match="B站横版"):
+    with pytest.raises(bili.BilibiliError, match="Bilibili landscape"):
         bili.publish_clip(bili.BilibiliPublishRequest(project_id="p1", clip_id="studio-x", output_variant_id="v1"),
                           session=_Session([]))

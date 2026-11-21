@@ -173,19 +173,19 @@ class UnifiedPathManager:
                 validation_result["paths"][name] = str(path)
                 
                 if not path.exists():
-                    validation_result["warnings"].append(f"目录不存在: {name} = {path}")
+                    validation_result["warnings"].append(f"Directory does not exist: {name} = {path}")
                 elif not path.is_dir():
-                    validation_result["errors"].append(f"路径不是目录: {name} = {path}")
+                    validation_result["errors"].append(f"Path is not a directory: {name} = {path}")
                     validation_result["valid"] = False
             
             # 检查是否有重复或冲突的路径
             all_paths = list(validation_result["paths"].values())
             if len(all_paths) != len(set(all_paths)):
-                validation_result["errors"].append("存在重复的路径配置")
+                validation_result["errors"].append("Duplicate path configuration found")
                 validation_result["valid"] = False
             
         except Exception as e:
-            validation_result["errors"].append(f"路径验证失败: {str(e)}")
+            validation_result["errors"].append(f"Path validation failed: {str(e)}")
             validation_result["valid"] = False
         
         return validation_result

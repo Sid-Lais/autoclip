@@ -77,7 +77,7 @@ ONLY_BINARY_MARKERS = (
 )
 NO_WHEEL_MARKERS = ONLY_BINARY_MARKERS
 NETWORK_MESSAGE = "安装失败：网络连不上 pip 源。请检查网络或代理后重试；也可以设置环境变量 PIP_INDEX_URL 指定可用的源。"
-SOURCE_NAMES = {"pypi": "官方 PyPI", "mirror": "清华镜像", "custom": "指定的 pip 源"}
+SOURCE_NAMES = {"pypi": "official PyPI", "mirror": "Tsinghua mirror", "custom": "custom pip index"}
 
 Plan = list[tuple[str, Optional[str]]]
 Progress = Callable[[int, str], None]
@@ -119,10 +119,10 @@ class PipProgress:
         self.megabytes = 0.0
 
     def _where(self) -> str:
-        return f"从{self.source}" if self.source else ""
+        return f" from {self.source}" if self.source else ""
 
     def _paren(self) -> str:
-        return f"（{self.source}）" if self.source else ""
+        return f" ({self.source})" if self.source else ""
 
     def feed(self, line: str) -> Optional[tuple[int, str]]:
         text = line.strip()
@@ -133,24 +133,24 @@ class PipProgress:
         if _COLLECT.match(text):
             self.collected += 1
             percent = max(percent, min(30, 10 + 2 * self.collected))
-            message = f"正在{self._where()}解析依赖（{self.collected} 个包）…"
+            message = f"Resolving dependencies{self._where()} ({self.collected} packages)…"
         elif match:
             self.downloaded += 1
             size = ""
             if match.group(2):
                 mb = float(match.group(2)) * _UNITS.get(match.group(3).lower(), 1.0)
                 self.megabytes += mb
-                size = f"（{mb:.1f} MB）" if mb >= 0.1 else ""
+                size = f" ({mb:.1f} MB)" if mb >= 0.1 else ""
             total = max(self.collected, self.downloaded, 1)
             percent = max(percent, 30 + int(55 * min(1.0, self.downloaded / total)))
             name = match.group(1).rsplit("/", 1)[-1].split("-", 1)[0]
-            message = f"正在{self._where()}下载 {name}{size}… 已下载 {self.downloaded}/{total} 个包，共 {self.megabytes:.1f} MB"
+            message = f"Downloading {name}{size}{self._where()}… {self.downloaded}/{total} packages downloaded, {self.megabytes:.1f} MB total"
         elif low.startswith("installing collected packages"):
             percent = max(percent, 88)
-            message = f"正在安装依赖{self._paren()}…"
+            message = f"Installing dependencies{self._paren()}…"
         elif low.startswith("successfully installed"):
             percent = max(percent, 98)
-            message = f"正在完成安装{self._paren()}…"
+            message = f"Finishing installation{self._paren()}…"
         if message is None:
             return None
         self.percent = min(98, percent)
@@ -309,13 +309,13 @@ def classify(code: int, lines: list[str], *, network: Optional[bool] = None,
 
 
 def reason(code: int) -> str:
-    return {TIMEOUT_EXIT: "超时", SOURCE_BUILD_EXIT: "需要源码编译", NO_WHEEL_EXIT: "没有可用 wheel",
+    return {TIMEOUT_EXIT: "timed out", SOURCE_BUILD_EXIT: "source build required", NO_WHEEL_EXIT: "no usable wheel",
             CANCEL_EXIT: "已取消", NETWORK_EXIT: "网络不通"}.get(code, f"退出码 {code}")
 
 
 def run_plan(plan: Plan, command_for: Callable[[Optional[str]], list[str]],
              run: Callable[[list[str], float, float, str], int],
-             on_switch: Optional[Callable[[str, str, str], None]] = None, what: str = "组件") -> tuple[int, list[str]]:
+             on_switch: Optional[Callable[[str, str, str], None]] = None, what: str = "component") -> tuple[int, list[str]]:
     """按 plan 逐个源尝试，返回 (最后的退出码, ["pypi: 超时", ...])。
 
     `run(cmd, timeout, stall, label)` 跑一次并返回退出码。官方源报“没有可用 wheel”时仍试镜像；
@@ -342,7 +342,7 @@ def error_code(code: int, failures: list[str]) -> str:
     pip_timeout | pip_cancelled | pip_failed."""
     if code == CANCEL_EXIT:
         return "pip_cancelled"
-    if code == NETWORK_EXIT or (code == TIMEOUT_EXIT and any(f.endswith("网络不通") for f in failures)):
+    if code == NETWORK_EXIT or (code == TIMEOUT_EXIT and any(f.endswith("network unreachable") for f in failures)):
         return "pip_network"
     if code == NO_WHEEL_EXIT:
         return "pip_no_wheel"
@@ -359,11 +359,11 @@ def failure_message(code: int, failures: list[str], what: str) -> str:
     if error_code(code, failures) == "pip_network":
         return NETWORK_MESSAGE
     if code == NO_WHEEL_EXIT:
-        return f"安装失败：当前系统没有可用的{what}预编译包。请把 AutoClip 更新到最新版。"
+        return f"Install failed: no prebuilt package is available for the {what} on this system. Please update AutoClip to the latest version."
     if code == SOURCE_BUILD_EXIT:
         return "安装失败：没有拿到预编译包，已停止从源码编译。请检查网络后重试。"
     if len(failures) > 1:
-        return "安装失败：官方 PyPI 和国内镜像都没有装好。请检查网络后重试。"
+        return "Install failed: neither the official PyPI nor the mirror could complete the install. Check your network and try again."
     if code == TIMEOUT_EXIT:
         return "安装失败：下载超时。请检查网络后重试。"
-    return f"安装失败（pip 退出码 {code}）"
+    return f"Install failed (pip exit code {code})"

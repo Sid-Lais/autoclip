@@ -50,8 +50,8 @@ class TaskQueueService:
             # 创建并保存任务记录
             task = self.task_repo.create(
                 project_id=project_id,
-                name="视频流水线处理",
-                description=f"处理项目 {project_id} 的视频流水线",
+                name="Video pipeline processing",
+                description=f"Video pipeline for project {project_id}",
                 task_type=TaskType.VIDEO_PROCESSING,
                 status=TaskStatus.PENDING,
                 priority=1
@@ -75,7 +75,7 @@ class TaskQueueService:
                 'task_id': task.id,
                 'celery_task_id': celery_task.id,
                 'status': 'PENDING',
-                'message': '视频处理任务已提交'
+                'message': 'Video processing task submitted'
             }
             
         except Exception as e:
@@ -105,8 +105,8 @@ class TaskQueueService:
             # 创建并保存任务记录
             task = self.task_repo.create(
                 project_id=project_id,
-                name=f"步骤处理: {step_name}",
-                description=f"处理项目 {project_id} 的步骤 {step_name}",
+                name=f"Step processing: {step_name}",
+                description=f"Step {step_name} for project {project_id}",
                 task_type=TaskType.VIDEO_PROCESSING,
                 status=TaskStatus.PENDING,
                 priority=2
@@ -127,7 +127,7 @@ class TaskQueueService:
                 'celery_task_id': celery_task.id,
                 'step': step_name,
                 'status': 'PENDING',
-                'message': f'步骤 {step_name} 处理任务已提交'
+                'message': f'Step {step_name} processing task submitted'
             }
             
         except Exception as e:
@@ -159,8 +159,8 @@ class TaskQueueService:
             # 创建并保存任务记录
             task = self.task_repo.create(
                 project_id=project_id,
-                name=f"重试步骤: {step_name}",
-                description=f"重试项目 {project_id} 的步骤 {step_name}",
+                name=f"Retry step: {step_name}",
+                description=f"Retry step {step_name} for project {project_id}",
                 task_type=TaskType.VIDEO_PROCESSING,
                 status=TaskStatus.PENDING,
                 priority=3
@@ -182,7 +182,7 @@ class TaskQueueService:
                 'original_task_id': task_id,
                 'step': step_name,
                 'status': 'PENDING',
-                'message': f'步骤 {step_name} 重试任务已提交'
+                'message': f'Step {step_name} retry task submitted'
             }
             
         except Exception as e:
@@ -203,7 +203,7 @@ class TaskQueueService:
             # 获取数据库任务记录
             task = self.task_repo.get_by_id(task_id)
             if not task:
-                return {'error': '任务不存在'}
+                return {'error': 'Task not found'}
             
             # 获取Celery任务状态
             celery_status = {}
@@ -232,7 +232,7 @@ class TaskQueueService:
             
         except Exception as e:
             logger.error(f"获取任务状态失败: {task_id}, 错误: {e}")
-            return {'error': f'获取任务状态失败: {e}'}
+            return {'error': f'Failed to get task status: {e}'}
     
     def get_project_tasks(self, project_id: str) -> List[Dict[str, Any]]:
         """
@@ -276,7 +276,7 @@ class TaskQueueService:
         try:
             task = self.task_repo.get_by_id(task_id)
             if not task:
-                return {'error': '任务不存在'}
+                return {'error': 'Task not found'}
             
             # 取消Celery任务
             if task.celery_task_id:
@@ -297,7 +297,7 @@ class TaskQueueService:
             
         except Exception as e:
             logger.error(f"取消任务失败: {task_id}, 错误: {e}")
-            return {'error': f'取消任务失败: {e}'}
+            return {'error': f'Failed to cancel task: {e}'}
     
     def submit_video_clips_task(self, project_id: str, clip_data: List[Dict[str, Any]]) -> Dict[str, Any]:
         """
@@ -316,8 +316,8 @@ class TaskQueueService:
             # 创建并保存任务记录
             task = self.task_repo.create(
                 project_id=project_id,
-                name="视频片段提取",
-                description=f"提取项目 {project_id} 的视频片段",
+                name="Video clip extraction",
+                description=f"Extract video clips for project {project_id}",
                 task_type=TaskType.VIDEO_PROCESSING,
                 status=TaskStatus.PENDING,
                 priority=2
@@ -338,7 +338,7 @@ class TaskQueueService:
                 'celery_task_id': celery_task.id,
                 'clip_count': len(clip_data),
                 'status': 'PENDING',
-                'message': f'视频片段提取任务已提交，共 {len(clip_data)} 个片段'
+                'message': f'Video clip extraction task submitted, {len(clip_data)} clips in total'
             }
             
         except Exception as e:
@@ -362,8 +362,8 @@ class TaskQueueService:
             # 创建并保存任务记录
             task = self.task_repo.create(
                 project_id=project_id,
-                name="视频合集生成",
-                description=f"生成项目 {project_id} 的视频合集",
+                name="Video collection generation",
+                description=f"Generate video collections for project {project_id}",
                 task_type=TaskType.VIDEO_PROCESSING,
                 status=TaskStatus.PENDING,
                 priority=2
@@ -384,7 +384,7 @@ class TaskQueueService:
                 'celery_task_id': celery_task.id,
                 'collection_count': len(collection_data),
                 'status': 'PENDING',
-                'message': f'视频合集生成任务已提交，共 {len(collection_data)} 个合集'
+                'message': f'Video collection generation task submitted, {len(collection_data)} collections in total'
             }
             
         except Exception as e:

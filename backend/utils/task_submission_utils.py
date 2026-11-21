@@ -61,7 +61,7 @@ def _run_pipeline_locally(project_id: str, input_video_path: str, input_srt_path
         'success': True,
         'task_id': task_id,
         'status': 'PENDING',
-        'message': '视频流水线任务已在本地启动',
+        'message': 'Video pipeline task started locally',
     }
 
 
@@ -103,7 +103,7 @@ def submit_video_pipeline_task(project_id: str, input_video_path: str, input_srt
             'success': True,
             'task_id': celery_task.id,
             'status': 'PENDING',
-            'message': '视频流水线任务已提交'
+            'message': 'Video pipeline task submitted'
         }
         
     except Exception as e:
@@ -111,7 +111,7 @@ def submit_video_pipeline_task(project_id: str, input_video_path: str, input_srt
         return {
             'success': False,
             'error': str(e),
-            'message': '任务提交失败'
+            'message': 'Task submission failed'
         }
 
 def submit_single_step_task(project_id: str, step: str, config: Dict[str, Any]) -> Dict[str, Any]:
@@ -142,7 +142,7 @@ def submit_single_step_task(project_id: str, step: str, config: Dict[str, Any]) 
             'task_id': celery_task.id,
             'step': step,
             'status': 'PENDING',
-            'message': f'步骤 {step} 任务已提交'
+            'message': f'Step {step} task submitted'
         }
         
     except Exception as e:
@@ -150,5 +150,5 @@ def submit_single_step_task(project_id: str, step: str, config: Dict[str, Any]) 
         return {
             'success': False,
             'error': str(e),
-            'message': '任务提交失败'
+            'message': 'Task submission failed'
         }

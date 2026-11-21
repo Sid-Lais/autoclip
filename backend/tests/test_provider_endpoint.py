@@ -82,7 +82,7 @@ def test_console_host_is_not_treated_as_an_api_root():
 def test_normalize_warns_but_connection_rejects_console_host():
     url = 'https://platform.openai.com/api-keys'
     assert normalize_provider_base_url(url).url == url
-    with pytest.raises(ValueError, match='这是控制台或官网地址，不是模型接口'):
+    with pytest.raises(ValueError, match='This is a console or website address, not a model endpoint'):
         ai.Connection(
             id='c', name='c', provider='compatible', base_url=url, api_key='k',
         )

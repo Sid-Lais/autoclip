@@ -223,7 +223,7 @@ def test_step2_call_failure_is_not_reported_as_short_content(tmp_path, monkeypat
         run_prepared_step2(obj, monkeypatch)
     assert len(calls) == 1  # The inner client already owns transport retries.
     assert exc.value.code == code
-    assert '最短时长' not in exc.value.user_message()
+    assert 'minimum duration' not in exc.value.user_message()
     assert 'secret-key' not in exc.value.user_message()
     report = json.loads((tmp_path / 'quality_report.json').read_text())['step2_extraction']
     assert report['chunks'][0]['error_code'] == code
@@ -248,8 +248,8 @@ def test_step2_invalid_reply_has_current_safe_diagnostics(tmp_path, monkeypatch,
     with pytest.raises(PipelineFailure) as exc:
         run_prepared_step2(obj, monkeypatch)
     assert exc.value.code == 'invalid_response'
-    assert '尚未进入评分或最短时长筛选' in exc.value.user_message()
-    assert '创建新项目' in exc.value.hint
+    assert 'This step has not yet reached scoring or minimum duration filtering' in exc.value.user_message()
+    assert 'create a new project' in exc.value.hint
     saved = json.loads((tmp_path / 'quality_report.json').read_text())
     report = saved['step2_extraction']
     assert report['parsed'] == report['output'] == 0
@@ -268,8 +268,8 @@ def test_step2_duration_failure_reports_actual_profile(tmp_path, monkeypatch, to
     with pytest.raises(PipelineFailure) as exc:
         run_prepared_step2(obj, monkeypatch)
     assert exc.value.code == 'timeline_empty'
-    assert f'{min_sec} 秒' in exc.value.message
-    assert '模型' not in exc.value.hint
+    assert f'({min_sec} s)' in exc.value.message
+    assert 'model' not in exc.value.hint.lower()
     assert obj.extraction_report['parsed'] == 1 and obj.extraction_report['output'] == 0
 
 
@@ -280,7 +280,7 @@ def test_step2_missing_subtitle_block_points_to_reimport(tmp_path, monkeypatch):
     with pytest.raises(PipelineFailure) as exc:
         run_prepared_step2(obj, monkeypatch)
     assert exc.value.code == 'missing_resource'
-    assert '重新导入' in exc.value.hint
+    assert 'Re-import the source video' in exc.value.hint
 
 
 def test_corrupted_chunk_is_not_a_model_or_duration_failure(tmp_path, monkeypatch):
@@ -290,7 +290,7 @@ def test_corrupted_chunk_is_not_a_model_or_duration_failure(tmp_path, monkeypatc
     with pytest.raises(PipelineFailure) as exc:
         run_prepared_step2(obj, monkeypatch)
     assert exc.value.code == 'unexpected'
-    assert '数据目录' in exc.value.hint
+    assert 'data directory' in exc.value.hint
 
 
 def test_live_json_repair_stays_bounded_and_returns_recovered_chunk(tmp_path):
@@ -335,9 +335,9 @@ def test_step2_refinement_error_never_exports_unvalidated_ranges(tmp_path, monke
 # #428 without a known-weak local model: the generic invalid_response sentence.
 # Ollama qwen2.5:7b uses the guidance in test_weak_local_timeline.py.
 ISSUE_428 = (
-    '时间线模型回复没有有效时间区间（82 个话题，14 个字幕块）。 '
-    '请换用能稳定返回结构化时间线的模型后重试；本地模型需支持当前字幕长度。'
-    '这一步尚未进入评分或最短时长筛选。'
+    'The timeline model reply has no valid time ranges (82 topics, 14 subtitle chunks).  '
+    'Retry with a model that reliably returns a structured timeline; a local model must support the current subtitle length. '
+    'This step has not yet reached scoring or minimum duration filtering.'
 )
 
 

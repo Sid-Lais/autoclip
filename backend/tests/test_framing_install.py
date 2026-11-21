@@ -71,7 +71,7 @@ def test_failure_is_a_warning_and_starts_a_cooldown(monkeypatch, caplog):
     _fake_pip(monkeypatch, [pip_install.TIMEOUT_EXIT, pip_install.TIMEOUT_EXIT])
     with caplog.at_level(logging.INFO, logger=framing.logger.name):
         framing._do_install(None)
-    assert framing._state["status"] == "error" and "镜像" in framing._state["message"]
+    assert framing._state["status"] == "error" and "mirror" in framing._state["message"]
     assert all(r.exc_info is None and r.levelno <= logging.WARNING for r in caplog.records)
     assert 29 * 60 < framing.cooldown_remaining() <= 30 * 60
     assert framing.get_status()["cooldown_seconds"] > 0
@@ -107,5 +107,5 @@ def test_locked_old_files_stop_cleanly(monkeypatch, caplog):
     with caplog.at_level(logging.WARNING, logger=framing.logger.name):
         framing._do_install(None)
     assert not called
-    assert framing._state["status"] == "error" and "重启" in framing._state["message"]
+    assert framing._state["status"] == "error" and "restart" in framing._state["message"]
     assert all(r.exc_info is None for r in caplog.records)

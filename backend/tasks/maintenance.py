@@ -72,7 +72,7 @@ def cleanup_expired_tasks(self, days: int = 7) -> Dict[str, Any]:
                 'success': True,
                 'cleaned_count': cleaned_count,
                 'expired_time': expired_time.isoformat(),
-                'message': f'成功清理 {cleaned_count} 个过期任务'
+                'message': f'Cleaned up {cleaned_count} expired tasks'
             }
             
         finally:
@@ -105,9 +105,9 @@ def health_check(self) -> Dict[str, Any]:
             db = SessionLocal()
             db.execute("SELECT 1")
             db.close()
-            health_status['checks']['database'] = {'status': 'healthy', 'message': '数据库连接正常'}
+            health_status['checks']['database'] = {'status': 'healthy', 'message': 'Database connection OK'}
         except Exception as e:
-            health_status['checks']['database'] = {'status': 'unhealthy', 'message': f'数据库连接失败: {e}'}
+            health_status['checks']['database'] = {'status': 'unhealthy', 'message': f'Database connection failed: {e}'}
             health_status['status'] = 'unhealthy'
         
         # 检查Redis连接
@@ -115,9 +115,9 @@ def health_check(self) -> Dict[str, Any]:
             import redis
             r = redis.Redis.from_url('redis://localhost:6379/0')
             r.ping()
-            health_status['checks']['redis'] = {'status': 'healthy', 'message': 'Redis连接正常'}
+            health_status['checks']['redis'] = {'status': 'healthy', 'message': 'Redis connection OK'}
         except Exception as e:
-            health_status['checks']['redis'] = {'status': 'unhealthy', 'message': f'Redis连接失败: {e}'}
+            health_status['checks']['redis'] = {'status': 'unhealthy', 'message': f'Redis connection failed: {e}'}
             health_status['status'] = 'unhealthy'
         
         # 检查磁盘空间
@@ -126,11 +126,11 @@ def health_check(self) -> Dict[str, Any]:
             disk_usage = psutil.disk_usage('/')
             disk_percent = disk_usage.percent
             if disk_percent < 90:
-                health_status['checks']['disk'] = {'status': 'healthy', 'message': f'磁盘使用率: {disk_percent}%'}
+                health_status['checks']['disk'] = {'status': 'healthy', 'message': f'Disk usage: {disk_percent}%'}
             else:
-                health_status['checks']['disk'] = {'status': 'warning', 'message': f'磁盘使用率过高: {disk_percent}%'}
+                health_status['checks']['disk'] = {'status': 'warning', 'message': f'Disk usage too high: {disk_percent}%'}
         except Exception as e:
-            health_status['checks']['disk'] = {'status': 'unknown', 'message': f'无法检查磁盘状态: {e}'}
+            health_status['checks']['disk'] = {'status': 'unknown', 'message': f'Unable to check disk status: {e}'}
         
         # 检查内存使用
         try:
@@ -138,11 +138,11 @@ def health_check(self) -> Dict[str, Any]:
             memory = psutil.virtual_memory()
             memory_percent = memory.percent
             if memory_percent < 80:
-                health_status['checks']['memory'] = {'status': 'healthy', 'message': f'内存使用率: {memory_percent}%'}
+                health_status['checks']['memory'] = {'status': 'healthy', 'message': f'Memory usage: {memory_percent}%'}
             else:
-                health_status['checks']['memory'] = {'status': 'warning', 'message': f'内存使用率过高: {memory_percent}%'}
+                health_status['checks']['memory'] = {'status': 'warning', 'message': f'Memory usage too high: {memory_percent}%'}
         except Exception as e:
-            health_status['checks']['memory'] = {'status': 'unknown', 'message': f'无法检查内存状态: {e}'}
+            health_status['checks']['memory'] = {'status': 'unknown', 'message': f'Unable to check memory status: {e}'}
         
         logger.info(f"系统健康检查完成，状态: {health_status['status']}")
         return health_status
@@ -175,7 +175,7 @@ def backup_project_data(self, project_id: str, backup_path: str = None) -> Dict[
             project = project_repo.get_by_id(project_id)
             
             if not project:
-                raise ValueError(f"项目不存在: {project_id}")
+                raise ValueError(f"Project does not exist: {project_id}")
             
             # 生成备份路径
             if not backup_path:
@@ -229,7 +229,7 @@ def backup_project_data(self, project_id: str, backup_path: str = None) -> Dict[
                 'project_id': project_id,
                 'backup_path': str(backup_path),
                 'backup_size': sum(f.stat().st_size for f in backup_dir.rglob('*') if f.is_file()),
-                'message': '项目数据备份成功'
+                'message': 'Project data backed up successfully'
             }
             
         finally:

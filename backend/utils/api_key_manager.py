@@ -54,7 +54,7 @@ class APIKeyManager:
         
         # 生产环境应该设置环境变量
         raise ConfigurationError(
-            "未设置主密码。请设置 AUTO_CLIPS_MASTER_PASSWORD 环境变量。"
+            "Master password is not set. Please set the AUTO_CLIPS_MASTER_PASSWORD environment variable."
         )
     
     def _create_fernet(self) -> Fernet:
@@ -112,7 +112,7 @@ class APIKeyManager:
             logger.debug("API密钥已保存")
         except Exception as e:
             logger.error(f"保存API密钥失败: {e}")
-            raise ConfigurationError(f"保存API密钥失败: {e}")
+            raise ConfigurationError(f"Failed to save API keys: {e}")
     
     def add_api_key(self, key_name: str, api_key: str, provider: str = "dashscope", 
                    description: str = "", expires_at: Optional[datetime] = None) -> bool:
@@ -132,7 +132,7 @@ class APIKeyManager:
         try:
             # 验证密钥格式
             if not self._validate_api_key_format(api_key, provider):
-                raise ValidationError(f"无效的{provider} API密钥格式")
+                raise ValidationError(f"Invalid {provider} API key format")
             
             # 检查密钥是否已存在
             if key_name in self.keys:
@@ -329,7 +329,7 @@ class APIKeyManager:
         if not api_key:
             return {
                 "success": False,
-                "error": "密钥不存在或已过期"
+                "error": "Key does not exist or has expired"
             }
         
         try:
@@ -338,12 +338,12 @@ class APIKeyManager:
             if self._validate_api_key_format(api_key, "dashscope"):
                 return {
                     "success": True,
-                    "message": "API密钥格式正确"
+                    "message": "API key format is valid"
                 }
             else:
                 return {
                     "success": False,
-                    "error": "API密钥格式不正确"
+                    "error": "API key format is invalid"
                 }
         except Exception as e:
             return {
@@ -391,7 +391,7 @@ class APIKeyManager:
         
         # 验证新密钥格式
         if not self._validate_api_key_format(new_api_key, old_key_info.get("provider", "dashscope")):
-            raise ValidationError("新API密钥格式不正确")
+            raise ValidationError("New API key format is invalid")
         
         # 更新密钥
         self.keys[key_name]["api_key"] = new_api_key

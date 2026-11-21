@@ -29,42 +29,42 @@ async def get_video_categories() -> Dict[str, Any]:
             {
                 "value": "knowledge",
                 "name": "知识科普",
-                "description": "科学、技术、历史、文化等知识类内容",
+                "description": "Knowledge content such as science, technology, history, and culture",
                 "icon": "book",
                 "color": "#1890ff"
             },
             {
                 "value": "entertainment", 
-                "name": "娱乐休闲",
-                "description": "游戏、音乐、电影、综艺等娱乐内容",
+                "name": "Entertainment",
+                "description": "Entertainment content such as games, music, movies, and variety shows",
                 "icon": "play-circle",
                 "color": "#52c41a"
             },
             {
                 "value": "experience",
                 "name": "生活经验",
-                "description": "生活技巧、美食、旅行、手工等实用内容",
+                "description": "Practical content such as life hacks, food, travel, and crafts",
                 "icon": "heart",
                 "color": "#fa8c16"
             },
             {
                 "value": "opinion",
                 "name": "观点评论",
-                "description": "时事评论、观点分享、社会话题等",
+                "description": "Current-affairs commentary, shared opinions, social topics, and more",
                 "icon": "message",
                 "color": "#722ed1"
             },
             {
                 "value": "business",
                 "name": "商业财经",
-                "description": "商业分析、财经资讯、投资理财等",
+                "description": "Business analysis, financial news, investing, and more",
                 "icon": "dollar",
                 "color": "#13c2c2"
             },
             {
                 "value": "speech",
-                "name": "演讲访谈",
-                "description": "演讲、访谈、对话等口语化内容",
+                "name": "Talks & Interviews",
+                "description": "Conversational content such as speeches, interviews, and dialogues",
                 "icon": "sound",
                 "color": "#eb2f96"
             }

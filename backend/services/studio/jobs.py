@@ -9,7 +9,7 @@ import uuid
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from backend.core import llm_usage
-from backend.services.studio import attempts, audio, intelligence, store
+from backend.services.studio import attempts, audio, intelligence, range_import, store
 from backend.services.studio.features import flag_enabled, resolve_features
 from backend.services.studio.models import Draft, Preferences, Scene
 from backend.services.studio.project_completion import sync_project_completion
@@ -468,6 +468,7 @@ def inspect_url(url, browser=None):
         'max_height': _info_max_height(info) or None,
         'thumbnail': _info_thumbnail(info) or None,
         'has_audio': _info_has_audio(info),
+        'embed': range_import.embed_info(info.get('webpage_url') or url),
     }
 
 
@@ -480,6 +481,9 @@ def download(project_id, url, browser, import_options=None):
     options = {'format': 'bestvideo[height<=1080]+bestaudio/best[height<=1080]', 'outtmpl': str(folder / 'input.%(ext)s'), 'merge_output_format': 'mp4', 'noplaylist': True, 'quiet': True, 'ffmpeg_location': get_ffmpeg_path(), 'socket_timeout': 30, 'retries': 2, 'progress_hooks': [progress], 'postprocessor_hooks': [progress], **ytdlp_js_runtimes()}
     if browser:
         options['cookiesfrombrowser'] = (browser,)
+    source_range = getattr(import_options, 'source_range', None)
+    if source_range is not None:
+        options.update(range_import.download_options(source_range))
     from backend.utils.download_recovery import download_with_recovery
     download_with_recovery(url, {**options, 'writeinfojson': True})
     # Public listing text only: packaging checks nameplate names against it instead of guessing.
@@ -494,7 +498,7 @@ def download(project_id, url, browser, import_options=None):
     height = _ensure_source_resolution(url, options, info, folder)
     if height:
         meta['source_height'] = height
-    if _fetch_platform_subtitles(url, options, info, folder):
+    if _fetch_platform_subtitles(url, options, info, folder, source_range):
         meta['subtitle_source'] = 'platform'
     store.change(project_id, lambda data: data.update(source_meta=meta))
     from backend.core.database import SessionLocal
@@ -505,7 +509,7 @@ def download(project_id, url, browser, import_options=None):
     with SessionLocal() as db:
         p = db.query(Project).filter(Project.id == project_id).first()
         if not p:
-            raise FileNotFoundError('项目已删除')
+            raise FileNotFoundError('Project was deleted')
         # A thumbnail miss must not fail screening. ensure_project_thumbnail is the
         # same rule for local uploads; this call used to be bare.
         try:
@@ -575,9 +579,10 @@ def _ensure_source_resolution(url, options, info, folder):
 
 
 MIN_PLATFORM_CUES = 20
+MIN_RANGE_CUES = 3  # a downloaded range with fewer platform cues falls back to speech recognition
 
 
-def _fetch_platform_subtitles(url, options, info, folder):
+def _fetch_platform_subtitles(url, options, info, folder, source_range=None):
     """Use the creator's own subtitles in the video's language instead of speech recognition.
 
     Uploaded subtitles are punctuated and human-checked, and skip ~9 minutes of local Whisper per
@@ -591,13 +596,17 @@ def _fetch_platform_subtitles(url, options, info, folder):
     try:
         from backend.utils.download_recovery import download_with_recovery
         download_with_recovery(url, {
-            **{key: value for key, value in options.items() if key not in ('format', 'merge_output_format', 'progress_hooks')},
+            **{key: value for key, value in options.items() if key not in ('format', 'merge_output_format', 'progress_hooks', 'download_ranges', 'force_keyframes_at_cuts')},
             'skip_download': True, 'writesubtitles': True, 'subtitleslangs': [code], 'subtitlesformat': 'srt/best',
             'postprocessors': [{'key': 'FFmpegSubtitlesConvertor', 'format': 'srt'}], 'outtmpl': str(folder / 'platform.%(ext)s'),
         })
         fetched = folder / f'platform.{code}.srt'
         if not fetched.exists() or fetched.read_text(encoding='utf-8', errors='ignore').count('-->') < MIN_PLATFORM_CUES:
             return False
+        if source_range is not None:
+            # Platform subtitles are timed against the whole video; keep only this range, shifted to start at 0.
+            if range_import.trim_srt_file(fetched, source_range.start, source_range.end) < MIN_RANGE_CUES:
+                return False
         fetched.replace(target)
         # P1 #6: platform captions must survive 「从头重做」.
         try:
@@ -681,7 +690,7 @@ def run_content(project_id, video, platform_min_sec=None, platform_min_label='',
     finally:
         unbind_clip_job(token)
     if not result or not result.get('success'):
-        message = (result or {}).get('error') or '内容切片未完成，请检查语音与文字模型设置后重试'
+        message = (result or {}).get('error') or 'Content clipping did not finish. Check the speech and text model settings, then retry'
         failure = (result or {}).get('result') or {}
         # The original exception does not survive apply().get(): the adapter records the provider
         # HTTP status in the result dict and it is carried back here (RC156 Win QA #1).
@@ -718,7 +727,7 @@ def run_content(project_id, video, platform_min_sec=None, platform_min_label='',
     except Exception:  # noqa: BLE001 - telemetry must not fail the pipeline
         pass
     if not clips:
-        raise UserFacingError('没有提取到可用内容片段，请检查语音/字幕，或修改方案为精彩高光')
+        raise UserFacingError('No usable content segments were extracted. Check the speech/subtitles, or switch the plan to highlights')
 
     return clips
 
@@ -841,7 +850,18 @@ def _content_drafts(project_id, plan, video, platforms=()):
         min_sec, label = long_form_minimum(platforms)
         # Pass the minimum only when a long platform asked for it. A two-argument mock
         # still matches every short-platform import.
-        clips = run_content(project_id, video, min_sec, label) if min_sec else run_content(project_id, video)
+        exact = (plan.get('overrides') or {}).get('source_range')
+        try:
+            clips = run_content(project_id, video, min_sec, label) if min_sec else run_content(project_id, video)
+        except Exception as error:  # noqa: BLE001
+            if not exact:
+                raise
+            # The user (or the replay graph) already chose this range: a missing model key or a video without speech
+            # must not stop it. The whole downloaded range becomes the clip, titled by the video.
+            logger.warning('Range clip made without content analysis: %s', type(error).__name__)
+            meta = store.read(project_id).get('source_meta') or {}
+            clips = [{'generated_title': str(exact.get('label') or meta.get('title') or 'Clip')[:120],
+                      'start_time_seconds': 0.0, 'end_time_seconds': float(intelligence._probe(video).get('duration') or 0), 'final_score': 0.5}]
         from backend.utils.text_processor import TextProcessor
         picked = []
         for clip in clips:
@@ -851,8 +871,14 @@ def _content_drafts(project_id, plan, video, platforms=()):
             except (KeyError, TypeError, ValueError):
                 continue
             picked.append((clip, start, end))
-        bounds = _complete_thought_bounds(project_id, [(s, e) for _, s, e in picked])
         source_duration = float(intelligence._probe(video).get('duration') or 0)
+        # `exact` (the chosen range) was read above.
+        if exact and picked:
+            # Long-video mode: the user chose this range, so it is the clip, not a hint for the model's own cut.
+            picked = [(max((item[0] for item in picked), key=_score), 0.0, source_duration)]
+            bounds = [(0.0, source_duration)]
+        else:
+            bounds = _complete_thought_bounds(project_id, [(s, e) for _, s, e in picked])
         window = (plan.get('overrides') or {}).get('source_window')
         win_start = win_end = None
         if isinstance(window, dict) and window.get('end') is not None:
@@ -879,7 +905,7 @@ def _content_drafts(project_id, plan, video, platforms=()):
             try:
                 scene = Scene(
                     id=uuid.uuid4().hex,
-                    label=str(clip.get('generated_title') or clip.get('outline') or '内容片段')[:120],
+                    label=str((exact or {}).get('label') or clip.get('generated_title') or clip.get('outline') or 'Content segment')[:120],
                     start=start,
                     end=end,
                     evidence=str(clip.get('recommend_reason') or clip.get('recommendation_reason') or '')[:1000],
@@ -893,12 +919,12 @@ def _content_drafts(project_id, plan, video, platforms=()):
                 subtitles=True,
             ).model_dump(), SCORE_KEY: _score(clip)})
         if not drafts:
-            raise UserFacingError('没有提取到可渲染的内容片段，请检查字幕或重新导入')
+            raise UserFacingError('No renderable content segments were extracted. Check the subtitles or re-import')
         return drafts
     if route != 'visual':
-        raise UserFacingError('没有可用的自动分析路径，请检查模型设置后重试')
+        raise UserFacingError('No automatic analysis route is available. Check the model settings and retry')
     if not intelligence.ready():
-        raise UserFacingError('请先在设置中配置视觉理解模型')
+        raise UserFacingError('Set up a visual understanding model in Settings first')
     try:
         events, coverage = analyze(video, prefs)
         drafts = make_drafts(events, prefs, plan.get('overrides', {}).get('instruction', ''), source_duration=intelligence._probe(video).get('duration'))
@@ -1222,7 +1248,7 @@ def request_ai_cover(project_id, variant_id):
     def claim(data):
         variant = next((item for item in data['output_variants'] if item['id'] == variant_id), None)
         if variant is None:
-            raise FileNotFoundError('成片版本不存在')
+            raise FileNotFoundError('Video version not found')
         active = variant.get('cover_job')
         if active and active['status'] in ('queued', 'running'):
             return active
@@ -1237,14 +1263,14 @@ def request_ai_cover(project_id, variant_id):
             except Exception as error:  # noqa: BLE001 - preserve the ready video and designed cover
                 store.remember_submission_rejection(project_id, ('cover', variant_id, job_id), error_code=studio_error_code(error))
                 logger.warning('AI cover dispatch failed: %s', type(error).__name__)
-                _update_cover_job(project_id, variant_id, job_id, status='failed', error='AI 封面任务未能启动，请重试')
+                _update_cover_job(project_id, variant_id, job_id, status='failed', error='The AI cover task could not start. Please retry')
         return ai_cover_status(project_id, variant_id)
 
 
 def ai_cover_status(project_id, variant_id):
     variant = next((item for item in store.read(project_id)['output_variants'] if item['id'] == variant_id), None)
     if variant is None or not variant.get('cover_job'):
-        raise FileNotFoundError('封面任务不存在')
+        raise FileNotFoundError('Cover task not found')
     return {key: value for key, value in variant['cover_job'].items() if key != 'instance'}
 
 
@@ -1272,7 +1298,7 @@ def _ai_cover_job(project_id, variant_id, job_id):
         logger.warning('AI cover job failed: %s', type(error).__name__)
         made = False
     _update_cover_job(project_id, variant_id, job_id, **({'status': 'completed'} if made else
-                      {'status': 'failed', 'error': 'AI 封面未生成，已保留原封面'}))
+                      {'status': 'failed', 'error': 'The AI cover was not generated; the original cover was kept'}))
 
 
 def update_post(project_id, variant_id, post):
@@ -1282,7 +1308,7 @@ def update_post(project_id, variant_id, post):
     state = store.read(project_id)
     variant = next((item for item in state.get('output_variants', []) if item['id'] == variant_id), None)
     if not variant:
-        raise FileNotFoundError('成片版本不存在')
+        raise FileNotFoundError('Video version not found')
     rules = post_copy.RULES.get(variant['strategy_id'], post_copy.RULES['original'])
     clean = PostCopy(title=post_copy._fit(post_copy._clean(post.title), rules.title_max) or variant.get('post', {}).get('title', ''),
                      description=post_copy._fit(post_copy._clean(post.description), rules.description_max),
@@ -1409,7 +1435,7 @@ def _auto_generate(project_id, plan):
 
         def persist(data):
             if not _still_this_run(data, attempt_id, run_id):
-                raise store.ConflictError('这次制作已结束')
+                raise store.ConflictError('This production run has already ended')
             data['drafts'].extend({**draft, 'updated_at': store.now()} for draft in derived_drafts)
             if events:
                 data['events'] = events
@@ -1568,7 +1594,7 @@ def _submit_production(project_id, run_id, plan, *, attempt_id=None):
         if type(error).__name__ == 'QuotaExhausted':
             message = _sentence('insufficient_quota')
         else:
-            message = '自动制作任务未能启动，请重试；原素材已保留'
+            message = 'The automatic production task could not start. Please retry; the original source was kept'
         def fail_automatic(data):
             return store.settle_attempt(
                 data, kind='fail', error=message, error_code=code, failure_stage='dispatch',
@@ -1655,7 +1681,7 @@ def _dispatch_pending_variants(project_id):
             continue
         raw = drafts.get(variant['draft_id'])
         if not raw:
-            store.change(project_id, lambda data: store.settle_attempt(data, kind='reject', variant_id=expected[0], expected=expected, error='来源草稿不存在', error_code='missing_resource'))
+            store.change(project_id, lambda data: store.settle_attempt(data, kind='reject', variant_id=expected[0], expected=expected, error='Source draft not found', error_code='missing_resource'))
             continue
         try:
             job = export(
@@ -1667,7 +1693,7 @@ def _dispatch_pending_variants(project_id):
             store.raise_owned_read_error(error)
             capture_studio_exception(error, 'dispatch')
             code = studio_error_code(error)
-            store.change(project_id, lambda data: store.settle_attempt(data, kind='reject', variant_id=expected[0], expected=expected, error='这条成片任务未能启动，请重试；已有成片已保留', error_code=code))
+            store.change(project_id, lambda data: store.settle_attempt(data, kind='reject', variant_id=expected[0], expected=expected, error='This video task could not start. Please retry; existing videos were kept', error_code=code))
             continue
         store.remember_render_link(project_id, expected, job['job_id'])
         store.change(project_id, lambda data, expected=expected, job_id=job['job_id']: store.bind_render(data, expected, job_id))
@@ -1797,7 +1823,7 @@ def _ensure_long_coverage(drafts, source_duration, min_sec):
                 continue
             pieces.append({
                 'start': start, 'end': end, 'score': score, 'index': index,
-                'title': scene.get('label') or draft.get('title') or '内容片段',
+                'title': scene.get('label') or draft.get('title') or 'Content segment',
                 'evidence': scene.get('evidence') or '',
             })
     pieces.sort(key=lambda item: (item['start'], item['end']))
@@ -1879,11 +1905,11 @@ def produce_variant(project_id, variant_id):
     def start(data):
         item = next((value for value in data.get('output_variants', []) if value['id'] == variant_id), None)
         if not item:
-            raise FileNotFoundError('成片版本不存在')
+            raise FileNotFoundError('Video version not found')
         if item.get('status') != 'on_demand':
-            raise UserFacingError('这条成片已经在生成或已完成')
+            raise UserFacingError('This video is already being generated or is complete')
         if not any(draft['id'] == item['draft_id'] for draft in data.get('drafts', [])):
-            raise FileNotFoundError('来源草稿不存在')
+            raise FileNotFoundError('Source draft not found')
         return _start_preparing(data, item)
     # One locked change checks and claims: a double click must not prepare (and pay for) it twice.
     attempt_id = store.change(project_id, start)
@@ -1907,7 +1933,7 @@ def _submit_on_demand(project_id, variant_id, attempt_id):
     except Exception as error:
         store.remember_submission_rejection(project_id, ('preparation', variant_id, attempt_id), error_code=studio_error_code(error))
         capture_studio_exception(error, 'dispatch')
-        message = '这条成片任务未能启动，请重试；已有成片已保留'
+        message = 'This video task could not start. Please retry; existing videos were kept'
         code = studio_error_code(error)
         def failed(data):
             target = next(item for item in data['output_variants'] if item['id'] == variant_id)
@@ -1954,7 +1980,7 @@ def _produce_on_demand(project_id, variant_id):
             logger.warning('On-demand variant failed: %s', type(error).__name__)
             capture_studio_exception(error, 'production')
             code = studio_error_code(error)
-            message = str(error) if isinstance(error, JobDurationExceeded) else '这条成片准备失败，请重试'
+            message = str(error) if isinstance(error, JobDurationExceeded) else 'This video could not be prepared. Please retry'
 
             def failed(data):
                 target = next(item for item in data['output_variants'] if item['id'] == variant_id)
@@ -1976,7 +2002,7 @@ def _retry_parent(data, parent_attempt_id):
         latest = max(settled, key=lambda a: a.get('sequence', 0), default=None)
         parent_attempt_id = latest['attempt_id'] if latest and latest['state'] in attempts.RETRYABLE_PARENT else None
     if attempts.current(data) and not attempts.unbound(attempts.current(data)):
-        raise attempts.RetryRejected('上一次重试还没结束，请稍后再试')
+        raise attempts.RetryRejected('The previous retry has not finished yet. Please try again shortly')
     return attempts.check_parent(data, parent_attempt_id)
 
 
@@ -2002,17 +2028,17 @@ def retry_variant(project_id, variant_id, retry=None):
         return next(item for item in state['output_variants'] if item['id'] == variant_id)
     variant = next((item for item in state.get('output_variants', []) if item['id'] == variant_id), None)
     if not variant:
-        raise FileNotFoundError('成片版本不存在')
+        raise FileNotFoundError('Video version not found')
     if variant.get('status') != 'failed':
-        raise UserFacingError('只有失败的成片版本可以重试')
+        raise UserFacingError('Only a video version that did not finish can be retried')
     raw = next((item for item in state.get('drafts', []) if item['id'] == variant['draft_id']), None)
     if not raw:
-        raise FileNotFoundError('来源草稿不存在')
+        raise FileNotFoundError('Source draft not found')
     if variant.get('needs_prepare'):
         def prepare(data):
             item = next(value for value in data['output_variants'] if value['id'] == variant_id)
             if item.get('status') != 'failed':
-                raise UserFacingError('只有失败的成片版本可以重试')
+                raise UserFacingError('Only a video version that did not finish can be retried')
             receipt = _variant_attempt(data, retry, item)
             data['analysis'] = {**store.attempt_identity(data.get('analysis'), data.get('generation')), **_carried_progress(data.get('analysis')), 'status': 'running', 'phase': 'rendering', 'run_id': receipt['run_id'], 'message': '正在重试成片版本', 'instance': store.INSTANCE, 'created_at': store.now()}
             return _start_preparing(data, item)
@@ -2022,7 +2048,7 @@ def retry_variant(project_id, variant_id, retry=None):
     def update(data):
         item = next(value for value in data['output_variants'] if value['id'] == variant_id)
         if item.get('status') != 'failed':
-            raise UserFacingError('只有失败的成片版本可以重试')
+            raise UserFacingError('Only a video version that did not finish can be retried')
         item.update(status='queued', render_attempt_id=uuid.uuid4().hex)
         item.pop('render_dispatch_claimed', None)
         item.pop('render_dispatch_instance', None)
@@ -2059,6 +2085,12 @@ def _sync_variant_status(project_id, job_id, status, error=None):
             _finish_generation(data)
     store.change(project_id, update)
     sync_project_completion(project_id)
+    if status == 'completed':
+        try:
+            from backend.services import youtube_publisher
+            youtube_publisher.maybe_auto_publish(project_id, job_id)
+        except Exception:  # noqa: BLE001 - publishing never decides whether the clip counts as finished
+            logger.warning('Automatic YouTube upload could not start', exc_info=True)
 
 
 def _finish_generation(data):
@@ -2081,7 +2113,7 @@ def inspect_project(project_id, options, url=None, browser=None, *, producer=Non
                 return again.get('run_id')
             parent = _retry_parent(previous, retry.get('parent_attempt_id'))
         if (previous.get('analysis') or {}).get('status') == 'running':
-            raise UserFacingError('当前任务正在运行，请稍后再试')
+            raise UserFacingError('The current task is running. Please try again shortly')
         state = deepcopy(previous)
         state.setdefault('schema_version', 2)
         from backend.services.output_captions import load_settings as load_output_captions
@@ -2225,14 +2257,14 @@ def confirm_project(project_id, body):
         state = store.recover(project_id)
         plan = state.get('plan') or {}
         if plan.get('id') != body.plan_id or (state.get('analysis') or {}).get('status') != 'awaiting_confirmation':
-            raise store.ConflictError('方案已变化或任务已开始，请刷新后确认')
+            raise store.ConflictError('The plan has changed or the task has already started. Refresh and confirm again')
         route = body.analysis_mode or plan.get('recommended_analysis', 'subtitle')
         if route == 'visual' and body.goals == ['content']:
-            raise UserFacingError('内容切片当前使用字幕分析，请选择字幕模式后确认')
+            raise UserFacingError('Content clipping currently uses subtitle analysis. Choose subtitle mode and confirm again')
         if route == 'visual':
             from backend.services.studio import intelligence
             if not intelligence.ready():
-                raise UserFacingError('视觉模型不可用，请配置后重新确认；原素材已保留')
+                raise UserFacingError('The vision model is unavailable. Configure it and confirm again; the original source was kept')
         if route == 'subtitle' or 'content' in body.goals:
             # Too short / no audio and no SRT: refuse before production spends any model call (RC156 #10/#11).
             # The one preflight on the confirmed subtitle route (#418 rewrite): source first, then the install
@@ -2334,9 +2366,9 @@ def _produce_selected(project_id, plan):
                     succeeded_goals.append(goal)
                     continue
                 if plan.get('confirmed_analysis', 'subtitle') != 'visual':
-                    raise UserFacingError('此确认未授权视觉分析；请重新选择处理方式')
+                    raise UserFacingError('This confirmation does not authorize visual analysis. Please choose the processing mode again')
                 if not intelligence.ready():
-                    raise UserFacingError('请先在设置中配置视觉理解模型')
+                    raise UserFacingError('Set up a visual understanding model in Settings first')
                 if visual_error is not None:
                     raise visual_error
                 if events is None:

@@ -134,12 +134,12 @@ def check_parent(data, parent_attempt_id):
         return None
     parent = find(data, parent_attempt_id)
     if not parent or parent.get('kind') not in KINDS:
-        raise RetryRejected('要重试的那次制作不存在')
+        raise RetryRejected('The production run to retry does not exist')
     if parent.get('state') not in RETRYABLE_PARENT:
-        raise RetryRejected('只有失败或部分完成的制作可以重试')
+        raise RetryRejected('Only failed or partially completed runs can be retried')
     newer = [a for a in receipts(data) if a.get('sequence', 0) > parent.get('sequence', 0) and (a.get('state') in TERMINAL or (a.get('state') == 'open' and not unbound(a)))]
     if newer:
-        raise RetryRejected('这次制作已经重试过了')
+        raise RetryRejected('This run has already been retried')
     return parent
 
 
@@ -154,9 +154,9 @@ def check_join(data, receipt, parent_attempt_id, key=None):
     if parent_attempt_id:
         parent = find(data, parent_attempt_id)
         if not parent or parent.get('kind') not in KINDS:
-            raise RetryRejected('要重试的那次制作不存在')
+            raise RetryRejected('The production run to retry does not exist')
         if parent_attempt_id != receipt.get('retry_of'):
-            raise RetryRejected('这次制作已经重试过了')
+            raise RetryRejected('This run has already been retried')
     if key and key != receipt.get('idempotency_key') and key not in (receipt.get('joined_keys') or []):
         receipt.setdefault('joined_keys', []).append(key)
     return receipt

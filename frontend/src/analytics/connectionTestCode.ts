@@ -46,10 +46,10 @@ export function codeFromRequestError(error: unknown, context: { emptyKey?: boole
   if (typeof status === 'number') {
     if (status === 422) {
       const detail = typeof e?.response?.data?.detail === 'string' ? e.response.data.detail : ''
-      if (context.emptyKey || /API Key|密钥/.test(detail)) return 'empty_key'
-      if (/图像识别|图片输入/.test(detail)) return 'vision_unsupported'
-      if (/地址|URL|url|控制台/.test(detail)) return 'bad_base_url'
-      if (/模型/.test(detail)) return 'model_not_found'
+      if (context.emptyKey || /API Key|密钥|API key/i.test(detail)) return 'empty_key'
+      if (/图像识别|图片输入|image (recognition|input)/i.test(detail)) return 'vision_unsupported'
+      if (/地址|URL|url|控制台|address|endpoint|console/i.test(detail)) return 'bad_base_url'
+      if (/模型|model/i.test(detail)) return 'model_not_found'
       return 'invalid_request'
     }
     if (status === 401) return 'invalid_key'

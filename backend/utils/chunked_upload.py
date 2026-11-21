@@ -111,11 +111,11 @@ class ChunkedUploadManager:
         
         # 验证文件大小
         if not self._validate_file_size(file_size):
-            raise ValueError(f"文件大小超过限制: {file_size} > {self.max_file_size}")
+            raise ValueError(f"File size exceeds limit: {file_size} > {self.max_file_size}")
         
         # 验证文件类型
         if not self._validate_file_type(filename):
-            raise ValueError(f"不支持的文件类型: {filename}")
+            raise ValueError(f"Unsupported file type: {filename}")
         
         # 生成上传ID
         upload_id = self._generate_upload_id(filename, file_size)
@@ -157,11 +157,11 @@ class ChunkedUploadManager:
         # 获取上传会话
         session = self.active_sessions.get(upload_id)
         if not session:
-            raise ValueError(f"上传会话不存在: {upload_id}")
+            raise ValueError(f"Upload session not found: {upload_id}")
         
         # 验证分片号
         if chunk_number < 0 or chunk_number >= session.total_chunks:
-            raise ValueError(f"无效的分片号: {chunk_number}")
+            raise ValueError(f"Invalid chunk number: {chunk_number}")
         
         # 验证分片大小
         expected_size = session.chunk_size
@@ -169,12 +169,12 @@ class ChunkedUploadManager:
             expected_size = session.file_size - (session.total_chunks - 1) * session.chunk_size
         
         if len(chunk_data) != expected_size:
-            raise ValueError(f"分片大小不匹配: 期望 {expected_size}, 实际 {len(chunk_data)}")
+            raise ValueError(f"Chunk size mismatch: expected {expected_size}, got {len(chunk_data)}")
         
         # 验证分片哈希
         calculated_hash = self._calculate_chunk_hash(chunk_data)
         if calculated_hash != chunk_hash:
-            raise ValueError(f"分片哈希不匹配: 期望 {chunk_hash}, 实际 {calculated_hash}")
+            raise ValueError(f"Chunk hash mismatch: expected {chunk_hash}, got {calculated_hash}")
         
         # 保存分片
         chunk_path = Path(session.temp_dir) / f"chunk_{chunk_number:06d}"
@@ -200,11 +200,11 @@ class ChunkedUploadManager:
         # 获取上传会话
         session = self.active_sessions.get(upload_id)
         if not session:
-            raise ValueError(f"上传会话不存在: {upload_id}")
+            raise ValueError(f"Upload session not found: {upload_id}")
         
         # 检查是否所有分片都已上传
         if len(session.uploaded_chunks) != session.total_chunks:
-            raise ValueError(f"分片上传未完成: {len(session.uploaded_chunks)}/{session.total_chunks}")
+            raise ValueError(f"Chunked upload incomplete: {len(session.uploaded_chunks)}/{session.total_chunks}")
         
         # 确保输出目录存在
         output_path = Path(output_path)
@@ -218,19 +218,19 @@ class ChunkedUploadManager:
                 chunk_path = Path(session.temp_dir) / f"chunk_{chunk_number:06d}"
                 
                 if not chunk_path.exists():
-                    raise FileNotFoundError(f"分片文件不存在: {chunk_path}")
+                    raise FileNotFoundError(f"Chunk file not found: {chunk_path}")
                 
                 with open(chunk_path, 'rb') as chunk_file:
                     shutil.copyfileobj(chunk_file, output_file)
         
         # 验证合并后的文件
         if output_path.stat().st_size != session.file_size:
-            raise ValueError(f"合并后文件大小不匹配: 期望 {session.file_size}, 实际 {output_path.stat().st_size}")
+            raise ValueError(f"Merged file size mismatch: expected {session.file_size}, got {output_path.stat().st_size}")
         
         # 验证文件哈希
         merged_hash = self._calculate_file_hash(str(output_path))
         if merged_hash != session.file_hash:
-            raise ValueError(f"合并后文件哈希不匹配: 期望 {session.file_hash}, 实际 {merged_hash}")
+            raise ValueError(f"Merged file hash mismatch: expected {session.file_hash}, got {merged_hash}")
         
         logger.info(f"分片合并完成: {upload_id}, 输出: {output_path}")
         
@@ -261,7 +261,7 @@ class ChunkedUploadManager:
         
         session = self.active_sessions.get(upload_id)
         if not session:
-            return {"error": "上传会话不存在"}
+            return {"error": "Upload session not found"}
         
         progress = len(session.uploaded_chunks) / session.total_chunks * 100
         

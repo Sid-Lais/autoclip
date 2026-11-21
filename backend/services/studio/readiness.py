@@ -79,13 +79,13 @@ def ensure_analysis_usable() -> None:
         settings = ai_models.load()
     except Exception:
         # Validation errors may contain private settings values. Expose only this message.
-        raise UserFacingError('已保存的模型配置需要修复，请到「设置 → 服务商与模型」重新选择服务和模型并保存后再生成。') from None
+        raise UserFacingError('The saved model configuration needs repair. Go to "Settings → Providers and models", reselect the provider and model, save, and then generate again.') from None
     if settings is None:
         return
     ai_models.require_analysis(settings)
     check = _analysis(settings)
     if check['code'] == 'validation_failed':
-        raise UserFacingError('当前模型连接未通过校验。请到「设置 → 服务商与模型」按提示改密钥或地址后再生成。')
+        raise UserFacingError('The current model connection did not pass validation. Go to "Settings → Providers and models", fix the key or endpoint, then generate again.')
     if ai_models.vision_follow_lacks_capability(settings):
         from backend.services.provider_validation import VISION_BLOCK_MESSAGE
         raise UserFacingError(VISION_BLOCK_MESSAGE)
@@ -102,7 +102,7 @@ def _transcription(settings: ai_models.ModelSettings) -> dict:
     if choice.provider == 'whisper_local':
         from backend.services import whisper_runtime
         model = choice.model or 'base'
-        label = f'本地 {model}'
+        label = f'Local {model}'
         status = whisper_runtime.get_status().get('status')
         if status == 'installed':
             return {**_whisper_model(model), 'label': label}
@@ -113,12 +113,12 @@ def _transcription(settings: ai_models.ModelSettings) -> dict:
         return _check(False, 'whisper_not_installed', 'install_whisper', label=label)
     if choice.provider == 'sensevoice_local':
         from backend.services import sensevoice_runtime
-        label = '本地 SenseVoice'
+        label = 'Local SenseVoice'
         if sensevoice_runtime.status().get('status') == 'ready':
             return _check(True, 'sensevoice_ready', label=label)
         return _check(False, 'sensevoice_not_ready', 'settings_transcription', label=label)
     connection = next((item for item in settings.connections if item.id == choice.connection_id), None)
-    label = f'云端 {choice.model}'.strip() if choice.model else '云端转写'
+    label = f'Cloud {choice.model}'.strip() if choice.model else 'Cloud transcription'
     trial = _trial_ok(connection)
     if choice.model and _connection_ready(connection):
         return _check(True, 'cloud_configured', label=label, trial_ok=trial)
@@ -238,8 +238,8 @@ def require_transcription(*, stage: str = 'SUBTITLE', srt_available: bool = Fals
 
 LOCAL_TRANSCRIPTION_REQUIRED = '需要先安装本地转写：视频没有字幕，所选的本地 Whisper 还没装好。请到「设置 → 默认模型 → 语音转字幕」一键安装，或改用云端转写后再导入。'
 LOCAL_TRANSCRIPTION_INSTALLING = '等待安装完成：本地 Whisper 正在安装，装好后再开始。'
-LOCAL_TRANSCRIPTION_DOWNLOADING = '等待下载完成：转写模型正在下载，下完后再开始。'
-LOCAL_TRANSCRIPTION_MODEL = '需要先下载转写模型：视频没有字幕，所选的本地 Whisper 模型还没下载。请一键安装（会下载模型），或改用云端转写后再导入。'
+LOCAL_TRANSCRIPTION_DOWNLOADING = 'Waiting for download to finish: the transcription model is being downloaded; processing starts once it is done.'
+LOCAL_TRANSCRIPTION_MODEL = 'The transcription model must be downloaded first: the video has no subtitles and the selected local Whisper model is not downloaded yet. Install with one click (this downloads the model), or switch to cloud transcription and import again.'
 
 
 # Waiting states keep their own code end to end never reported as whisper_not_installed.

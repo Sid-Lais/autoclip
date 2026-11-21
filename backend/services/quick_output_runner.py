@@ -29,7 +29,7 @@ def start(source: str, platforms: list[str], *, name: str | None = None, srt_pat
 
     style_for_request(template)
     if template is not None and not flag_enabled(resolve_features(), 'mcp_v2_tools'):
-        raise StyleDisabled('剪辑风格尚未开放，请设置 AUTOCLIP_FLAGS=mcp_v2_tools=on')
+        raise StyleDisabled('Editing styles are not available yet; set AUTOCLIP_FLAGS=mcp_v2_tools=on')
     options = ImportOptions(auto_start=True, platforms=platforms, instruction=instruction, portrait_style=portrait_style,
                             html_template=template)
     parsed = urlparse(source)
@@ -38,19 +38,19 @@ def start(source: str, platforms: list[str], *, name: str | None = None, srt_pat
         host = (parsed.hostname or '').lower()
         if parsed.scheme != 'https' or parsed.username or parsed.password or not any(
                 host == domain or host.endswith('.' + domain) for domain in ('youtube.com', 'youtu.be', 'bilibili.com', 'b23.tv')):
-            raise ValueError('仅支持 HTTPS 的 B 站或 YouTube 视频链接')
+            raise ValueError('Only HTTPS Bilibili or YouTube video links are supported')
         url = source
     else:
         video = Path(source).expanduser().resolve()
         if not video.is_file():
-            raise FileNotFoundError(f'视频不存在: {video}')
+            raise FileNotFoundError(f'Video not found: {video}')
         if video.suffix.lower() not in ('.mp4', '.mov', '.mkv', '.webm', '.avi'):
-            raise ValueError('不支持的视频格式')
+            raise ValueError('Unsupported video format')
     subtitle = Path(srt_path).expanduser().resolve() if srt_path else None
     if subtitle and (not subtitle.is_file() or not 0 < subtitle.stat().st_size <= 2 * 1024 * 1024):
-        raise ValueError('字幕文件不存在、为空或超过 2 MB')
+        raise ValueError('Subtitle file does not exist, is empty, or exceeds 2 MB')
     if browser not in (None, 'chrome', 'edge', 'firefox', 'safari'):
-        raise ValueError('不支持的浏览器')
+        raise ValueError('Unsupported browser')
     create_tables()
     if not url:
         from backend.services.studio import preflight
@@ -84,7 +84,7 @@ def status(project_id: str, *, export_kits: bool = False) -> dict:
     state = store.read(project_id)
     generation = state.get('generation')
     if not generation:
-        raise FileNotFoundError('一键出片项目不存在')
+        raise FileNotFoundError('Quick output project not found')
     phase = generation['status']
     outcome = phase if phase in ('completed', 'partial', 'failed') else 'running'
     error = generation.get('error')
@@ -106,9 +106,9 @@ def status(project_id: str, *, export_kits: bool = False) -> dict:
         if row.get('cover_job'):
             row['cover_job'] = {key: value for key, value in row['cover_job'].items() if key != 'instance'}
             if producer_stopped and row['cover_job'].get('status') in ('queued', 'running'):
-                row['cover_job'].update(status='failed', error='制作进程已退出，请重新生成封面')
+                row['cover_job'].update(status='failed', error='The production process exited. Please regenerate the cover')
         if producer_stopped and row.get('status') in ('queued', 'running', 'preparing'):
-            row.update(status='failed', error='制作进程已退出，请重试')
+            row.update(status='failed', error='The production process exited. Please try again')
         job = jobs.get(variant.get('render_job_id'), {})
         video = root / 'output' / 'studio' / f"{job.get('job_id')}.mp4"
         if variant['status'] == 'completed' and job.get('status') == 'completed' and video.is_file():
@@ -135,7 +135,7 @@ def status(project_id: str, *, export_kits: bool = False) -> dict:
     if producer_stopped:
         outcome = 'partial' if any(row.get('video_path') for row in outputs) else 'failed'
         phase = 'interrupted'
-        error = '制作进程已退出；已完成的视频仍可下载，请保持 CLI / MCP 进程运行至完成后再关闭'
+        error = 'The production process exited; completed videos can still be downloaded. Keep the CLI / MCP process running until it finishes before closing it'
     from backend.services import mcp_jobs
     from backend.services.studio.template_choice import style_from_generation
     analysis = state.get('analysis') or {}

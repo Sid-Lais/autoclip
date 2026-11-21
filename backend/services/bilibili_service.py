@@ -77,7 +77,7 @@ class BilibiliAccountService:
             # 验证Cookie
             is_valid, user_info = await self.verify_cookie(account_data.cookie_content)
             if not is_valid:
-                raise ValueError("无效的Cookie，请检查Cookie是否正确或已过期")
+                raise ValueError("Invalid cookie. Check that the cookie is correct and has not expired")
             
             # 检查账号是否已存在
             existing_account = self.db.query(BilibiliAccount).filter(
@@ -103,7 +103,7 @@ class BilibiliAccountService:
             # 创建新账号记录
             account = BilibiliAccount(
                 username=user_info.get("username", account_data.username),
-                nickname=account_data.nickname or user_info.get("username", "B站用户"),
+                nickname=account_data.nickname or user_info.get("username", "Bilibili User"),
                 cookies=encrypted_cookies,
                 status="active",
                 created_at=datetime.now(),
@@ -130,7 +130,7 @@ class BilibiliAccountService:
             ).first()
             
             if not account:
-                raise ValueError("账号不存在")
+                raise ValueError("Account not found")
             
             # 解密Cookie
             decrypted_cookies = decrypt_data(account.cookies)
@@ -158,7 +158,7 @@ class BilibiliAccountService:
                 account.status = "active"
                 account.updated_at = datetime.now()
             else:
-                health_status["error"] = "Cookie已失效或账号异常"
+                health_status["error"] = "Cookie has expired or the account is abnormal"
                 account.status = "inactive"
             
             self.db.commit()
@@ -395,7 +395,7 @@ class BilibiliUploadService:
         # 验证账号
         account = self.account_service.get_account(upload_data.account_id)
         if not account:
-            raise ValueError("账号不存在")
+            raise ValueError("Account not found")
         
         # 创建投稿记录
         record = UploadRecord(
@@ -502,10 +502,10 @@ class BilibiliUploadService:
         try:
             record = self.db.query(UploadRecord).filter(UploadRecord.id == record_id).first()
             if not record:
-                raise ValueError("投稿记录不存在")
+                raise ValueError("Upload record not found")
             
             if record.status != "failed":
-                raise ValueError("只有失败的任务可以重试")
+                raise ValueError("Only failed tasks can be retried")
             
             # 重置状态为待处理
             record.status = "pending"
@@ -534,10 +534,10 @@ class BilibiliUploadService:
         try:
             record = self.db.query(UploadRecord).filter(UploadRecord.id == record_id).first()
             if not record:
-                raise ValueError("投稿记录不存在")
+                raise ValueError("Upload record not found")
             
             if record.status not in ["pending", "processing"]:
-                raise ValueError("只有待处理或处理中的任务可以取消")
+                raise ValueError("Only pending or processing tasks can be cancelled")
             
             # 更新状态为已取消
             record.status = "cancelled"
@@ -557,11 +557,11 @@ class BilibiliUploadService:
         try:
             record = self.db.query(UploadRecord).filter(UploadRecord.id == record_id).first()
             if not record:
-                raise ValueError("投稿记录不存在")
+                raise ValueError("Upload record not found")
             
             # 只有已完成、失败或取消的任务可以删除
             if record.status in ["pending", "processing"]:
-                raise ValueError("进行中的任务不能删除，请先取消")
+                raise ValueError("Tasks in progress cannot be deleted. Cancel the task first")
             
             # 删除记录
             self.db.delete(record)
@@ -710,7 +710,7 @@ class BilibiliDirectUploader:
         """上传视频 - 简化版本，暂时返回失败状态"""
         try:
             # 暂时返回失败，因为需要重新实现上传逻辑
-            self.error_message = "上传功能正在开发中，请稍后再试"
+            self.error_message = "Upload is under development. Please try again later"
             logger.warning("上传功能暂未实现，返回失败状态")
             return False
                 
@@ -723,7 +723,7 @@ class BilibiliDirectUploader:
         """同步版本的上传视频"""
         try:
             # 暂时返回失败，因为需要重新实现上传逻辑
-            self.error_message = "上传功能正在开发中，请稍后再试"
+            self.error_message = "Upload is under development. Please try again later"
             logger.warning("上传功能暂未实现，返回失败状态")
             return False
                 
@@ -767,7 +767,7 @@ class BilibiliDirectUploader:
                     return None
                     
         except Exception as e:
-            self.error_message = f"预上传异常: {str(e)}"
+            self.error_message = f"Pre-upload error: {str(e)}"
             logger.error(self.error_message)
             return None
     
@@ -819,7 +819,7 @@ class BilibiliDirectUploader:
                                         
                         except Exception as e:
                             if attempt == max_retries - 1:
-                                self.error_message = f"分片 {chunk_index} 上传异常: {str(e)}"
+                                self.error_message = f"Chunk {chunk_index} upload error: {str(e)}"
                                 logger.error(self.error_message)
                                 return False
                             else:
@@ -831,7 +831,7 @@ class BilibiliDirectUploader:
             return True
             
         except Exception as e:
-            self.error_message = f"分片上传异常: {str(e)}"
+            self.error_message = f"Chunk upload error: {str(e)}"
             logger.error(self.error_message)
             return False
     
@@ -865,7 +865,7 @@ class BilibiliDirectUploader:
                     return False
                     
         except Exception as e:
-            self.error_message = f"分片合并异常: {str(e)}"
+            self.error_message = f"Chunk merge error: {str(e)}"
             logger.error(self.error_message)
             return False
     
@@ -924,7 +924,7 @@ class BilibiliDirectUploader:
                     return False
                     
         except Exception as e:
-            self.error_message = f"投稿提交异常: {str(e)}"
+            self.error_message = f"Upload submission error: {str(e)}"
             logger.error(self.error_message)
             return False
     

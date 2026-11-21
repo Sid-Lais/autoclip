@@ -236,7 +236,7 @@ test('X2: FailureAction.kind covers retry | settings | install_asr | switch_mode
   const recharge = fa.failureAction('provider_error', 'insufficient_quota', null, null, 'api88')
   assert.equal(recharge.kind, 'recharge')
   assert.equal(recharge.provider, 'api88')
-  assert.equal(recharge.label, '去 88API 充值')
+  assert.equal(recharge.label, 'Top up at 88API')
   assert.match(recharge.destination, /^https?:\/\//)
   // non-sponsor quota → 查看余额 (opens keyUrl / docs)
   const quota = fa.failureAction('provider_error', 'insufficient_quota', null, null, 'openai')
@@ -367,11 +367,11 @@ const fs = require('node:fs')
 const { loadTs } = require('./load-ts.cjs')
 const fa = loadTs(path.resolve(__dirname, '../src/features/studio/failureAction.ts'))
 
-test('X3: sponsor insufficient_quota → 去 XX 充值 with topup_url', () => {
+test('X3: sponsor insufficient_quota → Top up at XX with topup_url', () => {
   for (const [id, short] of [['api88', '88API'], ['infistar', 'Infistar'], ['apimart', 'APIMart']]) {
     const action = fa.failureAction('provider_error', 'insufficient_quota', null, null, id)
     assert.equal(action.kind, 'recharge', id)
-    assert.equal(action.label, `去 ${short} 充值`, id)
+    assert.equal(action.label, `Top up at ${short}`, id)
     const target = fa.rechargeTarget(id)
     assert.equal(target.sponsor, true, id)
     assert.equal(action.destination, target.url, id)
@@ -388,7 +388,7 @@ test('X3: non-sponsor insufficient_quota → 查看余额', () => {
 })
 
 test('X3: billableCallsLine has N requests, no dollar amount', () => {
-  assert.equal(fa.billableCallsLine(3), '本次已消耗 3 次请求')
+  assert.equal(fa.billableCallsLine(3), '3 requests used this time')
   assert.doesNotMatch(fa.billableCallsLine(3), /\$|￥|元/)
   const card = fa.presentedFailure({
     error_code: 'provider_error',
@@ -404,7 +404,7 @@ test('X3: billableCallsLine has N requests, no dollar amount', () => {
     error_code: 'provider_error',
     billable_calls_before_failure: 3,
   })
-  assert.equal(other.billing, '本次已消耗 3 次请求')
+  assert.equal(other.billing, '3 requests used this time')
   assert.equal(fa.quotaBillingCopy({ error_code: 'timeout', billable_calls_before_failure: 2 }), null)
 })
 

@@ -89,7 +89,7 @@ export const UpdateProvider: React.FC<{ children: React.ReactNode }> = ({ childr
   const [desktop, setDesktop] = useState(Boolean(previewKind))
   const [version, setVersion] = useState(previewKind ? '1.4.0' : '')
   const [currentVersion, setCurrentVersion] = useState(previewKind ? '1.3.1' : '')
-  const [notes, setNotes] = useState(previewKind === 'downloading' || previewKind === 'ready' ? '后台下载新版本，准备好后提示重启。' : '')
+  const [notes, setNotes] = useState(previewKind === 'downloading' || previewKind === 'ready' ? 'Downloading the new version in the background; you will be prompted to restart when it is ready.' : '')
   const [percent, setPercent] = useState<number | null>(previewKind === 'downloading' ? 42 : previewKind === 'ready' ? 100 : null)
   const [error, setError] = useState(previewKind === 'failed' ? 'offline' : '')
   const [toastVisible, setToastVisible] = useState(previewKind === 'ready' || previewKind === 'failed')

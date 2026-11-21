@@ -27,7 +27,7 @@ def test_ranked_whole_ranges_deduplicate_and_cap():
 
 
 def test_invalid_results_do_not_fabricate_full_length_highlight():
-    with pytest.raises(ValueError,match='没有可用'):
+    with pytest.raises(ValueError,match='No usable subtitle highlights'):
         make_highlights([{},clip(2,1),clip(0,40),clip(1,2,float('nan'))],Preferences(),30)
 
 

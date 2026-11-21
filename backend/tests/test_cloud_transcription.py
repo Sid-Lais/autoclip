@@ -87,7 +87,7 @@ def test_long_audio_merges_offsets_and_failure_does_not_publish_partial(monkeypa
 def test_missing_timestamps_not_treated_as_subtitles(tmp_path):
     audio = tmp_path / 'audio.wav'; audio.write_bytes(b'audio')
     with httpx.Client(transport=httpx.MockTransport(lambda _: httpx.Response(200, json={'text': 'text only'}))) as client:
-        with pytest.raises(asr.CloudTranscriptionError, match='时间戳'):
+        with pytest.raises(asr.CloudTranscriptionError, match='timestamps'):
             asr.request_chunk(client, Connection(id='a', name='a'), 'whisper-1', audio, 'auto')
 
 

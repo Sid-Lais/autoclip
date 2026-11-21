@@ -52,24 +52,24 @@ def get_scheduled_tasks() -> dict:
     """获取所有已配置的定期任务"""
     return {
         'daily_data_cleanup': {
-            'schedule': '每天凌晨2点',
+            'schedule': 'Daily at 2:00 AM',
             'task': 'cleanup_expired_data',
-            'description': '清理过期数据（保留30天）'
+            'description': 'Clean up expired data (keep 30 days)'
         },
         'hourly_consistency_check': {
-            'schedule': '每小时',
+            'schedule': 'Hourly',
             'task': 'check_data_consistency',
-            'description': '检查数据一致性'
+            'description': 'Check data consistency'
         },
         'weekly_orphaned_cleanup': {
-            'schedule': '每周日凌晨3点',
+            'schedule': 'Weekly on Sunday at 3:00 AM',
             'task': 'cleanup_orphaned_data',
-            'description': '清理孤立数据'
+            'description': 'Clean up orphaned data'
         },
         'daily_health_check': {
-            'schedule': '每天凌晨1点',
+            'schedule': 'Daily at 1:00 AM',
             'task': 'health_check',
-            'description': '系统健康检查'
+            'description': 'System health check'
         }
     }
 

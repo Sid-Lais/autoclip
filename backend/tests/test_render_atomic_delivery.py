@@ -26,7 +26,7 @@ def test_successful_encoder_with_invalid_output_cannot_replace_saved_video(tmp_p
     monkeypatch.setattr(render.project_cancellation, 'run', corrupt_encode)
     draft = Draft(id='d', title='fixture', subtitles=False, original_audio=False,
                   aspect='original', scenes=[Scene(id='s', start=0, end=.5)])
-    with pytest.raises(ValueError, match='渲染输出'):
+    with pytest.raises(ValueError, match='Render output is invalid'):
         render.render_draft('p', source, draft, 'job', lambda _: None)
     assert output.read_bytes() == b'previous saved video'
     assert not list(folder.glob('*.part.mp4'))
@@ -60,7 +60,7 @@ only a full decode catches it. Not published, old output kept, temp files cleane
     monkeypatch.setattr(render, '_probe', lambda _p: {'duration': 4.0, 'width': 320, 'height': 240})
     draft = Draft(id='d', title='fixture', subtitles=False, original_audio=False,
                   aspect='original', scenes=[Scene(id='s', start=0, end=.5)])
-    with pytest.raises(ValueError, match='渲染输出'):
+    with pytest.raises(ValueError, match='Render output is invalid'):
         render.render_draft('p', source, draft, 'job', lambda _: None)
     assert decodes, 'full decode check must run before publishing'
     assert output.read_bytes() == b'previous saved video'

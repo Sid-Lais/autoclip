@@ -29,14 +29,14 @@ def fix_project_thumbnail(project_id: str):
         project = db.query(Project).filter(Project.id == project_id).first()
         
         if not project:
-            print(f"❌ 项目 {project_id} 不存在")
+            print(f"❌ Project {project_id} not found")
             return False
         
         if project.thumbnail:
-            print(f"✅ 项目 {project_id} 已有缩略图，跳过")
+            print(f"✅ Project {project_id} already has a thumbnail, skipping")
             return True
         
-        print(f"🔧 修复项目 {project_id} 的缩略图...")
+        print(f"🔧 Fixing thumbnail for project {project_id}...")
         
         # 检查项目类型和来源
         source_url = project.project_metadata.get('source_url') if project.project_metadata else None
@@ -45,26 +45,26 @@ def fix_project_thumbnail(project_id: str):
         
         if is_bilibili_project:
             # 链接导入项目 - 尝试从B站获取缩略图
-            print(f"📺 检测到B站项目，尝试获取原视频缩略图...")
+            print(f"📺 Bilibili project detected, trying to fetch the original video thumbnail...")
             success = fix_bilibili_thumbnail(project, db)
         elif has_video_file:
             # 文件导入项目 - 从视频文件生成缩略图
-            print(f"📁 检测到文件导入项目，从视频文件生成缩略图...")
+            print(f"📁 File-import project detected, generating thumbnail from the video file...")
             success = fix_file_import_thumbnail(project, db)
         else:
             # 没有原始视频文件，尝试从切片生成缩略图
-            print(f"🎬 没有原始视频文件，尝试从切片生成缩略图...")
+            print(f"🎬 No original video file, trying to generate a thumbnail from a clip...")
             success = fix_clip_thumbnail(project, db)
         
         if success:
-            print(f"✅ 项目 {project_id} 缩略图修复成功")
+            print(f"✅ Project {project_id} thumbnail fixed")
         else:
-            print(f"❌ 项目 {project_id} 缩略图修复失败")
+            print(f"❌ Project {project_id} thumbnail fix failed")
         
         return success
         
     except Exception as e:
-        print(f"❌ 修复项目 {project_id} 缩略图时发生错误: {e}")
+        print(f"❌ Error while fixing thumbnail for project {project_id}: {e}")
         return False
     finally:
         db.close()
@@ -83,7 +83,7 @@ def fix_bilibili_thumbnail(project, db):
         # 尝试从B站API获取缩略图
         # 这里需要根据实际的B站API来实现
         # 暂时返回False，表示需要手动处理
-        print("⚠️  B站缩略图获取需要API支持，暂时跳过")
+        print("⚠️  Fetching Bilibili thumbnails requires API support; skipping for now")
         return False
         
     except Exception as e:
@@ -95,7 +95,7 @@ def fix_file_import_thumbnail(project, db):
     try:
         video_path = Path(project.video_path)
         if not video_path.exists():
-            print(f"⚠️  视频文件不存在: {video_path}")
+            print(f"⚠️  Video file does not exist: {video_path}")
             return False
         
         # 生成缩略图
@@ -107,7 +107,7 @@ def fix_file_import_thumbnail(project, db):
             db.commit()
             return True
         else:
-            print("⚠️  缩略图生成失败")
+            print("⚠️  Thumbnail generation failed")
             return False
             
     except Exception as e:
@@ -122,17 +122,17 @@ def fix_clip_thumbnail(project, db):
         clips_dir = project_dir / "output" / "clips"
         
         if not clips_dir.exists():
-            print(f"⚠️  切片目录不存在: {clips_dir}")
+            print(f"⚠️  Clips directory does not exist: {clips_dir}")
             return False
         
         # 获取第一个切片文件
         clip_files = list(clips_dir.glob("*.mp4"))
         if not clip_files:
-            print(f"⚠️  没有找到切片文件")
+            print(f"⚠️  No clip files found")
             return False
         
         first_clip = clip_files[0]
-        print(f"🎬 使用切片文件生成缩略图: {first_clip.name}")
+        print(f"🎬 Generating thumbnail from clip file: {first_clip.name}")
         
         # 生成缩略图
         thumbnail_data = generate_project_thumbnail(project.id, first_clip)
@@ -143,7 +143,7 @@ def fix_clip_thumbnail(project, db):
             db.commit()
             return True
         else:
-            print("⚠️  从切片生成缩略图失败")
+            print("⚠️  Failed to generate thumbnail from clip")
             return False
             
     except Exception as e:
@@ -158,21 +158,21 @@ def fix_all_project_thumbnails():
         projects = db.query(Project).filter(Project.thumbnail.is_(None)).all()
         
         if not projects:
-            print("✅ 所有项目都已有缩略图")
+            print("✅ All projects already have thumbnails")
             return True
         
-        print(f"📋 找到 {len(projects)} 个需要修复缩略图的项目")
+        print(f"📋 Found {len(projects)} projects that need thumbnail fixes")
         
         success_count = 0
         for project in projects:
             if fix_project_thumbnail(project.id):
                 success_count += 1
         
-        print(f"🎉 完成！成功修复 {success_count}/{len(projects)} 个项目的缩略图")
+        print(f"🎉 Done! Fixed thumbnails for {success_count}/{len(projects)} projects")
         return True
         
     except Exception as e:
-        print(f"❌ 修复所有项目缩略图时发生错误: {e}")
+        print(f"❌ Error while fixing all project thumbnails: {e}")
         return False
     finally:
         db.close()
@@ -182,19 +182,19 @@ def main():
     if len(sys.argv) > 1:
         # 修复指定项目
         project_id = sys.argv[1]
-        print(f"🚀 开始修复项目 {project_id} 的缩略图...")
+        print(f"🚀 Starting thumbnail fix for project {project_id}...")
         if fix_project_thumbnail(project_id):
-            print("🎉 缩略图修复完成！")
+            print("🎉 Thumbnail fix complete!")
         else:
-            print("❌ 缩略图修复失败")
+            print("❌ Thumbnail fix failed")
             sys.exit(1)
     else:
         # 修复所有项目
-        print("🚀 开始修复所有项目的缩略图...")
+        print("🚀 Starting thumbnail fix for all projects...")
         if fix_all_project_thumbnails():
-            print("🎉 所有缩略图修复完成！")
+            print("🎉 All thumbnails fixed!")
         else:
-            print("❌ 缩略图修复失败")
+            print("❌ Thumbnail fix failed")
             sys.exit(1)
 
 if __name__ == "__main__":

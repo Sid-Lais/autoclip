@@ -140,7 +140,7 @@ def is_installed() -> bool:
             logger.warning("Whisper 运行时导入失败: %s", type(exc).__name__)  # 状态轮询会反复调用：只记第一次
         # 异常名只进日志，不进设置页文案（RC156 #11）。
         _runtime_import_error = "" if missing_package else (
-            "Whisper 运行时依赖加载失败。请重新安装 Whisper 后重启 AutoClip。"
+            "Failed to load the Whisper runtime dependencies. Reinstall Whisper and restart AutoClip."
         )
         return False
 
@@ -206,38 +206,38 @@ def _stream(cmd: list[str], timeout: float, stall_timeout: float, label: str = "
 
 
 def _failure_message(code: int, failures: list[str]) -> str:
-    message = pip_install.failure_message(code, failures, " Whisper ")
+    message = pip_install.failure_message(code, failures, "Whisper runtime")
     if code == NO_WHEEL_EXIT:
-        message = message.removesuffix("。") + "，或改用带字幕的视频。"
+        message = message.removesuffix(".") + ", or use a video that already has subtitles."
     return message
 
 
 def _do_install(index_url: Optional[str]) -> None:
-    _set_state(status="installing", progress=5, message="正在准备安装…", log_tail="", error_code="")
+    _set_state(status="installing", progress=5, message="Preparing to install…", log_tail="", error_code="")
     try:
         code, failures = pip_install.run_plan(
             index_plan(index_url), pip_command,
             lambda cmd, timeout, stall, label: _stream(cmd, timeout, stall, label=label)[0],
-            on_switch=lambda _old, new, _why: _set_state(message=f"官方源没有装好，改用{pip_install.SOURCE_NAMES.get(new, new)}…"),
+            on_switch=lambda _old, new, _why: _set_state(message=f"Official source failed; switching to {pip_install.SOURCE_NAMES.get(new, new)}…"),
             what="Whisper 运行时",
         )
         if code == 0 and is_installed():
             _clear_install_error()
-            _set_state(status="installed", progress=100, message="安装完成")
+            _set_state(status="installed", progress=100, message="Install complete")
             logger.info("Whisper 运行时安装完成")
             return
         if code == pip_install.CANCEL_EXIT:
             _set_state(status="not_installed", progress=0, message="安装已取消")
             logger.info("Whisper 运行时安装已取消")
             return
-        message = _failure_message(code, failures) if code != 0 else "安装结束，但 Whisper 运行时仍不可用"
+        message = _failure_message(code, failures) if code != 0 else "Install finished, but the Whisper runtime is still unavailable"
         _set_state(error_code=pip_install.error_code(code, failures) if code != 0 else "not_usable")
         _write_install_error(message)
         _set_state(status="error", message=message)
         logger.error("Whisper 运行时安装失败: %s", "; ".join(failures) or message)
     except Exception as e:  # noqa: BLE001
         logger.error(f"安装 Whisper 运行时异常: {e}", exc_info=True)
-        message = f"安装异常: {e}"
+        message = f"Install error: {e}"
         _write_install_error(message)
         _set_state(status="error", message=message)
 
@@ -252,8 +252,8 @@ def _bump_progress(min_v: int, max_v: int, message: str) -> None:
 def start_install(index_url: Optional[str] = None) -> Dict[str, Any]:
     with _state_lock:
         if _state["status"] == "installing":
-            return {"started": False, "message": "正在安装中"}
-        _state.update(status="installing", progress=0, message="正在检查运行时…", log_tail="")
+            return {"started": False, "message": "Installation in progress"}
+        _state.update(status="installing", progress=0, message="Checking the runtime…", log_tail="")
     if is_installed():
         _set_state(status="installed", progress=100, message="已安装")
         return {"started": False, "message": "已安装"}
@@ -265,7 +265,7 @@ def start_install(index_url: Optional[str] = None) -> Dict[str, Any]:
 def uninstall() -> Dict[str, Any]:
     with _state_lock:
         if _state["status"] == "installing":
-            return {"success": False, "message": "正在安装中，无法卸载"}
+            return {"success": False, "message": "Installation in progress; cannot uninstall"}
     install_dir = get_install_dir()
     try:
         shutil.rmtree(install_dir, ignore_errors=True)
@@ -277,7 +277,7 @@ def uninstall() -> Dict[str, Any]:
             sys.path.remove(p)
         _clear_install_error()
         _set_state(status="not_installed", progress=0, message="已卸载")
-        return {"success": True, "message": "已卸载 Whisper 运行时"}
+        return {"success": True, "message": "Whisper runtime uninstalled"}
     except Exception as e:  # noqa: BLE001
         logger.error(f"卸载 Whisper 运行时失败: {e}")
         return {"success": False, "message": str(e)}

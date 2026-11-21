@@ -69,7 +69,7 @@ export default function ModelPicker({ role, model, capability, connection, list,
   const weakTimeline = role === 'analysis' && isKnownWeakLocalTimelineModel(connection?.provider, model, connection?.base_url)
   const stale = !!connection && connectionReady(connection) && !busy && (!!listError || !list || list.source !== 'live')
   // The generic preview warning is already covered by the row hint; account-specific warnings stay visible.
-  const warning = list?.warning && list.warning !== '公开目录预览，填写 API Key 后确认账号可用模型。' ? t(list.warning) : ''
+  const warning = list?.warning && list.warning !== '公开目录预览，填写 API Key 后确认账号可用模型。' && list.warning !== 'Public catalog preview. Enter an API key to confirm which models your account can use.' ? t(list.warning) : ''
   return <div style={{ width: '100%' }}>
     <Select aria-label={t(role === 'cover' ? '生图模型' : role === 'transcription' ? '转写模型' : '模型')} disabled={!connection || !endpointReady} showSearch value={model || undefined} status={invalid ? 'error' : undefined} style={{ width: '100%' }}
       open={open} onDropdownVisibleChange={o => { setOpen(o); if (!o) setSearch('') }} onSearch={setSearch}

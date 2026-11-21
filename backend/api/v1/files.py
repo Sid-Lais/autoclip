@@ -20,12 +20,12 @@ from ...models.collection import Collection
 
 logger = logging.getLogger(__name__)
 
-router = APIRouter(prefix="/files", tags=["文件管理"])
+router = APIRouter(prefix="/files", tags=["File Management"])
 
 @router.post("/upload")
 async def upload_files(
     files: List[UploadFile] = File(...),
-    project_id: str = Query(..., description="项目ID"),
+    project_id: str = Query(..., description="Project ID"),
     db: Session = Depends(get_db)
 ):
     """
@@ -93,12 +93,12 @@ async def upload_files(
             "success": True,
             "project_id": project_id,
             "uploaded_files": uploaded_files,
-            "message": f"成功上传 {len(uploaded_files)} 个文件"
+            "message": f"Successfully uploaded {len(uploaded_files)} files"
         }
         
     except Exception as e:
         logger.error(f"文件上传失败: {e}")
-        raise HTTPException(status_code=500, detail=f"文件上传失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"File upload failed: {str(e)}")
 
 @router.get("/clips/{clip_id}/content")
 async def get_clip_content(
@@ -115,7 +115,7 @@ async def get_clip_content(
         # 获取切片记录
         clip = db.query(Clip).filter(Clip.id == clip_id).first()
         if not clip:
-            raise HTTPException(status_code=404, detail="切片不存在")
+            raise HTTPException(status_code=404, detail="Clip not found")
         
         # 从文件系统获取完整内容
         from ...repositories.clip_repository import ClipRepository
@@ -123,7 +123,7 @@ async def get_clip_content(
         content = clip_repo.get_clip_content(clip_id)
         
         if not content:
-            raise HTTPException(status_code=404, detail="切片内容不存在")
+            raise HTTPException(status_code=404, detail="Clip content not found")
         
         return {
             "clip_id": clip_id,
@@ -140,7 +140,7 @@ async def get_clip_content(
         raise
     except Exception as e:
         logger.error(f"获取切片内容失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取切片内容失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get clip content: {str(e)}")
 
 @router.get("/collections/{collection_id}/content")
 async def get_collection_content(
@@ -157,7 +157,7 @@ async def get_collection_content(
         # 获取合集记录
         collection = db.query(Collection).filter(Collection.id == collection_id).first()
         if not collection:
-            raise HTTPException(status_code=404, detail="合集不存在")
+            raise HTTPException(status_code=404, detail="Collection not found")
         
         # 从文件系统获取完整内容
         from ...repositories.collection_repository import CollectionRepository
@@ -165,7 +165,7 @@ async def get_collection_content(
         content = collection_repo.get_collection_content(collection_id)
         
         if not content:
-            raise HTTPException(status_code=404, detail="合集内容不存在")
+            raise HTTPException(status_code=404, detail="Collection content not found")
         
         return {
             "collection_id": collection_id,
@@ -182,7 +182,7 @@ async def get_collection_content(
         raise
     except Exception as e:
         logger.error(f"获取合集内容失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取合集内容失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get collection content: {str(e)}")
 
 @router.get("/clips/{clip_id}/download")
 async def download_clip_file(
@@ -199,14 +199,14 @@ async def download_clip_file(
         # 获取切片记录
         clip = db.query(Clip).filter(Clip.id == clip_id).first()
         if not clip:
-            raise HTTPException(status_code=404, detail="切片不存在")
+            raise HTTPException(status_code=404, detail="Clip not found")
         
         if not clip.video_path:
-            raise HTTPException(status_code=404, detail="切片文件不存在")
+            raise HTTPException(status_code=404, detail="Clip file not found")
         
         file_path = Path(clip.video_path)
         if not file_path.exists():
-            raise HTTPException(status_code=404, detail="切片文件不存在")
+            raise HTTPException(status_code=404, detail="Clip file not found")
         
         return FileResponse(
             path=str(file_path),
@@ -218,7 +218,7 @@ async def download_clip_file(
         raise
     except Exception as e:
         logger.error(f"下载切片文件失败: {e}")
-        raise HTTPException(status_code=500, detail=f"下载切片文件失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to download clip file: {str(e)}")
 
 @router.get("/projects/{project_id}/clips/{clip_id}")
 async def get_project_clip_video(
@@ -241,18 +241,18 @@ async def get_project_clip_video(
         # 获取切片记录
         clip = db.query(Clip).filter(Clip.id == clip_id).first()
         if not clip:
-            raise HTTPException(status_code=404, detail="切片不存在")
+            raise HTTPException(status_code=404, detail="Clip not found")
         
         # 验证切片是否属于该项目
         if clip.project_id != project_id:
-            raise HTTPException(status_code=403, detail="切片不属于该项目")
+            raise HTTPException(status_code=403, detail="Clip does not belong to this project")
         
         if not clip.video_path:
-            raise HTTPException(status_code=404, detail="切片文件不存在")
+            raise HTTPException(status_code=404, detail="Clip file not found")
         
         file_path = Path(clip.video_path)
         if not file_path.exists():
-            raise HTTPException(status_code=404, detail="切片文件不存在")
+            raise HTTPException(status_code=404, detail="Clip file not found")
         
         # 内联播放。默认 attachment 时，macOS WKWebView 的 <video> 不会播放。
         return FileResponse(
@@ -270,7 +270,7 @@ async def get_project_clip_video(
         raise
     except Exception as e:
         logger.error(f"获取项目切片视频失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取项目切片视频失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get project clip video: {str(e)}")
 
 @router.get("/collections/{collection_id}/download")
 async def download_collection_file(
@@ -287,14 +287,14 @@ async def download_collection_file(
         # 获取合集记录
         collection = db.query(Collection).filter(Collection.id == collection_id).first()
         if not collection:
-            raise HTTPException(status_code=404, detail="合集不存在")
+            raise HTTPException(status_code=404, detail="Collection not found")
         
         if not collection.export_path:
-            raise HTTPException(status_code=404, detail="合集文件不存在")
+            raise HTTPException(status_code=404, detail="Collection file not found")
         
         file_path = Path(collection.export_path)
         if not file_path.exists():
-            raise HTTPException(status_code=404, detail="合集文件不存在")
+            raise HTTPException(status_code=404, detail="Collection file not found")
         
         return FileResponse(
             path=str(file_path),
@@ -306,7 +306,7 @@ async def download_collection_file(
         raise
     except Exception as e:
         logger.error(f"下载合集文件失败: {e}")
-        raise HTTPException(status_code=500, detail=f"下载合集文件失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to download collection file: {str(e)}")
 
 @router.get("/projects/{project_id}/collections/{collection_id}")
 async def get_project_collection_video(
@@ -329,17 +329,17 @@ async def get_project_collection_video(
         # 获取合集记录
         collection = db.query(Collection).filter(Collection.id == collection_id).first()
         if not collection:
-            raise HTTPException(status_code=404, detail="合集不存在")
+            raise HTTPException(status_code=404, detail="Collection not found")
         
         # 验证合集是否属于该项目（如果有project_id字段的话）
         # 注意：这里假设Collection模型有project_id字段，如果没有需要调整
         
         if not collection.export_path:
-            raise HTTPException(status_code=404, detail="合集文件不存在")
+            raise HTTPException(status_code=404, detail="Collection file not found")
         
         file_path = Path(collection.export_path)
         if not file_path.exists():
-            raise HTTPException(status_code=404, detail="合集文件不存在")
+            raise HTTPException(status_code=404, detail="Collection file not found")
         
         # 内联播放。默认 attachment 时，macOS WKWebView 的 <video> 不会播放。
         return FileResponse(
@@ -357,7 +357,7 @@ async def get_project_collection_video(
         raise
     except Exception as e:
         logger.error(f"获取项目合集视频失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取项目合集视频失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get project collection video: {str(e)}")
 
 @router.get("/projects/{project_id}/storage-info")
 async def get_project_storage_info(
@@ -393,12 +393,12 @@ async def get_project_storage_info(
         raise
     except Exception as e:
         logger.error(f"获取项目存储信息失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取项目存储信息失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get project storage info: {str(e)}")
 
 @router.delete("/projects/{project_id}/cleanup")
 async def cleanup_project_files(
     project_id: str,
-    keep_days: int = Query(30, description="保留天数"),
+    keep_days: int = Query(30, description="Days to keep"),
     db: Session = Depends(get_db)
 ):
     """
@@ -421,9 +421,9 @@ async def cleanup_project_files(
             "success": True,
             "project_id": project_id,
             "keep_days": keep_days,
-            "message": f"项目 {project_id} 旧文件清理完成"
+            "message": f"Old file cleanup completed for project {project_id}"
         }
         
     except Exception as e:
         logger.error(f"清理项目文件失败: {e}")
-        raise HTTPException(status_code=500, detail=f"清理项目文件失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to clean up project files: {str(e)}")

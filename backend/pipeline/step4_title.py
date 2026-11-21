@@ -91,12 +91,12 @@ class TitleGenerator:
                         # 日志仅保留标题长度。
                         outline = clip.get('outline', {})
                         if isinstance(outline, dict):
-                            title = outline.get('title', '未知标题')
+                            title = outline.get('title', 'Unknown title')
                         else:
                             title = str(outline)
                         logger.info("  > 生成标题 outline_length=%s title_length=%s", len(title), len(generated_title))
                     else:
-                        clip['generated_title'] = clip.get('outline', f"片段_{clip_id}")  # 使用outline作为fallback
+                        clip['generated_title'] = clip.get('outline', f"Clip_{clip_id}")  # 使用outline作为fallback
                         logger.warning("  > 未能找到或解析标题，使用原始outline")
                 
                 return chunk_clips

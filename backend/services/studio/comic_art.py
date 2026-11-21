@@ -26,7 +26,7 @@ def _face(line, size, width, punch=False):
 
 def artwork(text, w, h, scale=1, y=.12, accent=None, *, punch=False):
     if w < 16 or h < 16 or w*h > 16777216:
-        raise UserFacingError('文字模板支持最大 1600 万像素画布，请使用 1080p 画幅')
+        raise UserFacingError('Text templates support a canvas of up to 16 megapixels; use a 1080p frame')
     canvas = Image.new('RGBA', (w, h))
     if not text.strip():
         return canvas
@@ -41,7 +41,7 @@ def artwork(text, w, h, scale=1, y=.12, accent=None, *, punch=False):
             break
         size -= 3
         if size < max(12, w*.045):
-            raise UserFacingError('开头文字太长，请缩短或减少换行（最多三行）')
+            raise UserFacingError('The opening text is too long; shorten it or reduce line breaks (three lines at most)')
     faces = [_face(line, size, w*(.76 if i<len(lines)-1 else .82)*scale, punch=punch)
              for i, line in enumerate(lines)]
     if punch and len(faces) > 1:

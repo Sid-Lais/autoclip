@@ -152,9 +152,9 @@ def _require(config: UploadPostConfig | None) -> UploadPostConfig:
     cfg = config or load_config()
     if not cfg.configured:
         raise UploadPostError(
-            "没有配置 Upload-Post API Key：设置环境变量 UPLOAD_POST_API_KEY，"
-            "或 `autoclip publish --api-key <key> --user <profile> --save`。"
-            "Key 在 https://app.upload-post.com/api-keys 生成。"
+            "Upload-Post API Key is not configured: set the UPLOAD_POST_API_KEY environment variable, "
+            "or use `autoclip publish --api-key <key> --user <profile> --save`. "
+            "Generate a key at https://app.upload-post.com/api-keys."
         )
     return cfg
 
@@ -176,11 +176,11 @@ def _raise_for_response(resp: requests.Response, what: str) -> dict[str, Any]:
     if resp.status_code >= 400:
         msg = _payload_message(payload)
         if resp.status_code == 401:
-            msg = msg or "API Key 无效或已过期"
-        raise UploadPostError(f"{what}失败（HTTP {resp.status_code}）: {msg or payload}", resp.status_code, payload)
+            msg = msg or "API Key is invalid or expired"
+        raise UploadPostError(f"{what} failed (HTTP {resp.status_code}): {msg or payload}", resp.status_code, payload)
     if isinstance(payload, dict) and payload.get("success") is False:
         raise UploadPostError(
-            f"{what}失败: {_payload_message(payload) or payload}",
+            f"{what} failed: {_payload_message(payload) or payload}",
             resp.status_code,
             payload,
         )
@@ -193,7 +193,7 @@ def verify_api_key(config: UploadPostConfig | None = None, session: requests.Ses
     resp = (session or requests.Session()).get(
         f"{cfg.base_url}/api/uploadposts/me", headers=_headers(cfg), timeout=30,
     )
-    data = _raise_for_response(resp, "校验 API Key")
+    data = _raise_for_response(resp, "API Key validation")
     return {"ok": True, "email": data.get("email"), "plan": data.get("plan")}
 
 
@@ -226,7 +226,7 @@ def list_profiles(config: UploadPostConfig | None = None, session: requests.Sess
     resp = (session or requests.Session()).get(
         f"{cfg.base_url}/api/uploadposts/users", headers=_headers(cfg), timeout=30,
     )
-    data = _raise_for_response(resp, "读取 profile 列表")
+    data = _raise_for_response(resp, "Reading profile list")
     out: list[dict[str, Any]] = []
     for profile in data.get("profiles") or []:
         if not isinstance(profile, dict):
@@ -268,13 +268,13 @@ def normalize_platforms(platforms: Sequence[str]) -> list[str]:
             if name == "twitter":
                 name = "x"
             if name == "reddit":
-                raise ValueError("Reddit 目前不能发视频：Upload-Post 会返回 reddit_unavailable")
+                raise ValueError("Reddit cannot post video yet: Upload-Post returns reddit_unavailable")
             if name not in PLATFORMS:
-                raise ValueError(f"不支持的平台: {name}（可选 {', '.join(PLATFORMS)}）")
+                raise ValueError(f"Unsupported platform: {name} (choose from {', '.join(PLATFORMS)})")
             if name not in seen:
                 seen.append(name)
     if not seen:
-        raise ValueError("至少要指定一个平台")
+        raise ValueError("Specify at least one platform")
     return seen
 
 
@@ -314,21 +314,21 @@ def cancel_record(project_id: str, request_id: str, config: UploadPostConfig | N
                   session: requests.Session | None = None) -> dict[str, Any]:
     path = records_dir(project_id) / f"{request_id}.json"
     if not path.exists():
-        raise UploadPostError("没有这条发布记录", 404)
+        raise UploadPostError("Publish record not found", 404)
     try:
         record = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as e:
-        raise UploadPostError(f"读不到这条发布记录: {e}") from e
+        raise UploadPostError(f"Could not read this publish record: {e}") from e
     if not isinstance(record, dict):
-        raise UploadPostError("发布记录损坏了")
+        raise UploadPostError("The publish record is corrupted")
     if record.get("provider") == "bilibili":
         from backend.services.bilibili_publisher import cancel_record as cancel_bilibili
         return cancel_bilibili(project_id, request_id, session=session)
     if record.get("status") != "scheduled":
-        raise UploadPostError("只有还没发出的排期可以取消")
+        raise UploadPostError("Only schedules that have not been sent yet can be cancelled")
     job_id = str(record.get("job_id") or "").strip()
     if not job_id:
-        raise UploadPostError("这条排期没有远端编号，不能取消")
+        raise UploadPostError("This schedule has no remote ID and cannot be cancelled")
     cancel_scheduled(job_id, config=config, session=session)
     record["status"] = "cancelled"
     record["cancelled_at"] = datetime.now(timezone.utc).isoformat()
@@ -391,8 +391,8 @@ def publish_clip(req: PublishRequest, config: UploadPostConfig | None = None,
     user = (req.user or cfg.user or "").strip()
     if not user:
         raise UploadPostError(
-            "没有指定 Upload-Post profile：传 user=…，或设置 UPLOAD_POST_USER / `autoclip publish --user <profile> --save`。"
-            "profile 在 https://app.upload-post.com/manage-users 创建并连接社交账号。"
+            "No Upload-Post profile specified: pass user=…, or set UPLOAD_POST_USER / `autoclip publish --user <profile> --save`. "
+            "Create a profile and connect social accounts at https://app.upload-post.com/manage-users."
         )
     preset = req.preset or pick_preset(platforms)
     if req.output_variant_id:
@@ -401,7 +401,7 @@ def publish_clip(req: PublishRequest, config: UploadPostConfig | None = None,
         clip = output_variant_meta(req.project_id, req.output_variant_id)
         blocked = incompatible_transport_platforms(clip['strategy_id'], platforms)
         if blocked:
-            raise UploadPostError(f"横版成片不能发布到 {', '.join(blocked)}，请选择竖版版本")
+            raise UploadPostError(f"Landscape videos cannot be published to {', '.join(blocked)}; choose the vertical version")
         export = {'ok': True, 'path': clip['video_path'], 'preset': clip['strategy_id'], 'warnings': clip['warnings']}
     else:
         clip = load_clip_meta(req.project_id, req.clip_id)
@@ -415,19 +415,19 @@ def publish_clip(req: PublishRequest, config: UploadPostConfig | None = None,
         from dataclasses import replace
         from backend.services.studio.publish_kit import caption_text
         req = replace(req, description=caption_text({"description": post.get("description", ""), "tags": post.get("tags", [])}) or None)
-    title = (req.title or post.get("title") or clip.get("generated_title") or clip.get("title") or clip.get("outline") or f"切片 {req.clip_id}").strip()
+    title = (req.title or post.get("title") or clip.get("generated_title") or clip.get("title") or clip.get("outline") or f"Clip {req.clip_id}").strip()
     if not title:
-        title = f"切片 {req.clip_id}"
+        title = f"Clip {req.clip_id}"
     if clip.get("strategy_id"):
         from backend.services.platform_strategy import platform_strategy
         from backend.services.studio.packaging import foreign_for
         if platform_strategy(clip["strategy_id"]).audience_language == "en" and foreign_for("en", title):
             # Never post a Chinese title to an English platform; the publish page asks for one.
-            raise UploadPostError("这个平台的标题需要是英文，请在发布页填写英文标题后再发布")
+            raise UploadPostError("The title for this platform must be in English; enter an English title on the publish page and publish again")
 
     video_path = Path(export["path"])
     if not video_path.exists() or video_path.stat().st_size == 0:
-        raise UploadPostError(f"成片不存在或为空: {video_path}")
+        raise UploadPostError(f"The exported video does not exist or is empty: {video_path}")
 
     request_id = str(uuid.uuid4())
     form = build_form(req, platforms, user, title, request_id)
@@ -444,7 +444,7 @@ def publish_clip(req: PublishRequest, config: UploadPostConfig | None = None,
             files={"video": (video_path.name, handle, "video/mp4")},
             timeout=(30, 900),
         )
-    data = _raise_for_response(resp, "提交发布")
+    data = _raise_for_response(resp, "Publish submission")
     record = {
         "request_id": data.get("request_id") or request_id,
         "job_id": data.get("job_id"),
@@ -479,7 +479,7 @@ def publish_clip(req: PublishRequest, config: UploadPostConfig | None = None,
         **({"studio_job_id": clip["studio_job_id"], "revision": clip["revision"]} if clip.get("source_type") == "studio" else {}),
         "export_warnings": export.get("warnings") or [],
         "status": record["status"],
-        "hint": "用 get_status(request_id) 查看各平台结果。处理中大约每 10 秒查一次。",
+        "hint": "Use get_status(request_id) to see each platform's result. While processing, check about every 10 seconds.",
     }
 
 
@@ -515,7 +515,7 @@ def get_status(request_id: str | None = None, job_id: str | None = None,
                project_id: str | None = None) -> dict[str, Any]:
     """GET /api/uploadposts/status。终态是 completed / failed / not_found。"""
     if not request_id and not job_id:
-        raise ValueError("request_id 或 job_id 必填一个")
+        raise ValueError("Either request_id or job_id is required")
     cfg = _require(config)
     params = {"request_id": request_id} if request_id else {"job_id": job_id}
     resp = (session or requests.Session()).get(
@@ -524,9 +524,9 @@ def get_status(request_id: str | None = None, job_id: str | None = None,
     if resp.status_code == 404:
         return {
             "ok": False, "request_id": request_id, "job_id": job_id, "status": "not_found", "final": True,
-            "results": [], "message": "Upload-Post 没有这个请求（id 写错，或不是这个 API Key 提交的）",
+            "results": [], "message": "Upload-Post has no such request (the id is wrong, or it was not submitted with this API Key)",
         }
-    data = _raise_for_response(resp, "查询发布状态")
+    data = _raise_for_response(resp, "Publish status lookup")
     results = _parse_results(data.get("results"))
     status = data.get("status") or "pending"
     out = {
@@ -634,7 +634,7 @@ def get_publish_job(job_id: str, refresh_remote: bool = True) -> dict[str, Any] 
         alive = job_id in _jobs
     if not alive and job.get("status") in {"queued", "running"}:
         job["status"] = "failed"
-        job["error"] = "发布进程已中断，请再发一次。"
+        job["error"] = "The publish process was interrupted; please publish again."
         _remember_job(job)
         return job
     if refresh_remote and job.get("status") == "submitted" and job.get("request_id"):

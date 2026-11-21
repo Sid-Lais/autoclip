@@ -1533,6 +1533,8 @@ function mount({ readiness, importImpl, dropZone = false, autostart = false, spe
     './pasteStart': { claimBackgroundWhisperInstall: () => false, importUrlKind: text => /^https:/.test(text || '') ? 'youtube' : null, isVideoFile: () => true, shouldArmAutostart: () => false, shouldAutoStart: () => false, shouldBackgroundInstallWhisper: () => false, UNDO_MS: 3000, ...pasteStart },
     './importPreferencesStore': { readImportPreferences: () => null },
     './UrlPreview': { default: 'url-preview', shouldSuggestFirstWindow: () => false },
+    './LongVideoPicker': { default: 'long-video-picker' },
+    './SearchPanel': { default: 'search-panel' },
     './studio.css': {}, './quick-output.css': {},
     '../settings/OutputCaptionsSetting': { OutputCaptionsSwitch: () => null },
   }

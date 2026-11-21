@@ -141,7 +141,7 @@ class DashScopeProvider(LLMProvider):
                 from dashscope import Generation
                 self._ds_generation = Generation
             except ImportError:
-                raise ImportError("请安装dashscope: pip install dashscope")
+                raise ImportError("Please install dashscope: pip install dashscope")
     
     def call(self, prompt: str, input_data: Any = None, **kwargs) -> LLMResponse:
         """调用DashScope API（mode: native|compatible）"""
@@ -455,7 +455,7 @@ def _native_llm_response(resp: Any, model: str) -> LLMResponse:
         logger.warning("API请求成功，但输出为空。")
         return LLMResponse(content="")
     code = getattr(resp, "code", "N/A")
-    message = getattr(resp, "message", "未知API错误")
+    message = getattr(resp, "message", "Unknown API error")
     error = RuntimeError(str(message))
     error.status_code = getattr(resp, "status_code", None)
     error.body = {"code": code, "message": message}
@@ -547,7 +547,7 @@ class OpenAIProvider(LLMProvider):
                     client_kwargs["http_client"] = http_client
             self.client = openai.OpenAI(**client_kwargs)
         except ImportError:
-            raise ImportError("请安装openai: pip install openai")
+            raise ImportError("Please install openai: pip install openai")
     
     def call(self, prompt: str, input_data: Any = None, **kwargs) -> LLMResponse:
         """调用OpenAI API"""
@@ -664,7 +664,7 @@ class GeminiProvider(LLMProvider):
             from google import genai
             self.client = genai.Client(api_key=api_key)
         except ImportError:
-            raise ImportError("请安装google-genai: pip install google-genai")
+            raise ImportError("Please install google-genai: pip install google-genai")
 
     def call(self, prompt: str, input_data: Any = None, **kwargs) -> LLMResponse:
         """调用Gemini API"""
@@ -814,7 +814,7 @@ class LLMProviderFactory:
     def create_provider(cls, provider_type: ProviderType, api_key: str, model_name: str, **kwargs) -> LLMProvider:
         """创建提供商实例"""
         if provider_type not in cls._providers:
-            raise ValueError(f"不支持的提供商类型: {provider_type}")
+            raise ValueError(f"Unsupported provider type: {provider_type}")
         
         provider_class = cls._providers[provider_type]
         return provider_class(api_key, model_name, **kwargs)

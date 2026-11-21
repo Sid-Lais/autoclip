@@ -129,6 +129,8 @@ test('saving the first-run dialog makes the import page ready without a reload',
     '../../ui': { Btn: 'button', Segmented: 'segmented', Dialog: 'dialog', StatusDot: 'status' },
     './PlatformPicker': { default: 'platform-picker' },
     './UrlPreview': { default: 'url-preview', shouldSuggestFirstWindow: () => false },
+    './LongVideoPicker': { default: 'long-video-picker' },
+    './SearchPanel': { default: 'search-panel' },
     './api': {
       studioApi: {
         inspectUrl: async () => ({ title: 't', duration: 60, preview_route: 'platform_subtitle', has_manual_subtitle: true }),

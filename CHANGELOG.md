@@ -14,6 +14,9 @@
 - 刀一：桌面服务崩溃恢复带上现场（exit/signal 枚举、心跳分桶、`.fault`），便于区分真崩与误杀。
 - 刀二：把「意外失败」收成有名错误（`unexpected_type` / `source_unsupported` 等），失败卡与反馈可归因。
 - 刀三：制作前做额度预检（New API，失败开放）；余额不足时锁定「重试」为「核对余额并测试连接」，并写清本次 0/N 次可能计费。
+- Long videos (over 1.5 hours) are no longer downloaded whole. Pasting a link opens an online player with a timeline: mark one or more ranges, preview each in the player, then only those ranges are downloaded (`yt-dlp --download-sections`) and each becomes its own clip (`POST /api/v1/studio/import-ranges`). YouTube gets a full picker (playhead, "use current time", auto-stop preview); Bilibili's embed only accepts a start offset, so times are typed. "Download the whole video instead" is still available.
+- Platform subtitles are trimmed and shifted to each downloaded range; a range with fewer than 3 cues falls back to speech recognition.
+- User-facing backend, frontend and CLI messages were translated to English. Messages that are translation keys in the frontend catalogs (`frontend/src/i18n/locales`) are left as Chinese on the backend so the other locales keep working.
 
 ## [1.5.8] - 2026-11-02
 

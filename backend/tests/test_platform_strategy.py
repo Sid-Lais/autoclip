@@ -62,7 +62,7 @@ def test_legacy_presets_keep_existing_keys_and_render_specs():
 def test_platform_selection_rejects_empty_or_unknown_values():
     import pytest
 
-    with pytest.raises(ValueError, match="至少要选择"):
+    with pytest.raises(ValueError, match="Select at least one"):
         normalize_platform_ids([])
-    with pytest.raises(ValueError, match="未知平台策略"):
+    with pytest.raises(ValueError, match="Unknown platform strategy"):
         normalize_platform_ids(["not-a-platform"])

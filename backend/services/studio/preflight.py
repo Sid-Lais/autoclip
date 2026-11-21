@@ -228,7 +228,7 @@ def preflight(inputs: ResolvedInputs, *, probe: MaterialProbe = NOT_PROBED,
         settings = snapshot_settings()
     if not probe.probed:
         if inputs.video is None:
-            raise FileNotFoundError('视频不存在')
+            raise FileNotFoundError('Video does not exist')
         probe = probe_material(inputs.video)  # a missing file is simply unreadable here
     route, certain = _route(inputs, probe, settings)
     srt = inputs.srt_available

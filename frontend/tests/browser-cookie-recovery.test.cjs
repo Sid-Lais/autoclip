@@ -144,6 +144,8 @@ test('#481 import expands the browser picker and keeps the chosen browser on sub
       './settingsReturn': { SETTINGS_SAVED_EVENT: 'autoclip:model-settings-saved' },
       '../settings/OutputCaptionsSetting': { OutputCaptionsSwitch: () => null },
       './UrlPreview': { default: 'url-preview', shouldSuggestFirstWindow: () => false },
+      './LongVideoPicker': { default: 'long-video-picker' },
+      './SearchPanel': { default: 'search-panel' },
     './studio.css': {}, './quick-output.css': {},
     }
     const sandbox = {
@@ -217,6 +219,8 @@ test('#481 a normal import keeps the browser picker inside the closed preference
       './settingsReturn': { SETTINGS_SAVED_EVENT: 'autoclip:model-settings-saved' },
       '../settings/OutputCaptionsSetting': { OutputCaptionsSwitch: () => null },
       './UrlPreview': { default: 'url-preview', shouldSuggestFirstWindow: () => false },
+      './LongVideoPicker': { default: 'long-video-picker' },
+      './SearchPanel': { default: 'search-panel' },
     './studio.css': {}, './quick-output.css': {},
     }
     const sandbox = { window, document: window.document, navigator: window.navigator, HTMLElement: window.HTMLElement, FormData: window.FormData, URL: window.URL, sessionStorage: window.sessionStorage, Promise, setTimeout, clearTimeout }
@@ -248,6 +252,8 @@ test('#481 import review uses the same browser action for source_blocked', () =>
     './failureAction': loadTs(path.join(studio, 'failureAction.ts')),
     './types': { defaultImportOptions: { goal: 'auto', language: 'source', aspect: null, duration: null, instruction: '' } },
     './UrlPreview': { default: 'url-preview', shouldSuggestFirstWindow: () => false },
+    './LongVideoPicker': { default: 'long-video-picker' },
+    './SearchPanel': { default: 'search-panel' },
     './studio.css': {},
   }
   const exports = loadStudio('ImportReview.tsx', mocks, { URLSearchParams })

@@ -31,7 +31,7 @@ def extract_video_clips(self, project_id: str, clip_data: List[Dict[str, Any]]) 
         return {
             'success': True,
             'project_id': project_id,
-            'message': '视频片段提取完成'
+            'message': 'Video clip extraction complete'
         }
         
     except Exception as e:
@@ -58,7 +58,7 @@ def generate_video_collections(self, project_id: str, collection_data: List[Dict
         return {
             'success': True,
             'project_id': project_id,
-            'message': '视频合集生成完成'
+            'message': 'Video collection generation complete'
         }
         
     except Exception as e:
@@ -86,7 +86,7 @@ def optimize_video_quality(self, project_id: str, video_path: str, quality_setti
         return {
             'success': True,
             'project_id': project_id,
-            'message': '视频质量优化完成'
+            'message': 'Video quality optimization complete'
         }
         
     except Exception as e:

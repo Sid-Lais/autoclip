@@ -21,7 +21,7 @@ class PublishMessage(BaseModel):
     step: int = 1
     total: int = 6
     phase: str = "test"
-    message: str = "调试消息"
+    message: str = "Debug message"
     status: str = "PROGRESS"
     seq: int = 1
     meta: Dict[str, Any] = {}
@@ -65,7 +65,7 @@ async def debug_publish_message(message: PublishMessage):
         
     except Exception as e:
         logger.error(f"调试发布消息失败: {e}")
-        raise HTTPException(status_code=500, detail=f"发布失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Publish failed: {str(e)}")
 
 @router.get("/debug/subscriptions")
 async def debug_get_subscriptions():
@@ -83,7 +83,7 @@ async def debug_get_subscriptions():
             
     except Exception as e:
         logger.error(f"获取订阅状态失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Fetch failed: {str(e)}")
 
 @router.get("/debug/redis-info")
 async def debug_redis_info():
@@ -110,5 +110,5 @@ async def debug_redis_info():
         
     except Exception as e:
         logger.error(f"获取Redis信息失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Fetch failed: {str(e)}")
 

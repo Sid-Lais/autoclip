@@ -274,7 +274,7 @@ def recommend(video: Path, options: ImportOptions):
     local_evidence = None
     if options.goal != 'auto':
         result = Recommendation(content_type='other', goal=options.goal,
-            reason='按你指定的制作方式处理，其他未指定选项使用推荐设置。', confidence=1,
+            reason='Processed the way you specified; other unspecified options use recommended settings.', confidence=1,
             aspect='portrait' if options.goal == 'promo' else 'original')
     elif overlong:
         mode = 'local'
@@ -285,11 +285,11 @@ def recommend(video: Path, options: ImportOptions):
         local_evidence, result = _local_recommendation(video, duration)
     elif not configured:
         if options.auto_start and consent.analysis_mode == 'visual':
-            raise UserFacingError('视觉模型尚未配置，请在设置中配置后重试；原素材已保留')
+            raise UserFacingError('The vision model is not configured. Configure it in Settings and try again; the original source is kept')
         mode = 'fallback'
         _require_local_transcription(video, consent.analysis_mode)
         result = Recommendation(content_type='other', goal='content',
-            reason='尚未配置视觉模型，无法自动判断；请手动选择制作类型，或在设置中配置后重新识别。', confidence=0, suggested_goals=[])
+            reason='The vision model is not configured, so this cannot be judged automatically; choose a production type manually, or configure it in Settings and re-analyze.', confidence=0, suggested_goals=[])
     else:
         mode = 'ai'
         # Auto mode still bills for screening. If Whisper/ASR is not ready and there is no
@@ -328,7 +328,7 @@ def recommend(video: Path, options: ImportOptions):
                     _PydVE = ()
                 if _PydVE and isinstance(ve, _PydVE):
                     from backend.core.failure_attribution import ModelResponseInvalid
-                    raise ModelResponseInvalid('推荐结果结构不合规，请重试') from None
+                    raise ModelResponseInvalid('The recommendation result has an invalid structure; please retry') from None
                 raise
         except (RuntimeError, ValueError, KeyError, TypeError, OSError, subprocess.SubprocessError) as error:
             # Only an explicit visual choice fails the run; the default automatic
@@ -356,26 +356,26 @@ def recommend(video: Path, options: ImportOptions):
                 screening_degrade = True
             if options.auto_start or screening_degrade or invalid_degrade or frame_degrade:
                 local_evidence, result = _local_recommendation(
-                    video, duration, '快速画面判断未完成，已改按字幕制作。')
+                    video, duration, 'Quick visual judgment did not complete; falling back to subtitle-based production. ')
             else:
                 result = Recommendation(content_type='other', goal='highlight', confidence=0, suggested_goals=[],
-                    reason='快速判断暂未完成，请按素材内容选择制作类型；尚未启动正式理解与剪辑。')
+                    reason='Quick judgment did not complete yet; choose a production type based on the source content. Full understanding and editing have not started.')
     if degrade_reason:  # failed vision connection before screening
         mode = 'fallback'
-        result.reason = (VISION_FALLBACK_MESSAGE + result.reason)[:500]
+        result.reason = (VISION_FALLBACK_MESSAGE + ' ' + result.reason)[:500]
     elif screening_degrade:  # vision request failed during auto screening
         degrade_reason = VISION_FALLBACK_CODE
-        result.reason = (result.reason + VISION_FALLBACK_MESSAGE)[:500]
+        result.reason = (result.reason + ' ' + VISION_FALLBACK_MESSAGE)[:500]
     elif invalid_degrade:  # auto mode screening returned an unparseable answer (E1; visual mode raises)
         degrade_reason = VISION_INVALID_FALLBACK_CODE
-        result.reason = (VISION_INVALID_FALLBACK_MESSAGE + result.reason)[:500]
+        result.reason = (VISION_INVALID_FALLBACK_MESSAGE + ' ' + result.reason)[:500]
     elif frame_degrade:
         degrade_reason = FRAME_EXTRACT_FALLBACK_CODE
-        result.reason = (FRAME_EXTRACT_FALLBACK_MESSAGE + result.reason)[:500]
+        result.reason = (FRAME_EXTRACT_FALLBACK_MESSAGE + ' ' + result.reason)[:500]
     if overlong:
         degrade_reason = SOURCE_TOO_LONG_CODE
         if VISUAL_SOURCE_TOO_LONG_MESSAGE not in result.reason:
-            result.reason = (VISUAL_SOURCE_TOO_LONG_MESSAGE + result.reason)[:500]
+            result.reason = (VISUAL_SOURCE_TOO_LONG_MESSAGE + ' ' + result.reason)[:500]
     explicit_visual = (consent.analysis_mode == 'visual' and not invalid_degrade and configured and mode in ('ai', 'local')
                        and options.goal == 'auto' and duration <= VISUAL_MAX_SOURCE_SEC)
     if explicit_visual and result.goal == 'content':

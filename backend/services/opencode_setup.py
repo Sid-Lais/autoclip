@@ -162,7 +162,7 @@ def parse_config_text(text: str) -> Tuple[Dict[str, Any], bool]:
         data = json.loads(_strip_trailing_commas(_strip_comments(text)))
         lenient = True
     if not isinstance(data, dict):
-        raise json.JSONDecodeError("opencode 配置顶层必须是 JSON 对象", text, 0)
+        raise json.JSONDecodeError("The top level of the opencode config must be a JSON object", text, 0)
     return data, lenient
 
 
@@ -208,15 +208,15 @@ def install_opencode(
                     jsonc_data, _ = parse_config_text(jsonc_path.read_text(encoding="utf-8-sig"))
                 except Exception as e:  # noqa: BLE001
                     report.update(
-                        error=f"同目录的 opencode.jsonc 无法解析：{e}",
-                        hint="opencode.jsonc 覆盖 opencode.json；请先处理它，或手动合并下面的片段",
+                        error=f"The opencode.jsonc in the same directory cannot be parsed: {e}",
+                        hint="opencode.jsonc overrides opencode.json; fix it first, or merge the snippet below by hand",
                     )
                     return report
                 if isinstance(jsonc_data.get("mcp"), dict):
                     report.update(
-                        error="opencode.json 与 opencode.jsonc 同时存在，且 jsonc 里已有 mcp 段（它覆盖 json），"
-                              "继续写入会出现“成功但实际不生效”",
-                        hint=f"请只保留一份配置，或手动把下面的片段合并进 {jsonc_path.name}",
+                        error="Both opencode.json and opencode.jsonc exist, and the jsonc already has an mcp section (it overrides the json); "
+                              "writing would appear to succeed but not take effect",
+                        hint=f"Keep only one config file, or merge the snippet below into {jsonc_path.name} by hand",
                     )
                     return report
     report["path"] = str(write_target)
@@ -228,20 +228,20 @@ def install_opencode(
         try:
             data, lenient = parse_config_text(write_target.read_text(encoding="utf-8-sig"))
         except Exception as e:  # noqa: BLE001
-            report.update(error=f"现有配置无法解析：{e}", hint="为免误删，请手动把下面的片段合并进配置")
+            report.update(error=f"The existing config cannot be parsed: {e}", hint="To avoid deleting anything, merge the snippet below into the config by hand")
             return report
         if lenient and not force:
             report.update(
-                error="现有配置带注释 / 尾随逗号（JSONC），重写会丢注释，没有动它",
-                hint=f"确认可接受时重跑并加 --force（会先备份为 {write_target.name}.bak）",
+                error="The existing config has comments / trailing commas (JSONC); rewriting would lose the comments, so it was left untouched",
+                hint=f"If that is acceptable, rerun with --force (it first backs up to {write_target.name}.bak)",
             )
             return report
     if write_target is not target:
-        report["warnings"].append("未找到 opencode.json，本次写入 opencode.jsonc（它优先级更高）")
+        report["warnings"].append("opencode.json not found; wrote opencode.jsonc instead (it has higher priority)")
 
     mcp = data.get("mcp")
     if mcp is not None and not isinstance(mcp, dict):
-        report.update(action="error", error="配置里的 mcp 字段不是对象，未改动", hint="请手动清理 mcp 字段后重试")
+        report.update(action="error", error="The mcp field in the config is not an object; nothing was changed", hint="Clean up the mcp field by hand and retry")
         return report
     mcp = dict(mcp or {})
 
@@ -285,11 +285,11 @@ def install_opencode(
     write_target.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
 
     if lenient:
-        report["warnings"].append(f"原配置的注释 / 尾随逗号未保留，已重写为纯 JSON（备份：{backup}）")
+        report["warnings"].append(f"Comments / trailing commas in the original config were not preserved; rewritten as plain JSON (backup: {backup})")
     if isinstance(existing_entry, dict) and existing_entry.get("enabled") is False:
-        report["warnings"].append("原有条目 enabled=false，opencode 不会加载它；本次未改动该字段")
+        report["warnings"].append("The existing entry has enabled=false, so opencode will not load it; that field was left unchanged")
     if server.get("kind") == "module":
-        report["warnings"].append("PATH 里没有 autoclip 命令，已回退到 python -m backend.mcp_server（依赖 cwd / PYTHONPATH）")
+        report["warnings"].append("No autoclip command on PATH; fell back to python -m backend.mcp_server (depends on cwd / PYTHONPATH)")
 
     report.update(ok=True, action="updated" if exists else "created", backup=str(backup) if backup else None)
     return report

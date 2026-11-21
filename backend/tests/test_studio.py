@@ -69,7 +69,7 @@ def test_visual_empty_evidence_is_not_fabricated(root,monkeypatch):
     monkeypatch.setattr(intelligence,'_probe',lambda _: {'duration':30})
     monkeypatch.setattr(intelligence,'sample',lambda *args: [])
     monkeypatch.setattr(intelligence,'vision_call',lambda _, **_kwargs: {'events':[]})
-    with pytest.raises(ValueError,match='没有找到'): intelligence.analyze(Path('unused'),Preferences(goal='promo'))
+    with pytest.raises(ValueError,match='No usable'): intelligence.analyze(Path('unused'),Preferences(goal='promo'))
 
 def test_settings_mask_key_preserve_and_clear(root,monkeypatch):
     monkeypatch.setenv('SEEDANCE_API_KEY','test-env-key')
@@ -126,7 +126,7 @@ def test_translation_is_applied_and_warning_for_missing_srt(root,source,monkeypa
     if not render.resolve_cjk_font(): pytest.skip('No title font')
     d=draft(language='en',hook='新开头');d.subtitles=True
     result=render.render_draft('p1',source,d,'translated',lambda _:None)
-    assert result['warnings']==['原素材没有可用字幕，本次未烧录字幕']
+    assert result['warnings']==['The source has no usable subtitles; no subtitles were burned in']
     assert (root/'output'/'studio'/'translated.mp4').stat().st_size>0
 
 @pytest.fixture
@@ -289,7 +289,7 @@ def test_candidates_are_project_scoped_and_invalid_ranges_are_excluded(client):
     data=response.json()
     assert abs(data['duration']-3)<.1
     assert [c['id'] for c in data['candidates']]==['visual-event-1','legacy-c1','legacy-c2']
-    assert data['warnings']==['2 个片段时间无效，已从候选中排除']
+    assert data['warnings']==['2 clip(s) with invalid timing were excluded from candidates']
     assert 'Other footage' not in response.text
     assert client.get('/studio/missing/candidates').status_code==404
 
@@ -321,7 +321,7 @@ def test_empty_upload_is_actionable_and_does_not_create_project(client,monkeypat
     from backend.models import Project
     monkeypatch.setattr(intelligence,'ready',lambda:True)
     response=client.post('/studio/import',data={'goal':'highlight'},files={'video':('empty.mp4',b'','video/mp4')})
-    assert response.status_code==422 and '为空' in response.json()['detail']
+    assert response.status_code==422 and 'is empty' in response.json()['detail']
     with SessionLocal() as db: assert db.query(Project).count()==1
 
 def test_export_requires_the_revision_shown_in_editor(client,monkeypatch):
@@ -356,7 +356,7 @@ def test_title_wrapping_bounds_and_literal_text():
         lines,size=title_layout(text,'impact',1080,1920)
         assert 1<=len(lines)<=3
         assert all(text_width(line)*size <= 1080*.80+.1 for line in lines)
-    with pytest.raises(ValueError,match='太长'): title_layout('非常长的文字'*100,'card',1080,1920)
+    with pytest.raises(ValueError,match='too long'): title_layout('非常长的文字'*100,'card',1080,1920)
 
 
 @pytest.mark.parametrize('style,x,expected', [('impact',.5,'blue'),('card',0,'red')])
@@ -418,9 +418,9 @@ def test_artwork_cjk_manual_breaks_and_limits():
         assert title_art.artwork(text,'neon',1080,1920).getbbox()
     font=title_art.font_for('CAN YOU',120)
     assert title_art.lines_for('CAN YOU\nESCAPE?',font,800)==['CAN YOU','ESCAPE?']
-    with pytest.raises(ValueError,match='太长'):
+    with pytest.raises(ValueError,match='too long'):
         title_art.artwork('a\nb\nc\nd','comic',1080,1920)
-    with pytest.raises(ValueError,match='像素'):
+    with pytest.raises(ValueError,match='million pixels'):
         title_art.artwork('Hi','comic',20000,20000)
 
 
@@ -507,7 +507,7 @@ def test_v2_title_languages_and_safety_bounds(style):
             x0,y0,x1,y1=art.getbbox()
             assert x0>=w*.04 and x1<=w*.98
             assert y0>=h*.035 and y1<h*.4
-    with pytest.raises(ValueError,match='太长'):
+    with pytest.raises(ValueError,match='too long'):
         title_art.artwork('a\nb\nc\nd',style,1080,1920,version=2)
 
 
@@ -624,7 +624,7 @@ def test_comic_v4_bounds_and_version_isolation(version):
                 assert box[1]>=h*.035 and box[3]<=h*.91
     for style in ['neon','arena','editorial','pixel','frosted','plain']:
         with pytest.raises(ValidationError):draft(title_style=style,title_template_version=version)
-    with pytest.raises(ValueError,match='太长'):
+    with pytest.raises(ValueError,match='too long'):
         artwork('a\nb\nc\nd','comic',1080,1920,version=version)
 
 
@@ -642,7 +642,7 @@ def test_v6_multilingual_layout_and_saved_preview(client,style):
     assert saved.status_code==200 and saved.json()['title_template_version']==6
     assert client.post('/studio/p1/title-preview',json=saved.json()).status_code==200
     assert client.get('/studio/title-presets/'+style+'/thumbnail?v=6').status_code==200
-    with pytest.raises(ValueError,match='太长'):
+    with pytest.raises(ValueError,match='too long'):
         artwork('a\nb\nc\nd',style,1080,1920,version=6)
 
 
@@ -718,7 +718,7 @@ def test_thumbnail_failure_does_not_cache_empty_frame(monkeypatch):
     from backend.services.studio import thumbnails
     thumbnails._frame.cache_clear()
     monkeypatch.setattr(thumbnails.subprocess, 'run', lambda *a, **k: subprocess.CompletedProcess([], 0, b'', b''))
-    with pytest.raises(ValueError, match='缩略图'):
+    with pytest.raises(ValueError, match='thumbnail'):
         thumbnails._frame('/unused', 1, 1, 0)
     assert thumbnails._frame.cache_info().currsize == 0
 

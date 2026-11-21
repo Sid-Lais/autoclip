@@ -205,7 +205,7 @@ def write_privacy(*, crash_reports: Optional[bool] = None, analytics: Optional[b
     existing file keeps collection OFF unless this call sets analytics explicitly."""
     path = _privacy_path()
     if path is None:
-        raise RuntimeError("未设置 AUTOCLIP_APP_DIR / AUTOCLIP_DATA_DIR，写不了隐私开关")
+        raise RuntimeError("AUTOCLIP_APP_DIR / AUTOCLIP_DATA_DIR is not set; cannot write the privacy setting")
     with _privacy_lock:
         current: dict[str, Any] = {}
         if path.exists():

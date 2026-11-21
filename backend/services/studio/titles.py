@@ -41,7 +41,7 @@ def title_layout(text, style, w, h):
         if len(lines) <= 3: break
         size -= 2
         if size < minimum:
-            raise UserFacingError('开头文字太长，请缩短后再导出（标题最多三行）')
+            raise UserFacingError('The opening text is too long; shorten it before exporting (title: three lines at most)')
     return lines, size
 
 

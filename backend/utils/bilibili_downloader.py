@@ -98,7 +98,7 @@ class BilibiliDownloader:
             视频信息对象
         """
         if not self.validate_bilibili_url(url):
-            raise ValidationError(f"无效的B站视频链接: {url}")
+            raise ValidationError(f"Invalid Bilibili video link: {url}")
         
         ydl_opts = {
             'quiet': True,
@@ -118,7 +118,7 @@ class BilibiliDownloader:
             )
             return BilibiliVideoInfo(info_dict)
         except Exception as e:
-            raise ProcessingError(f"获取视频信息失败: {str(e)}")
+            raise ProcessingError(f"Failed to get video info: {str(e)}")
     
     def _extract_info_sync(self, url: str, ydl_opts: Dict[str, Any]) -> Dict[str, Any]:
         """同步方式提取视频信息"""
@@ -141,7 +141,7 @@ class BilibiliDownloader:
             包含video_path和subtitle_path的字典
         """
         if not self.validate_bilibili_url(url):
-            raise ValidationError(f"无效的B站视频链接: {url}")
+            raise ValidationError(f"Invalid Bilibili video link: {url}")
         
         # 获取视频信息
         video_info = await self.get_video_info(url)
@@ -174,7 +174,7 @@ class BilibiliDownloader:
         
         try:
             if progress_callback:
-                progress_callback("开始下载视频和字幕...", 0)
+                progress_callback("Starting video and subtitle download...", 0)
             
             loop = asyncio.get_event_loop()
             await loop.run_in_executor(
@@ -194,7 +194,7 @@ class BilibiliDownloader:
                 subtitle_path = await self._try_alternative_subtitle_strategies(url, safe_title)
             
             if progress_callback:
-                progress_callback("下载完成", 100)
+                progress_callback("Download complete", 100)
             
             result = {
                 'video_path': str(video_path) if video_path else '',
@@ -206,7 +206,7 @@ class BilibiliDownloader:
             return result
             
         except Exception as e:
-            error_msg = f"下载失败: {str(e)}"
+            error_msg = f"Download failed: {str(e)}"
             if progress_callback:
                 progress_callback(error_msg, 0)
             raise ProcessingError(error_msg)
@@ -357,10 +357,10 @@ class BilibiliDownloader:
                 
                 speed = d.get('_speed_str', '')
                 eta = d.get('_eta_str', '')
-                status = f"下载中... {speed} ETA: {eta}"
+                status = f"Downloading... {speed} ETA: {eta}"
                 progress_callback(status, progress)
             elif d['status'] == 'finished':
-                progress_callback("下载完成，正在处理...", 95)
+                progress_callback("Download complete, processing...", 95)
         
         return progress_hook
     

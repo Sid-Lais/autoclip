@@ -61,7 +61,7 @@ def create_app(mode: str = "web") -> FastAPI:
     # 创建 FastAPI 应用
     app = FastAPI(
         title="AutoClip API",
-        description="AI视频切片处理API",
+        description="AI video clipping API",
         version=__version__,
         docs_url="/docs",
         redoc_url="/redoc"
@@ -162,49 +162,49 @@ def create_app(mode: str = "web") -> FastAPI:
                 {
                     "value": "default",
                     "name": "默认",
-                    "description": "通用视频内容处理",
+                    "description": "General video content processing",
                     "icon": "🎬",
                     "color": "#4facfe"
                 },
                 {
                     "value": "knowledge",
                     "name": "知识科普",
-                    "description": "科学、技术、历史、文化等知识类内容",
+                    "description": "Science, technology, history, culture and other educational content",
                     "icon": "📚",
                     "color": "#52c41a"
                 },
                 {
                     "value": "entertainment",
                     "name": "娱乐",
-                    "description": "游戏、音乐、电影等娱乐内容",
+                    "description": "Games, music, movies and other entertainment content",
                     "icon": "🎮",
                     "color": "#722ed1"
                 },
                 {
                     "value": "business",
                     "name": "商业",
-                    "description": "商业、创业、投资等商业内容",
+                    "description": "Business, entrepreneurship, investing and other business content",
                     "icon": "💼",
                     "color": "#fa8c16"
                 },
                 {
                     "value": "experience",
                     "name": "经验分享",
-                    "description": "个人经历、生活感悟等经验内容",
+                    "description": "Personal experiences, life insights and similar content",
                     "icon": "🌟",
                     "color": "#eb2f96"
                 },
                 {
                     "value": "opinion",
                     "name": "观点评论",
-                    "description": "时事评论、观点分析等评论内容",
+                    "description": "Current-affairs commentary, opinion analysis and similar content",
                     "icon": "💭",
                     "color": "#13c2c2"
                 },
                 {
                     "value": "speech",
                     "name": "演讲",
-                    "description": "公开演讲、讲座等演讲内容",
+                    "description": "Public speeches, lectures and similar content",
                     "icon": "🎤",
                     "color": "#f5222d"
                 }

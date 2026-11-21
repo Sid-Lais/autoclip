@@ -32,7 +32,7 @@ test('failed render exposes the server error and stops polling', async () => {
 
 test('timeout bounds observation without claiming server cancellation', async () => {
   let calls = 0
-  await assert.rejects(pollExportJob(async () => { calls++; return { status: 'running' } }, options()), /后台任务可能仍在运行/)
+  await assert.rejects(pollExportJob(async () => { calls++; return { status: 'running' } }, options()), /background task may still be running/)
   assert.equal(calls, 3)
 })
 

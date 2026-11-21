@@ -95,28 +95,28 @@ class SpeechRecognitionConfig:
             try:
                 self.method = SpeechRecognitionMethod(self.method)
             except ValueError:
-                raise ValueError(f"不支持的语音识别方法: {self.method}")
+                raise ValueError(f"Unsupported speech recognition method: {self.method}")
         
         # 验证语言
         if not isinstance(self.language, LanguageCode):
             try:
                 self.language = LanguageCode(self.language)
             except ValueError:
-                raise ValueError(f"不支持的语言代码: {self.language}")
+                raise ValueError(f"Unsupported language code: {self.language}")
         
         # 验证模型
         valid_models = ["tiny", "base", "small", "medium", "large", "large-v3"]
         if self.model not in valid_models:
-            raise ValueError(f"不支持的Whisper模型: {self.model}")
+            raise ValueError(f"Unsupported Whisper model: {self.model}")
         
         # 验证超时时间
         if self.timeout < 0:
-            raise ValueError("超时时间不能为负数")
+            raise ValueError("Timeout cannot be negative")
         
         # 验证输出格式
         valid_formats = ["srt", "vtt", "txt", "json"]
         if self.output_format not in valid_formats:
-            raise ValueError(f"不支持的输出格式: {self.output_format}")
+            raise ValueError(f"Unsupported output format: {self.output_format}")
 
 
 class SpeechRecognitionError(Exception):
@@ -182,36 +182,36 @@ def describe_whisper_failure(exc: BaseException) -> str:
     low = f"{type(exc).__name__} {exc}".lower()
     if isinstance(exc, ImportError) or "dll load failed" in low or "winerror 126" in low:
         return (
-            "Whisper 运行时依赖加载失败。请到「设置 → 默认模型 → 语音转字幕」卸载后重新安装 Whisper，"
-            "然后重启 AutoClip；Windows 用户还需检查 Microsoft Visual C++ 运行库。"
+            "Whisper runtime dependencies failed to load. Go to Settings → Default models → Speech to subtitles, uninstall and reinstall Whisper, "
+            "then restart AutoClip. On Windows, also check the Microsoft Visual C++ runtime."
         )
     if isinstance(exc, MemoryError) or any(token in low for token in ("out of memory", "bad_alloc", "cannot allocate memory")):
-        return "Whisper 转写时内存不足。请到「设置 → 默认模型 → 语音转字幕」改用 tiny 或 base 模型，关闭其他占用内存的程序后重试。"
+        return "Whisper ran out of memory while transcribing. Go to Settings → Default models → Speech to subtitles, switch to the tiny or base model, close other memory-heavy programs, and try again."
     if isinstance(exc, PermissionError):
-        return "Whisper 无法读写视频、模型或字幕文件。请检查文件访问权限，并确认文件没有被其他程序占用。"
+        return "Whisper cannot read or write the video, model, or subtitle file. Check file access permissions and make sure no other program is using the file."
     if any(token in low for token in ("connectionerror", "connecterror", "timeout", "certificate_verify_failed")):
-        return "Whisper 模型下载连接失败。请检查网络，并到「设置 → 默认模型 → 语音转字幕」完成所选模型下载后重试。"
+        return "Whisper model download connection failed. Check your network, then finish downloading the selected model in Settings → Default models → Speech to subtitles and try again."
     if any(token in low for token in ("model.bin", "tokenizer.json", "config.json", "localentrynotfounderror")):
-        return "Whisper 模型文件缺失或不完整。请到「设置 → 默认模型 → 语音转字幕」删除所选模型并重新下载后重试。"
+        return "The Whisper model file is missing or incomplete. Go to Settings → Default models → Speech to subtitles, delete the selected model, download it again, and retry."
     if any(token in low for token in ("invaliddataerror", "invalid data found", "does not have any audio", "no audio stream")):
-        return "Whisper 无法解码视频音轨。请确认视频包含可播放的音频，或重新导入视频并附带 SRT 字幕。"
+        return "Whisper cannot decode the video's audio track. Make sure the video has playable audio, or re-import the video with an SRT subtitle file."
     if type(exc).__name__ in {"Fail", "InvalidArgument", "NoSuchFile"} or "onnxruntime" in low:
         return (
-            "本地语音活动检测没有跑起来，字幕转写已中断。"
-            "请确认视频里有人声；若刚安装过 Whisper，到「设置 → 默认模型 → 语音转字幕」重新安装后再试。"
+            "Local voice activity detection failed to start, so subtitle transcription was interrupted. "
+            "Make sure the video contains speech; if you just installed Whisper, reinstall it in Settings → Default models → Speech to subtitles and try again."
         )
     if any(token in low for token in ("cuda", "cublas", "cudnn")):
         return (
-            "本地 Whisper 在显卡上转写失败。"
-            "请重试；若仍失败，去掉 AUTOCLIP_WHISPER_DEVICE 让它走 CPU 后再试。"
+            "Local Whisper failed to transcribe on the GPU. "
+            "Try again; if it still fails, remove AUTOCLIP_WHISPER_DEVICE so it runs on the CPU, then retry."
         )
     if "n_fft" in low or "no speech" in low or ("audio" in low and "empty" in low):
         return "没有从这段视频里识别到可用语音。请确认视频包含清晰人声，或直接导入 SRT 字幕。"
     # 不把内部异常名（IndexError 之类）放进界面文案；类型和原文只进日志（RC156 #11）。
     return (
-        "本地 Whisper 生成字幕失败。"
-        "请到「设置 → 默认模型 → 语音转字幕」确认模型已下载，并检查视频有可播放的音轨；"
-        "若仍失败，请通过反馈附上本次错误和脱敏日志。"
+        "Local Whisper failed to generate subtitles. "
+        "Go to Settings → Default models → Speech to subtitles, confirm the model is downloaded and the video has a playable audio track; "
+        "if it still fails, send feedback with this error and the redacted logs."
     )
 
 
@@ -513,7 +513,7 @@ class SpeechRecognizer:
             result = subprocess.run([ffmpeg_bin, '-version'], 
                                   capture_output=True, text=True, timeout=10)
             if result.returncode != 0:
-                raise SpeechRecognitionError("ffmpeg不可用，请安装ffmpeg")
+                raise SpeechRecognitionError("ffmpeg is unavailable. Please install ffmpeg")
             
             # 生成音频文件路径
             audio_filename = f"{video_path.stem}_audio.wav"
@@ -541,18 +541,18 @@ class SpeechRecognizer:
             result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
             
             if result.returncode != 0:
-                raise SpeechRecognitionError(f"音频提取失败: {result.stderr}")
+                raise SpeechRecognitionError(f"Audio extraction failed: {result.stderr}")
             
             if not audio_path.exists():
-                raise SpeechRecognitionError("音频提取失败，输出文件不存在")
+                raise SpeechRecognitionError("Audio extraction failed: output file does not exist")
             
             logger.info(f"音频提取成功: {audio_path}")
             return audio_path
             
         except subprocess.TimeoutExpired:
-            raise SpeechRecognitionError("音频提取超时")
+            raise SpeechRecognitionError("Audio extraction timed out")
         except Exception as e:
-            raise SpeechRecognitionError(f"音频提取失败: {e}")
+            raise SpeechRecognitionError(f"Audio extraction failed: {e}")
     
     def generate_subtitle(self, video_path: Path, output_path: Optional[Path] = None, 
                          config: Optional[SpeechRecognitionConfig] = None) -> Path:
@@ -571,7 +571,7 @@ class SpeechRecognizer:
             SpeechRecognitionError: 语音识别失败
         """
         if not video_path.exists():
-            raise SpeechRecognitionError(f"视频文件不存在: {video_path}")
+            raise SpeechRecognitionError(f"Video file not found: {video_path}")
         
         # 使用传入的配置或默认配置
         config = config or self.config
@@ -595,7 +595,7 @@ class SpeechRecognizer:
             elif config.method == SpeechRecognitionMethod.CUSTOM_API:
                 return self._generate_subtitle_custom_api(video_path, output_path, config)
             else:
-                raise SpeechRecognitionError(f"不支持的语音识别方法: {config.method}")
+                raise SpeechRecognitionError(f"Unsupported speech recognition method: {config.method}")
         except SpeechRecognitionError as e:
             # 如果启用了回退机制且当前方法不是回退方法，则尝试回退
             if (config.enable_fallback and 
@@ -668,9 +668,9 @@ class SpeechRecognizer:
             )
 
         if not video_path.exists():
-            raise SpeechRecognitionError(f"视频文件不存在: {video_path}")
+            raise SpeechRecognitionError(f"Video file not found: {video_path}")
         if video_path.stat().st_size == 0:
-            raise SpeechRecognitionError(f"视频文件为空: {video_path}")
+            raise SpeechRecognitionError(f"Video file is empty: {video_path}")
         if output_path.exists() and srt_has_cue_text(output_path):
             logger.info(f"字幕文件已存在，跳过Whisper处理: {output_path}")
             return output_path
@@ -705,8 +705,8 @@ class SpeechRecognizer:
                     # 每个下载源的失败原因只进日志；界面文案不带异常名和原文（RC156 #11）。
                     logger.warning("Whisper 模型 %s 下载失败: %s: %s", config.model, type(exc).__name__, exc)
                     raise SpeechRecognitionError(
-                        f"Whisper 模型 {config.model} 下载失败。"
-                        "请检查网络后到「设置 → 默认模型 → 语音转字幕」重新下载模型，或重新导入时带上 .srt 字幕。"
+                        f"Whisper model {config.model} failed to download. "
+                        "Check your network and re-download the model in Settings → Default models → Speech to subtitles, or re-import with an .srt subtitle file."
                     ) from exc
             logger.info(
                 "使用 faster-whisper 生成字幕: model=%s lang=%s device=%s compute=%s",
@@ -762,7 +762,7 @@ class SpeechRecognizer:
                                 _fail_whisper_clock(clock)
                             if decoded.returncode or not decoded.stdout:
                                 raise SpeechRecognitionError(
-                                    "Whisper 无法解码视频音轨。请确认视频有可播放的人声，或导入 SRT 字幕。"
+                                    "Whisper cannot decode the video's audio track. Make sure the video has playable speech, or import an SRT subtitle file."
                                 ) from exc
                             audio_input = np.frombuffer(decoded.stdout, np.int16).astype(np.float32) / 32768.0
                             clock.check()
@@ -854,7 +854,7 @@ class SpeechRecognizer:
             raise
         except ModuleNotFoundError as e:
             raise SpeechRecognitionError(
-                f"Whisper 运行时缺少依赖（{e}）。请到「设置 → 默认模型 → 语音转字幕」重新安装 Whisper。"
+                f"Whisper runtime is missing a dependency ({e}). Reinstall Whisper in Settings → Default models → Speech to subtitles."
             )
         except Exception as e:  # noqa: BLE001
             from backend.core.project_cancellation import ProjectDeleted
@@ -869,17 +869,17 @@ class SpeechRecognizer:
                                     config: SpeechRecognitionConfig) -> Path:
         """使用OpenAI API生成字幕"""
         if not self.available_methods[SpeechRecognitionMethod.OPENAI_API]:
-            raise SpeechRecognitionError("OpenAI API不可用，请设置OPENAI_API_KEY环境变量")
+            raise SpeechRecognitionError("OpenAI API is unavailable. Set the OPENAI_API_KEY environment variable")
         
         try:
             logger.info(f"开始使用OpenAI API生成字幕: {video_path}")
             
             # 这里需要实现OpenAI API调用
             # 由于需要额外的依赖，这里先抛出异常
-            raise SpeechRecognitionError("OpenAI API功能暂未实现，请使用本地Whisper")
+            raise SpeechRecognitionError("OpenAI API support is not implemented yet. Please use local Whisper")
             
         except Exception as e:
-            error_msg = f"OpenAI API生成字幕时发生错误: {e}"
+            error_msg = f"Error generating subtitles with the OpenAI API: {e}"
             logger.error(error_msg)
             raise SpeechRecognitionError(error_msg)
     
@@ -887,16 +887,16 @@ class SpeechRecognizer:
                                       config: SpeechRecognitionConfig) -> Path:
         """使用Azure Speech Services生成字幕"""
         if not self.available_methods[SpeechRecognitionMethod.AZURE_SPEECH]:
-            raise SpeechRecognitionError("Azure Speech Services不可用，请设置AZURE_SPEECH_KEY和AZURE_SPEECH_REGION环境变量")
+            raise SpeechRecognitionError("Azure Speech Services is unavailable. Set the AZURE_SPEECH_KEY and AZURE_SPEECH_REGION environment variables")
         
         try:
             logger.info(f"开始使用Azure Speech Services生成字幕: {video_path}")
             
             # 这里需要实现Azure Speech Services调用
-            raise SpeechRecognitionError("Azure Speech Services功能暂未实现，请使用本地Whisper")
+            raise SpeechRecognitionError("Azure Speech Services support is not implemented yet. Please use local Whisper")
             
         except Exception as e:
-            error_msg = f"Azure Speech Services生成字幕时发生错误: {e}"
+            error_msg = f"Error generating subtitles with Azure Speech Services: {e}"
             logger.error(error_msg)
             raise SpeechRecognitionError(error_msg)
     
@@ -904,16 +904,16 @@ class SpeechRecognizer:
                                        config: SpeechRecognitionConfig) -> Path:
         """使用Google Speech-to-Text生成字幕"""
         if not self.available_methods[SpeechRecognitionMethod.GOOGLE_SPEECH]:
-            raise SpeechRecognitionError("Google Speech-to-Text不可用，请设置GOOGLE_APPLICATION_CREDENTIALS或GOOGLE_SPEECH_API_KEY环境变量")
+            raise SpeechRecognitionError("Google Speech-to-Text is unavailable. Set GOOGLE_APPLICATION_CREDENTIALS or the GOOGLE_SPEECH_API_KEY environment variable")
         
         try:
             logger.info(f"开始使用Google Speech-to-Text生成字幕: {video_path}")
             
             # 这里需要实现Google Speech-to-Text调用
-            raise SpeechRecognitionError("Google Speech-to-Text功能暂未实现，请使用本地Whisper")
+            raise SpeechRecognitionError("Google Speech-to-Text support is not implemented yet. Please use local Whisper")
             
         except Exception as e:
-            error_msg = f"Google Speech-to-Text生成字幕时发生错误: {e}"
+            error_msg = f"Error generating subtitles with Google Speech-to-Text: {e}"
             logger.error(error_msg)
             raise SpeechRecognitionError(error_msg)
     
@@ -921,14 +921,14 @@ class SpeechRecognizer:
                                        config: SpeechRecognitionConfig) -> Path:
         """使用阿里云语音识别生成字幕"""
         if not self.available_methods[SpeechRecognitionMethod.ALIYUN_SPEECH]:
-            raise SpeechRecognitionError("阿里云语音识别不可用，请配置API Key")
+            raise SpeechRecognitionError("Alibaba Cloud speech recognition is unavailable. Please configure the API Key")
         
         try:
             logger.info(f"开始使用阿里云语音识别生成字幕: {video_path}")
             
             # 检查视频文件是否存在
             if not video_path.exists():
-                raise SpeechRecognitionError(f"视频文件不存在: {video_path}")
+                raise SpeechRecognitionError(f"Video file not found: {video_path}")
             
             # 提取音频文件
             audio_path = self._extract_audio_from_video(video_path, output_path.parent)
@@ -979,13 +979,13 @@ class SpeechRecognizer:
                     logger.info(f"阿里云语音识别字幕生成成功: {output_path}")
                     return output_path
                 else:
-                    raise SpeechRecognitionError("阿里云语音识别返回结果为空")
+                    raise SpeechRecognitionError("Alibaba Cloud speech recognition returned an empty result")
             else:
                 error_detail = response.json().get('message', '未知错误') if response.headers.get('content-type', '').startswith('application/json') else response.text
-                raise SpeechRecognitionError(f"阿里云语音识别API调用失败: {response.status_code} - {error_detail}")
+                raise SpeechRecognitionError(f"Alibaba Cloud speech recognition API call failed: {response.status_code} - {error_detail}")
             
         except Exception as e:
-            error_msg = f"阿里云语音识别生成字幕时发生错误: {e}"
+            error_msg = f"Error generating subtitles with Alibaba Cloud speech recognition: {e}"
             logger.error(error_msg)
             raise SpeechRecognitionError(error_msg)
     
@@ -994,7 +994,7 @@ class SpeechRecognizer:
         """使用自定义API生成字幕"""
         if not config.custom_api_url or not config.custom_api_key:
             raise SpeechRecognitionError(
-                "自定义API配置不完整，请配置 custom_api_url 和 custom_api_key"
+                "Custom API configuration is incomplete. Please configure custom_api_url and custom_api_key"
             )
         
         try:
@@ -1002,7 +1002,7 @@ class SpeechRecognizer:
             
             # 检查视频文件是否存在
             if not video_path.exists():
-                raise SpeechRecognitionError(f"视频文件不存在: {video_path}")
+                raise SpeechRecognitionError(f"Video file not found: {video_path}")
             
             # 提取音频文件
             audio_path = self._extract_audio_from_video(video_path, output_path.parent)
@@ -1038,10 +1038,10 @@ class SpeechRecognizer:
                 logger.info(f"自定义API字幕生成成功: {output_path}")
                 return output_path
             else:
-                raise SpeechRecognitionError(f"自定义API调用失败: {response.status_code} - {response.text}")
+                raise SpeechRecognitionError(f"Custom API call failed: {response.status_code} - {response.text}")
                 
         except Exception as e:
-            error_msg = f"自定义API生成字幕时发生错误: {e}"
+            error_msg = f"Error generating subtitles with the custom API: {e}"
             logger.error(error_msg)
             raise SpeechRecognitionError(error_msg)
     

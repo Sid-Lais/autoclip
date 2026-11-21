@@ -91,11 +91,11 @@ def parse_cookie(raw: str) -> dict[str, str]:
         key, value = piece.split("=", 1)
         key, value = key.strip(), value.strip()
         if not key or any(ch in key or ch in value for ch in "\r\n"):
-            raise BilibiliError("Cookie 格式不正确")
+            raise BilibiliError("Cookie format is invalid")
         parsed[key] = value
     missing = [name for name in REQUIRED_COOKIE_FIELDS if not parsed.get(name)]
     if missing:
-        raise BilibiliError("Cookie 缺少 " + "、".join(missing))
+        raise BilibiliError("Cookie is missing " + ", ".join(missing))
     return parsed
 
 
@@ -166,11 +166,11 @@ def _json_body(resp: requests.Response, what: str) -> dict[str, Any]:
     try:
         data = resp.json()
     except ValueError as exc:
-        raise BilibiliError(f"{what}失败（HTTP {resp.status_code}）") from exc
+        raise BilibiliError(f"{what} failed (HTTP {resp.status_code})") from exc
     if not isinstance(data, dict):
         raise BilibiliError(f"{what}失败")
     if resp.status_code >= 400:
-        raise BilibiliError(str(data.get("message") or f"{what}失败（HTTP {resp.status_code}）"))
+        raise BilibiliError(str(data.get("message") or f"{what} failed (HTTP {resp.status_code})"))
     return data
 
 
@@ -183,10 +183,10 @@ def verify_cookie(raw: str, session: requests.Session | None = None) -> dict[str
         headers=_headers(header, {"Referer": "https://www.bilibili.com/"}),
         timeout=15,
     )
-    data = _json_body(resp, "校验 Cookie")
+    data = _json_body(resp, "Cookie check")
     info = data.get("data") if isinstance(data.get("data"), dict) else {}
     if data.get("code") != 0 or not info.get("isLogin"):
-        raise BilibiliError("Cookie 无效或已过期", 401)
+        raise BilibiliError("Cookie is invalid or has expired", 401)
     nickname = str(info.get("uname") or "").strip() or "B站"
     uid = str(info.get("mid") or parsed["DedeUserID"])
     return {"cookie": header, "nickname": nickname, "uid": uid}
@@ -207,7 +207,7 @@ def schedule_unix(scheduled_date: str | None, timezone_name: str | None, now: fl
         try:
             zone = ZoneInfo(timezone_name or "UTC")
         except Exception as exc:
-            raise BilibiliError(f"不认识的时区: {timezone_name or ''}") from exc
+            raise BilibiliError(f"Unknown time zone: {timezone_name or ''}") from exc
         when = when.replace(tzinfo=zone)
     stamp = int(when.timestamp())
     current = time.time() if now is None else now
@@ -270,7 +270,7 @@ def extract_cover_jpeg(video_path: Path, at_sec: float = 0.5) -> bytes:
     try:
         return extract_frame_jpeg(Path(video_path), at_sec=at_sec)
     except Exception as exc:  # noqa: BLE001
-        raise BilibiliError(str(exc) or "从成片截封面失败") from exc
+        raise BilibiliError(str(exc) or "Failed to capture a cover from the video") from exc
 
 
 def upload_cover(
@@ -281,7 +281,7 @@ def upload_cover(
 ) -> str:
     """POST /x/vu/web/cover/up，返回封面 URL。"""
     if not jpeg:
-        raise BilibiliError("封面是空的")
+        raise BilibiliError("The cover is empty")
     parsed = parse_cookie(cookie)
     header = cookie_header(parsed)
     import base64
@@ -293,13 +293,13 @@ def upload_cover(
         data={"csrf": parsed["bili_jct"], "cover": data_uri},
         timeout=60,
     )
-    result = _json_body(resp, "上传封面")
+    result = _json_body(resp, "Cover upload")
     if result.get("code") != 0:
-        raise BilibiliError(str(result.get("message") or "上传封面失败"))
+        raise BilibiliError(str(result.get("message") or "Cover upload failed"))
     info = result.get("data") if isinstance(result.get("data"), dict) else {}
     url = str(info.get("url") or "").strip()
     if not url.startswith(("http://", "https://")):
-        raise BilibiliError("上传封面没有返回地址")
+        raise BilibiliError("Cover upload returned no URL")
     return url
 
 
@@ -310,7 +310,7 @@ def _upload_url(preupload: dict[str, Any]) -> str:
     endpoint = endpoint.rstrip("/")
     upos = str(preupload.get("upos_uri") or "").removeprefix("upos://").lstrip("/")
     if not endpoint or not upos:
-        raise BilibiliError("预上传没有返回上传地址")
+        raise BilibiliError("Pre-upload returned no upload URL")
     return f"{endpoint}/{upos}"
 
 
@@ -338,7 +338,7 @@ def upload_video(
     path = Path(video_path)
     size = path.stat().st_size
     if size <= 0:
-        raise BilibiliError("成片是空的")
+        raise BilibiliError("The video file is empty")
     http = session or requests.Session()
     pre = http.get(
         "https://member.bilibili.com/preupload",
@@ -356,13 +356,13 @@ def upload_video(
         },
         timeout=30,
     )
-    preupload = _json_body(pre, "预上传")
+    preupload = _json_body(pre, "Pre-upload")
     if preupload.get("OK") != 1:
-        raise BilibiliError(str(preupload.get("message") or "预上传失败"))
+        raise BilibiliError(str(preupload.get("message") or "Pre-upload failed"))
     url = _upload_url(preupload)
     auth = str(preupload.get("auth") or "")
     if not auth:
-        raise BilibiliError("预上传没有返回凭证")
+        raise BilibiliError("Pre-upload returned no credentials")
     chunk_size = int(preupload.get("chunk_size") or 10485760)
     biz_id = int(preupload["biz_id"])
     init = http.post(
@@ -378,9 +378,9 @@ def upload_video(
         },
         timeout=30,
     )
-    started = _json_body(init, "开始上传")
+    started = _json_body(init, "Upload start")
     if started.get("OK") != 1 or not started.get("upload_id"):
-        raise BilibiliError(str(started.get("message") or "开始上传失败"))
+        raise BilibiliError(str(started.get("message") or "Upload start failed"))
     upload_id = started["upload_id"]
     chunks = max(1, (size + chunk_size - 1) // chunk_size)
     with path.open("rb") as handle:
@@ -405,7 +405,7 @@ def upload_video(
             )
             text = (put.text or "").strip()
             if put.status_code >= 400 or (text and text != "MULTIPART_PUT_SUCCESS"):
-                raise BilibiliError(f"分片上传失败: {text or put.status_code}")
+                raise BilibiliError(f"Chunk upload failed: {text or put.status_code}")
     merged = http.post(
         url,
         headers=_headers(header, {"X-Upos-Auth": auth, "Content-Type": "application/json"}),
@@ -419,13 +419,13 @@ def upload_video(
         json={"parts": [{"partNumber": i, "eTag": "etag"} for i in range(1, chunks + 1)]},
         timeout=60,
     )
-    done = _json_body(merged, "合并分片")
+    done = _json_body(merged, "Chunk merge")
     if done.get("OK") != 1:
-        raise BilibiliError(str(done.get("message") or "合并分片失败"))
+        raise BilibiliError(str(done.get("message") or "Chunk merge failed"))
     key = str(done.get("key") or preupload.get("upos_uri") or "")
     filename = os.path.splitext(key.removeprefix("upos://").lstrip("/"))[0]
     if not filename:
-        raise BilibiliError("合并分片没有返回文件名")
+        raise BilibiliError("Chunk merge returned no file name")
     cover_url = ""
     try:
         jpeg = cover_jpeg
@@ -465,7 +465,7 @@ def upload_video(
     bvid = str(data.get("bvid") or "")
     aid = data.get("aid")
     if not bvid:
-        raise BilibiliError("投稿没有返回 BV 号")
+        raise BilibiliError("Submission returned no BV ID")
     return {"bvid": bvid, "aid": aid, "url": f"https://www.bilibili.com/video/{bvid}"}
 
 
@@ -481,12 +481,12 @@ def publish_clip(req: BilibiliPublishRequest, session: requests.Session | None =
 
     cfg = load_config()
     if not cfg.configured:
-        raise BilibiliError("还没有配置 B 站账号")
+        raise BilibiliError("No Bilibili account is configured yet")
     if req.output_variant_id:
         from backend.services.studio.publishing import output_variant_meta
         clip = output_variant_meta(req.project_id, req.output_variant_id)
         if clip.get('strategy_id') != 'bilibili':
-            raise BilibiliError('请选择 B站横版成片版本后再投稿')
+            raise BilibiliError('Select the Bilibili landscape cut before submitting')
         export = {'ok': True, 'path': clip['video_path'], 'preset': clip['strategy_id']}
     else:
         clip = load_clip_meta(req.project_id, req.clip_id)
@@ -498,9 +498,9 @@ def publish_clip(req: BilibiliPublishRequest, session: requests.Session | None =
             title_card=req.title_card,
         ))
     post = clip.get("post") or {}
-    title = (req.title or post.get("title") or clip.get("generated_title") or clip.get("title") or clip.get("outline") or f"切片 {req.clip_id}").strip()
+    title = (req.title or post.get("title") or clip.get("generated_title") or clip.get("title") or clip.get("outline") or f"Clip {req.clip_id}").strip()
     if not title:
-        title = f"切片 {req.clip_id}"
+        title = f"Clip {req.clip_id}"
     description = req.description if req.description is not None else post.get("description", "")
     dtime = schedule_unix(req.scheduled_date, req.timezone)
     video_path = Path(export["path"])
@@ -545,21 +545,21 @@ def cancel_record(project_id: str, request_id: str, session: requests.Session | 
 
     path = records_dir(project_id) / f"{request_id}.json"
     if not path.exists():
-        raise BilibiliError("没有这条发布记录", 404)
+        raise BilibiliError("No such publish record", 404)
     try:
         record = json.loads(path.read_text(encoding="utf-8"))
     except (OSError, ValueError) as exc:
-        raise BilibiliError(f"读不到这条发布记录: {exc}") from exc
+        raise BilibiliError(f"Could not read this publish record: {exc}") from exc
     if not isinstance(record, dict) or record.get("provider") != "bilibili":
-        raise BilibiliError("没有这条发布记录", 404)
+        raise BilibiliError("No such publish record", 404)
     if record.get("status") != "scheduled":
-        raise BilibiliError("只有还没发出的排期可以取消")
+        raise BilibiliError("Only scheduled posts that have not been published can be canceled")
     aid = str(record.get("aid") or record.get("job_id") or "").strip()
     if not aid:
-        raise BilibiliError("这条排期没有远端编号，不能取消")
+        raise BilibiliError("This scheduled post has no remote ID and cannot be canceled")
     cfg = load_config()
     if not cfg.configured:
-        raise BilibiliError("还没有配置 B 站账号")
+        raise BilibiliError("No Bilibili account is configured yet")
     parsed = parse_cookie(cfg.cookie)
     resp = (session or requests.Session()).post(
         "https://member.bilibili.com/x/web/archive/delete",
@@ -569,7 +569,7 @@ def cancel_record(project_id: str, request_id: str, session: requests.Session | 
     )
     data = _json_body(resp, "取消排期")
     if data.get("code") not in (0, None):
-        raise BilibiliError(str(data.get("message") or "取消失败"))
+        raise BilibiliError(str(data.get("message") or "Cancel failed"))
     record["status"] = "cancelled"
     record["cancelled_at"] = datetime.now(timezone.utc).isoformat()
     path.write_text(json.dumps(record, ensure_ascii=False, indent=2), encoding="utf-8")
@@ -648,6 +648,6 @@ def get_publish_job(job_id: str) -> dict[str, Any] | None:
         alive = job_id in _jobs
     if not alive and job.get("status") in {"queued", "running"}:
         job["status"] = "failed"
-        job["error"] = "发布进程已中断，请再发一次。"
+        job["error"] = "The publish process was interrupted. Please publish again."
         _remember_job(job)
     return job

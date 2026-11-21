@@ -47,7 +47,7 @@ class AccountHealthService:
                     return {
                         "account_id": account_id,
                         "status": AccountHealthStatus.UNKNOWN,
-                        "message": "账号不存在",
+                        "message": "Account not found",
                         "last_check": datetime.now()
                     }
                 view = _AccountSnapshot(account)
@@ -94,7 +94,7 @@ class AccountHealthService:
             return {
                 "account_id": account_id,
                 "status": AccountHealthStatus.UNKNOWN,
-                "message": f"检查失败: {str(e)}",
+                "message": f"Check failed: {str(e)}",
                 "last_check": datetime.now()
             }
     
@@ -104,7 +104,7 @@ class AccountHealthService:
             if not account.cookies:
                 return {
                     "status": AccountHealthStatus.CRITICAL,
-                    "message": "Cookie为空",
+                    "message": "Cookie is empty",
                     "expires_in": None
                 }
             
@@ -114,7 +114,7 @@ class AccountHealthService:
             except Exception as e:
                 return {
                     "status": AccountHealthStatus.CRITICAL,
-                    "message": f"Cookie解密失败: {str(e)}",
+                    "message": f"Cookie decryption failed: {str(e)}",
                     "expires_in": None
                 }
             
@@ -129,7 +129,7 @@ class AccountHealthService:
             if missing_fields:
                 return {
                     "status": AccountHealthStatus.CRITICAL,
-                    "message": f"Cookie缺少必要字段: {', '.join(missing_fields)}",
+                    "message": f"Cookie is missing required fields: {', '.join(missing_fields)}",
                     "expires_in": None
                 }
             
@@ -141,25 +141,25 @@ class AccountHealthService:
                 if expires_in <= 0:
                     return {
                         "status": AccountHealthStatus.EXPIRED,
-                        "message": "Cookie已过期",
+                        "message": "Cookie has expired",
                         "expires_in": expires_in
                     }
                 elif expires_in <= self.warning_days:
                     return {
                         "status": AccountHealthStatus.WARNING,
-                        "message": f"Cookie将在 {expires_in} 天后过期",
+                        "message": f"Cookie will expire in {expires_in} days",
                         "expires_in": expires_in
                     }
                 else:
                     return {
                         "status": AccountHealthStatus.HEALTHY,
-                        "message": "Cookie有效",
+                        "message": "Cookie is valid",
                         "expires_in": expires_in
                     }
             
             return {
                 "status": AccountHealthStatus.HEALTHY,
-                "message": "Cookie格式正确",
+                "message": "Cookie format is valid",
                 "expires_in": None
             }
             
@@ -167,7 +167,7 @@ class AccountHealthService:
             logger.error(f"检查Cookie有效性失败: {str(e)}")
             return {
                 "status": AccountHealthStatus.UNKNOWN,
-                "message": f"检查失败: {str(e)}",
+                "message": f"Check failed: {str(e)}",
                 "expires_in": None
             }
     
@@ -179,7 +179,7 @@ class AccountHealthService:
             if not account.cookies:
                 return {
                     "status": AccountHealthStatus.CRITICAL,
-                    "message": "无Cookie信息"
+                    "message": "No cookie information"
                 }
             
             # 解密Cookie
@@ -204,7 +204,7 @@ class AccountHealthService:
                             if user_info.get('isLogin'):
                                 return {
                                     "status": AccountHealthStatus.HEALTHY,
-                                    "message": "登录状态正常",
+                                    "message": "Login status is normal",
                                     "user_info": {
                                         "uname": user_info.get('uname'),
                                         "mid": user_info.get('mid'),
@@ -214,24 +214,24 @@ class AccountHealthService:
                             else:
                                 return {
                                     "status": AccountHealthStatus.CRITICAL,
-                                    "message": "未登录状态"
+                                    "message": "Not logged in"
                                 }
                         else:
                             return {
                                 "status": AccountHealthStatus.CRITICAL,
-                                "message": f"API返回错误: {data.get('message')}"
+                                "message": f"API returned an error: {data.get('message')}"
                             }
                     else:
                         return {
                             "status": AccountHealthStatus.CRITICAL,
-                            "message": f"请求失败: HTTP {response.status}"
+                            "message": f"Request failed: HTTP {response.status}"
                         }
             
         except Exception as e:
             logger.error(f"检查登录状态失败: {str(e)}")
             return {
                 "status": AccountHealthStatus.UNKNOWN,
-                "message": f"检查失败: {str(e)}"
+                "message": f"Check failed: {str(e)}"
             }
     
     async def _check_upload_permission(self, account: BilibiliAccount) -> Dict:
@@ -242,7 +242,7 @@ class AccountHealthService:
             if not account.cookies:
                 return {
                     "status": AccountHealthStatus.CRITICAL,
-                    "message": "无Cookie信息"
+                    "message": "No cookie information"
                 }
             
             # 解密Cookie
@@ -265,29 +265,29 @@ class AccountHealthService:
                         if data.get('code') == 0:
                             return {
                                 "status": AccountHealthStatus.HEALTHY,
-                                "message": "具有上传权限"
+                                "message": "Upload permission granted"
                             }
                         elif data.get('code') == -101:
                             return {
                                 "status": AccountHealthStatus.CRITICAL,
-                                "message": "账号未登录或Cookie失效"
+                                "message": "Account not logged in or cookie invalid"
                             }
                         else:
                             return {
                                 "status": AccountHealthStatus.WARNING,
-                                "message": f"上传权限受限: {data.get('message')}"
+                                "message": f"Upload permission restricted: {data.get('message')}"
                             }
                     else:
                         return {
                             "status": AccountHealthStatus.WARNING,
-                            "message": f"无法检查上传权限: HTTP {response.status}"
+                            "message": f"Unable to check upload permission: HTTP {response.status}"
                         }
             
         except Exception as e:
             logger.error(f"检查上传权限失败: {str(e)}")
             return {
                 "status": AccountHealthStatus.UNKNOWN,
-                "message": f"检查失败: {str(e)}"
+                "message": f"Check failed: {str(e)}"
             }
     
     def _evaluate_overall_status(self, cookie_status: Dict, login_status: Dict, upload_status: Dict) -> Dict:
@@ -299,9 +299,9 @@ class AccountHealthService:
         if cookie_status["status"] != AccountHealthStatus.HEALTHY:
             messages.append(f"Cookie: {cookie_status['message']}")
         if login_status["status"] != AccountHealthStatus.HEALTHY:
-            messages.append(f"登录: {login_status['message']}")
+            messages.append(f"Login: {login_status['message']}")
         if upload_status["status"] != AccountHealthStatus.HEALTHY:
-            messages.append(f"上传: {upload_status['message']}")
+            messages.append(f"Upload: {upload_status['message']}")
         
         # 确定整体状态
         if AccountHealthStatus.CRITICAL in statuses or AccountHealthStatus.EXPIRED in statuses:
@@ -316,7 +316,7 @@ class AccountHealthService:
         if messages:
             message = "; ".join(messages)
         else:
-            message = "账号状态正常"
+            message = "Account status is normal"
         
         return {
             "status": overall_status,
@@ -351,7 +351,7 @@ class AccountHealthService:
                 if not account:
                     return {
                         "success": False,
-                        "message": "账号不存在"
+                        "message": "Account not found"
                     }
                 username = account.username
             
@@ -361,7 +361,7 @@ class AccountHealthService:
             
             return {
                 "success": False,
-                "message": "自动刷新Cookie功能待实现，请手动更新Cookie",
+                "message": "Automatic cookie refresh is not implemented yet. Please update the cookie manually",
                 "account_id": account_id,
                 "username": username
             }
@@ -370,7 +370,7 @@ class AccountHealthService:
             logger.error(f"自动刷新Cookie失败: {str(e)}")
             return {
                 "success": False,
-                "message": f"刷新失败: {str(e)}"
+                "message": f"Refresh failed: {str(e)}"
             }
 
 # 全局服务实例

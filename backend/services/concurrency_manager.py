@@ -172,7 +172,7 @@ class ConcurrencyManager:
         try:
             if not self.acquire_lock(resource_id, task_id, timeout_seconds):
                 raise ConcurrentError(
-                    f"无法获取锁: {resource_id}",
+                    f"Unable to acquire lock: {resource_id}",
                     resource=resource_id,
                     details={"task_id": task_id, "timeout": timeout_seconds}
                 )
@@ -302,7 +302,7 @@ def with_concurrency_control(resource_id_func: Callable = None):
                 task_id = f"temp_task_{project_id}"
             
             if not project_id:
-                raise ValueError("无法确定project_id和task_id")
+                raise ValueError("Unable to determine project_id and task_id")
             
             # 生成资源ID
             if resource_id_func:
@@ -313,7 +313,7 @@ def with_concurrency_control(resource_id_func: Callable = None):
             # 检查是否可以启动任务
             if not task_scheduler.can_start_task(project_id, task_id):
                 raise ConcurrentError(
-                    f"项目 {project_id} 正在被其他任务处理",
+                    f"Project {project_id} is being processed by another task",
                     resource=resource_id,
                     details={"project_id": project_id, "task_id": task_id}
                 )
@@ -321,7 +321,7 @@ def with_concurrency_control(resource_id_func: Callable = None):
             # 启动任务
             if not task_scheduler.start_task(project_id, task_id, {"function": func.__name__}):
                 raise ConcurrentError(
-                    f"无法启动任务: {task_id}",
+                    f"Unable to start task: {task_id}",
                     resource=resource_id,
                     details={"project_id": project_id, "task_id": task_id}
                 )

@@ -70,7 +70,7 @@ async def get_clip_subtitles(
         from ...models.clip import Clip
         clip = project_service.db.query(Clip).filter(Clip.id == clip_id, Clip.project_id == project_id).first()
         if not clip:
-            raise HTTPException(status_code=404, detail="片段不存在")
+            raise HTTPException(status_code=404, detail="Clip not found")
         
         # 查找原始SRT文件
         projects_dir = get_projects_directory()
@@ -78,7 +78,7 @@ async def get_clip_subtitles(
         srt_file = project_dir / "raw" / "input.srt"
         
         if not srt_file.exists():
-            raise HTTPException(status_code=404, detail="字幕文件不存在")
+            raise HTTPException(status_code=404, detail="Subtitle file not found")
         
         # 解析字幕数据
         subtitle_data = subtitle_processor.parse_srt_to_word_level(srt_file)
@@ -127,7 +127,7 @@ async def get_clip_subtitles(
         import traceback
         logger.error(f"获取字幕数据失败: {e}")
         logger.error(f"错误详情: {traceback.format_exc()}")
-        raise HTTPException(status_code=500, detail=f"获取字幕数据失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get subtitle data: {str(e)}")
 
 @router.post("/{project_id}/clips/{clip_id}/edit")
 async def edit_clip_by_subtitles(
@@ -149,7 +149,7 @@ async def edit_clip_by_subtitles(
         from ...models.clip import Clip
         clip = project_service.db.query(Clip).filter(Clip.id == clip_id, Clip.project_id == project_id).first()
         if not clip:
-            raise HTTPException(status_code=404, detail="片段不存在")
+            raise HTTPException(status_code=404, detail="Clip not found")
         
         # 获取原始视频和字幕文件路径
         projects_dir = get_projects_directory()
@@ -158,13 +158,13 @@ async def edit_clip_by_subtitles(
         # 查找原始视频文件
         video_files = list(project_dir.glob("raw/*.mp4"))
         if not video_files:
-            raise HTTPException(status_code=404, detail="原始视频文件不存在")
+            raise HTTPException(status_code=404, detail="Original video file not found")
         original_video = video_files[0]
         
         # 查找字幕文件
         srt_file = project_dir / "raw" / "input.srt"
         if not srt_file.exists():
-            raise HTTPException(status_code=404, detail="字幕文件不存在")
+            raise HTTPException(status_code=404, detail="Subtitle file not found")
         
         # 解析字幕数据
         subtitle_data = subtitle_processor.parse_srt_to_word_level(srt_file)
@@ -215,7 +215,7 @@ async def edit_clip_by_subtitles(
         )
         
         if not edit_result['success']:
-            raise HTTPException(status_code=500, detail=f"视频编辑失败: {edit_result['error']}")
+            raise HTTPException(status_code=500, detail=f"Video edit failed: {edit_result['error']}")
         
         # 导出编辑后的字幕文件
         edited_srt_path = output_dir / f"{clip_id}_edited.srt"
@@ -227,7 +227,7 @@ async def edit_clip_by_subtitles(
         
         return SubtitleEditResponse(
             success=True,
-            message="视频编辑成功",
+            message="Video edited",
             edited_video_path=str(edited_video_path),
             deleted_duration=edit_result['totalDeletedDuration'],
             final_duration=edit_result['finalDuration']
@@ -237,7 +237,7 @@ async def edit_clip_by_subtitles(
         raise
     except Exception as e:
         logger.error(f"编辑视频片段失败: {e}")
-        raise HTTPException(status_code=500, detail=f"编辑视频片段失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to edit video clip: {str(e)}")
 
 @router.get("/{project_id}/clips/{clip_id}/edited-video")
 async def get_edited_video(
@@ -257,7 +257,7 @@ async def get_edited_video(
         edited_video_path = projects_dir / project_id / "edited_clips" / f"{clip_id}_edited.mp4"
         
         if not edited_video_path.exists():
-            raise HTTPException(status_code=404, detail="编辑后的视频文件不存在")
+            raise HTTPException(status_code=404, detail="Edited video file not found")
         
         # 返回视频文件
         return FileResponse(
@@ -270,7 +270,7 @@ async def get_edited_video(
         raise
     except Exception as e:
         logger.error(f"获取编辑后的视频失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取编辑后的视频失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get edited video: {str(e)}")
 
 @router.post("/{project_id}/clips/{clip_id}/preview")
 async def create_edit_preview(
@@ -292,7 +292,7 @@ async def create_edit_preview(
         from ...models.clip import Clip
         clip = project_service.db.query(Clip).filter(Clip.id == clip_id, Clip.project_id == project_id).first()
         if not clip:
-            raise HTTPException(status_code=404, detail="片段不存在")
+            raise HTTPException(status_code=404, detail="Clip not found")
         
         # 获取原始视频和字幕文件路径
         projects_dir = get_projects_directory()
@@ -300,12 +300,12 @@ async def create_edit_preview(
         
         video_files = list(project_dir.glob("raw/*.mp4"))
         if not video_files:
-            raise HTTPException(status_code=404, detail="原始视频文件不存在")
+            raise HTTPException(status_code=404, detail="Original video file not found")
         original_video = video_files[0]
         
         srt_file = project_dir / "raw" / "input.srt"
         if not srt_file.exists():
-            raise HTTPException(status_code=404, detail="字幕文件不存在")
+            raise HTTPException(status_code=404, detail="Subtitle file not found")
         
         # 解析字幕数据
         subtitle_data = subtitle_processor.parse_srt_to_word_level(srt_file)
@@ -351,7 +351,7 @@ async def create_edit_preview(
         
     except Exception as e:
         logger.error(f"创建编辑预览失败: {e}")
-        raise HTTPException(status_code=500, detail=f"创建编辑预览失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create edit preview: {str(e)}")
 
 @router.get("/{project_id}/clips/{clip_id}/preview/{segment_id}")
 async def get_preview_segment(
@@ -372,7 +372,7 @@ async def get_preview_segment(
         preview_file = projects_dir / project_id / "edit_previews" / clip_id / f"preview_{segment_id}.mp4"
         
         if not preview_file.exists():
-            raise HTTPException(status_code=404, detail="预览文件不存在")
+            raise HTTPException(status_code=404, detail="Preview file not found")
         
         # 返回预览文件
         return FileResponse(
@@ -385,4 +385,4 @@ async def get_preview_segment(
         raise
     except Exception as e:
         logger.error(f"获取预览文件失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取预览文件失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get preview file: {str(e)}")

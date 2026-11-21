@@ -31,7 +31,7 @@ def test_broken_cv2_is_not_installed_and_cleans_modules(broken_cv2):
     assert framing.load_cv2() is None
     assert framing.is_installed() is False
     assert "cv2" not in sys.modules
-    assert "重新安装" in framing.unavailable_reason()
+    assert "reinstall" in framing.unavailable_reason()
 
 
 def test_speaker_center_falls_back_without_raising(broken_cv2, tmp_path):
@@ -52,7 +52,7 @@ def test_auto_frame_endpoint_returns_409_without_sentry(broken_cv2, monkeypatch)
     path = next(r.path for r in studio.router.routes if r.path.endswith("/auto-frame")).replace("{project_id}", "p1")
     response = TestClient(app).post(path, json=body)
     assert response.status_code == 409
-    assert "重新安装" in response.json()["detail"]
+    assert "reinstall" in response.json()["detail"]
 
 
 def test_framing_runtime_precedes_whisper_runtime(monkeypatch, tmp_path):

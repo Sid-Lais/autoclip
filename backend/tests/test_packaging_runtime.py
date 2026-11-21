@@ -206,7 +206,7 @@ def test_installing_status_is_not_overwritten(monkeypatch):
 
 def test_start_install_refuses_a_second_concurrent_install():
     runtime._set_state(status="installing", progress=10, message="正在安装", log_tail="")
-    assert runtime.start_install() == {"started": False, "message": "正在安装中"}
+    assert runtime.start_install() == {"started": False, "message": "Installation in progress"}
 
 
 def test_start_install_does_nothing_when_already_ready(monkeypatch):
@@ -349,7 +349,7 @@ def test_pypi_mode_does_not_fall_back_after_a_timeout(monkeypatch):
     })
     runtime._do_install(None)
     assert seen == [runtime.OFFICIAL_PIP_INDEX]
-    assert "超时" in runtime.get_status()["message"]
+    assert "timed out" in runtime.get_status()["message"]
 
 
 def test_mirror_mode_skips_the_official_index(monkeypatch):
@@ -375,7 +375,7 @@ def test_both_pip_sources_failing_stays_generic(monkeypatch, tmp_path):
     runtime._do_install(None)
     message = runtime.get_status()["message"]
     assert runtime.get_status()["status"] == "error"
-    assert "国内镜像" in message
+    assert "China mirror" in message
     assert str(tmp_path) not in message
 
 
@@ -418,7 +418,7 @@ def test_explicit_playwright_host_is_not_retried(monkeypatch):
     })
     runtime._do_install(None)
     assert seen == ["https://mirror.example/pw"]
-    assert "超时" in runtime.get_status()["message"]
+    assert "timed out" in runtime.get_status()["message"]
 
 
 def test_playwright_download_source_mirror_uses_npmmirror_only(monkeypatch):

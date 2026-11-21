@@ -9,7 +9,7 @@ export function classifyTimelineEmpty(error?: string | null, code?: string | nul
   if (code === TIMELINE_EMPTY) return true
   const text = error || ''
   if (!text) return false
-  return text.includes('时间线提取为空') || text.includes('时间线为空')
+  return /时间线提取为空|时间线为空|timeline extraction is empty/i.test(text)
 }
 
 /** User-facing sentence. Same text as backend WEAK_LOCAL_TIMELINE_REASON. */

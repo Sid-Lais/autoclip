@@ -152,8 +152,8 @@ def load_cv2() -> Any | None:
 def unavailable_reason() -> str:
     """User-facing reason for a 409: broken install gets a reinstall hint."""
     if _cv2 is None and _cv2_error:
-        return "人物识别组件加载失败，请在设置中重新安装人物识别组件"
-    return "人物识别组件未安装"
+        return "Person detection component failed to load; reinstall it in Settings"
+    return "Person detection component is not installed"
 
 
 def is_installed() -> bool:
@@ -229,7 +229,7 @@ def _run(cmd: list[str], timeout: float, stall: float, label: str) -> int:
         if step:
             _set_state(progress=step[0], message=step[1])
 
-    _set_state(message=f"正在连接{pip_install.SOURCE_NAMES.get(label, label)}…")
+    _set_state(message=f"Connecting to {pip_install.SOURCE_NAMES.get(label, label)}…")
     return pip_install.stream(cmd, timeout, stall, on_line, owner="framing")[0]
 
 
@@ -248,10 +248,10 @@ def _do_install(index_url: str | None) -> None:
     except OSError as error:
         # Windows: a running process still holds cv2*.pyd. Not a code fault; say so and stop.
         logger.warning("人物识别组件旧文件清理失败，已跳过本次安装: %s", error)
-        _fail(f"无法清理旧的人物识别组件，请重启后重试: {error}")
+        _fail(f"Unable to clean up the old person detection component; restart and try again: {error}")
         return
     reset_cv2_cache()
-    _set_state(status="installing", progress=5, message="正在准备人物识别组件…", error_code="")
+    _set_state(status="installing", progress=5, message="Preparing person detection component…", error_code="")
     try:
         # Same sources, budgets and stall detection as the Whisper runtime (#339):
         # PyPI first, then the Tsinghua mirror; PIP_INDEX_URL pins one index.
@@ -259,20 +259,20 @@ def _do_install(index_url: str | None) -> None:
             pip_install.index_plan(index_url),
             lambda url: pip_install.command(PACKAGES, str(get_install_dir()), url),
             _run,
-            on_switch=lambda _old, new, _why: _set_state(message=f"官方源没有响应，改用{pip_install.SOURCE_NAMES.get(new, new)}…"),
-            what="人物识别组件",
+            on_switch=lambda _old, new, _why: _set_state(message=f"Official source not responding; switching to {pip_install.SOURCE_NAMES.get(new, new)}…"),
+            what="person detection component",
         )
         reset_cv2_cache()
         if code == 0 and is_installed():
             _clear_failure()
-            _set_state(status="installed", progress=100, message="安装完成")
+            _set_state(status="installed", progress=100, message="Installation complete")
             logger.info("人物识别组件安装完成")
             return
         if code == pip_install.CANCEL_EXIT:  # user/shutdown cancel: no cooldown
             _set_state(status="not_installed", progress=0, message="安装已取消")
             logger.info("人物识别组件安装已取消")
             return
-        message = pip_install.failure_message(code, failures, "人物识别组件") if code else "安装结束，但人物识别组件仍不可用"
+        message = pip_install.failure_message(code, failures, "person detection component") if code else "Installation finished, but the person detection component is still unavailable"
         _set_state(error_code=pip_install.error_code(code, failures) if code else "not_usable")
         # Network trouble is expected here: one warning with the reason, no traceback.
         logger.warning("人物识别组件安装失败（%s），竖屏成片先用完整画面；%d 分钟内不再自动重试",
@@ -280,7 +280,7 @@ def _do_install(index_url: str | None) -> None:
         _fail(message)
     except (OSError, subprocess.SubprocessError) as error:
         logger.warning("人物识别组件安装没有完成: %s: %s", type(error).__name__, error)
-        _fail(f"安装异常: {error}")
+        _fail(f"Installation error: {error}")
 
 
 def start_install(index_url: str | None = None, *, manual: bool = False) -> dict[str, Any]:
@@ -292,13 +292,13 @@ def start_install(index_url: str | None = None, *, manual: bool = False) -> dict
         left = cooldown_remaining()
         if left > 0:
             logger.info("人物识别组件上次自动安装失败，%d 分钟内不再自动重试；本次竖屏用完整画面", int(left // 60) + 1)
-            return {"started": False, "message": "上次安装失败，稍后再自动重试", "cooldown_seconds": int(left)}
+            return {"started": False, "message": "Last install failed; will retry automatically later", "cooldown_seconds": int(left)}
     # Claim the install under the lock before the thread starts. Every vertical job calls this;
     # without the claim two threads both cleared framing-runtime while the other's pip wrote into it.
     with _state_lock:
         if _state["status"] == "installing":
-            return {"started": False, "message": "正在安装中"}
-        _state.update(status="installing", progress=0, message="正在准备人物识别组件…")
+            return {"started": False, "message": "Installation in progress"}
+        _state.update(status="installing", progress=0, message="Preparing person detection component…")
     if manual:
         _clear_failure()
     threading.Thread(target=_do_install, args=(index_url,), name="framing-install", daemon=True).start()
@@ -1464,7 +1464,7 @@ def scan_speakers(video: Path, scenes) -> list[dict[str, Any]]:
     nobody in it.
     """
     if not is_installed():
-        raise RuntimeError("人物识别组件未安装")
+        raise RuntimeError("Person detection component is not installed")
     scans = []
     with tempfile.TemporaryDirectory(prefix="ac-framing-") as temp:
         folder = Path(temp)

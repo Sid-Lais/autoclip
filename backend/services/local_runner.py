@@ -163,8 +163,8 @@ def configure_llm(override: LLMOverride) -> Dict[str, Any]:
     info = manager.get_current_provider_info()
     if not info.get("available"):
         raise RuntimeError(
-            f"LLM 提供商 {info.get('provider')} 未就绪：需要自备 API Key（或本机服务地址）。"
-            f" 用 --api-key / --base-url 指定，或到桌面应用「设置 → 服务商与模型」填写后点测试连接。"
+            f"LLM provider {info.get('provider')} is not ready: you need to bring your own API key (or a local service address)."
+            f" Set it with --api-key / --base-url, or fill it in under Settings → Providers and models in the desktop app and run Test connection."
         )
     return info
 
@@ -178,7 +178,7 @@ def check_llm_connection() -> Dict[str, Any]:
         return {
             "ok": False,
             **info,
-            "error": "未配置 API Key。需要自备密钥，到「设置 → 服务商与模型」填写提供商、密钥和模型名后再测试连接。",
+            "error": "No API key is configured. You need to bring your own key: enter the provider, key and model name under Settings → Providers and models, then test the connection.",
         }
     base_url = info.get("base_url")
     if base_url:
@@ -191,8 +191,8 @@ def check_llm_connection() -> Dict[str, Any]:
         except Exception as e:  # noqa: BLE001
             from backend.core.local_presets import LOCAL_PRESETS
             preset = LOCAL_PRESETS.get(info.get("provider") or "")
-            tip = f"请先启动 {preset.display_name.split('（')[0]}（{preset.docs_url}）" if preset else "请检查地址是否正确、服务是否已启动"
-            return {"ok": False, **info, "error": f"{base_url} 不可达：{type(e).__name__}。{tip}"}
+            tip = f"Start {preset.display_name.split('（')[0]} first ({preset.docs_url})" if preset else "Check that the address is correct and the service is running"
+            return {"ok": False, **info, "error": f"{base_url} is unreachable: {type(e).__name__}. {tip}"}
     from backend.core.local_presets import context_hint_for
     hint = context_hint_for(m.settings)
     try:
@@ -200,7 +200,7 @@ def check_llm_connection() -> Dict[str, Any]:
         return {
             "ok": ok,
             **info,
-            "error": None if ok else "连接测试失败。请到「设置 → 服务商与模型」核对自备的密钥和模型名后再试。",
+            "error": None if ok else "Connection test failed. Check your own key and model name under Settings → Providers and models, then try again.",
             **({"context_hint": hint} if hint else {}),
         }
     except Exception as e:  # noqa: BLE001
@@ -224,7 +224,7 @@ def _write_project_json(project_dir: Path, req: RunRequest, extra: Optional[Dict
     """`DataSyncService` 会读 project.json 拿名字；顺手把来源记下来。"""
     meta = {
         "project_name": req.name or req.video.stem,
-        "description": f"由 autoclip CLI 从 {req.video} 创建",
+        "description": f"Created by the autoclip CLI from {req.video}",
         "created_at": datetime.now().isoformat(),
         "source": {"video": str(req.video), "srt": str(req.srt) if req.srt else None, "via": "cli"},
         "video_category": req.category,
@@ -257,7 +257,7 @@ def _register_project(req: RunRequest, video_path: Path) -> None:
         project = Project(
             id=req.project_id,
             name=req.name or req.video.stem,
-            description=f"由 autoclip CLI 从 {req.video.name} 创建",
+            description=f"Created by the autoclip CLI from {req.video.name}",
             project_type=ptype,
             status=ProjectStatus.PROCESSING,
             video_path=str(video_path),
@@ -316,11 +316,11 @@ def prepare_project(req: RunRequest, link: bool = True) -> Path:
 def _resolve_inputs(req: RunRequest) -> None:
     req.video = req.video.expanduser().resolve()
     if not req.video.exists():
-        raise FileNotFoundError(f"视频不存在: {req.video}")
+        raise FileNotFoundError(f"Video not found: {req.video}")
     if req.srt:
         req.srt = req.srt.expanduser().resolve()
         if not req.srt.exists():
-            raise FileNotFoundError(f"字幕不存在: {req.srt}")
+            raise FileNotFoundError(f"Subtitle file not found: {req.srt}")
 
 
 def place_video(req: RunRequest, link: bool = True) -> Path:
@@ -420,7 +420,7 @@ def summarize_project(project_id: str) -> Dict[str, Any]:
 
     project_dir = get_projects_directory() / project_id
     if not project_dir.exists():
-        raise FileNotFoundError(f"项目不存在: {project_id}")
+        raise FileNotFoundError(f"Project not found: {project_id}")
     meta_dir = project_dir / "metadata"
     out_dir = project_dir / "output"
     project_meta = _load_json(project_dir / "project.json", {})

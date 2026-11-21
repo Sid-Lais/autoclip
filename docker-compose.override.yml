@@ -1,0 +1,36 @@
+# Local overrides: serve the web UI on :3000 via nginx, keep internal services off the network.
+services:
+  web:
+    build:
+      context: .
+      dockerfile: deploy/web/Dockerfile
+      additional_contexts:
+        app: service:autoclip
+    container_name: autoclip-web
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:3000:3000"
+    depends_on:
+      autoclip:
+        condition: service_healthy
+
+  autoclip:
+    # Nothing listens on :3000 in this image; API stays reachable only from this machine (nginx proxies it).
+    ports: !override
+      - "127.0.0.1:8000:8000"
+
+  redis:
+    ports: !override
+      - "127.0.0.1:6379:6379"
+
+  # `celery flower` is not installed in the image (container crash-loops); disabled.
+  flower:
+    profiles: ["disabled"]
+
+  # Image healthcheck curls :8000, which these containers don't serve -> permanently "unhealthy".
+  celery-worker:
+    healthcheck:
+      disable: true
+  celery-beat:
+    healthcheck:
+      disable: true

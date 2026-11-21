@@ -137,7 +137,7 @@ def _record_import_failure(
     error_code: Optional[str] = None,
 ) -> None:
     """项目标失败，并把原因写进 project_metadata.last_error（详情页从这里读）。"""
-    message = (error or "导入失败")[:2000]
+    message = (error or "Import failed")[:2000]
     project_service.update_project_status(project_id, "failed")
     try:
         project = project_service.get(project_id)
@@ -199,7 +199,7 @@ def import_subtitle_failure(speech_error: Optional[str | CloudTranscriptionError
         logger.warning("构造字幕失败说明失败", exc_info=True)
         return PipelineFailure(
             "SUBTITLE",
-            "没有字幕可分析：视频不带字幕，这次也没有生成可用字幕。",
+            "No subtitles to analyze: the video has no subtitles, and none could be generated this time.",
             HINT_SUBTITLE,
             code="subtitle_setup",
         )
@@ -208,7 +208,7 @@ def import_subtitle_failure(speech_error: Optional[str | CloudTranscriptionError
 def _generate_import_subtitle(task, project_id: str, video_path: str):
     """转写字幕。不持有数据库会话：Whisper 可能跑很久。返回 (srt_path, speech_error)。"""
     logger.info(f"开始为项目 {project_id} 生成字幕...")
-    task.update_state(state='PROGRESS', meta={'progress': 40, 'message': '生成字幕...'})
+    task.update_state(state='PROGRESS', meta={'progress': 40, 'message': 'Generating subtitles...'})
     speech_error = None
     speech_config = None
     srt_path = None
@@ -268,7 +268,7 @@ def _generate_import_subtitle(task, project_id: str, video_path: str):
             elif speech_config.method == "custom_api":
                 api_config = speech_config.custom_api_config
             else:
-                raise ValueError(f"不支持的语音识别方法: {speech_config.method}")
+                raise ValueError(f"Unsupported speech recognition method: {speech_config.method}")
 
             generated_subtitle = generate_subtitle_for_video(
                 Path(video_path),
@@ -347,19 +347,19 @@ def process_import_task(self, project_id: str, video_path: str, srt_file_path: O
                 logger.warning(f"项目 {project_id} 已有处理任务在运行 (任务ID: {existing_task.celery_task_id})，跳过重复处理")
                 return {
                     'success': False,
-                    'error': '项目正在处理中，避免重复处理',
+                    'error': 'Project is already being processed; skipping duplicate processing',
                     'existing_task_id': existing_task.celery_task_id
                 }
 
-            self.update_state(state='PROGRESS', meta={'progress': 10, 'message': '开始处理...'})
+            self.update_state(state='PROGRESS', meta={'progress': 10, 'message': 'Starting processing...'})
 
             logger.info(f"检查项目 {project_id} 缩略图...")
-            self.update_state(state='PROGRESS', meta={'progress': 20, 'message': '检查缩略图...'})
+            self.update_state(state='PROGRESS', meta={'progress': 20, 'message': 'Checking thumbnail...'})
 
             project = project_service.get(project_id)
             if project and not project.thumbnail:
                 logger.info(f"项目 {project_id} 没有缩略图，开始生成...")
-                self.update_state(state='PROGRESS', meta={'progress': 25, 'message': '生成缩略图...'})
+                self.update_state(state='PROGRESS', meta={'progress': 25, 'message': 'Generating thumbnail...'})
 
                 try:
                     thumbnail_data = generate_project_thumbnail(project_id, Path(video_path))
@@ -387,7 +387,7 @@ def process_import_task(self, project_id: str, video_path: str, srt_file_path: O
             srt_path, speech_error = _generate_import_subtitle(self, project_id, video_path)
 
         logger.info(f"更新项目 {project_id} 状态为处理中...")
-        self.update_state(state='PROGRESS', meta={'progress': 80, 'message': '启动处理流程...'})
+        self.update_state(state='PROGRESS', meta={'progress': 80, 'message': 'Starting processing pipeline...'})
 
         with session_scope() as db:
             project_service = ProjectService(db)
@@ -406,7 +406,7 @@ def process_import_task(self, project_id: str, video_path: str, srt_file_path: O
                 else:
                     if task_result['success']:
                         logger.info(f"项目 {project_id} 处理任务已启动，Celery任务ID: {task_result['task_id']}")
-                        self.update_state(state='PROGRESS', meta={'progress': 100, 'message': '处理流程已启动'})
+                        self.update_state(state='PROGRESS', meta={'progress': 100, 'message': 'Processing pipeline started'})
                     else:
                         logger.error(f"Celery任务提交失败: {task_result['error']}")
                         _fail_import(project_service, project_id, task_result['error'])
@@ -424,7 +424,7 @@ def process_import_task(self, project_id: str, video_path: str, srt_file_path: O
         return {
             'status': 'completed',
             'project_id': project_id,
-            'message': '导入处理完成'
+            'message': 'Import processing complete'
         }
 
     except ImportProcessingError:

@@ -45,12 +45,12 @@ def test_invalid_model_scores_are_rejected(score):
 
 
 def test_no_gameplay_does_not_fabricate_a_highlight():
-    with pytest.raises(ValueError,match='没有找到可用玩法高光'):
+    with pytest.raises(ValueError,match='No usable gameplay highlights found'):
         vision.select_highlights([candidate(0,'menu'),candidate(1,'reward_screen')],20)
 
 
 def test_duplicate_candidate_identity_is_rejected():
-    with pytest.raises(ValueError,match='重复候选'):
+    with pytest.raises(ValueError,match='duplicate candidate'):
         vision.select_highlights([candidate(0),candidate(0)],20)
 
 
@@ -85,7 +85,7 @@ def test_dense_rejection_of_only_candidate_reports_no_highlight(monkeypatch):
     monkeypatch.setattr(vision,'sample',lambda *a: [])
     responses=iter([{'events':[candidate(2)]},{'events':[candidate(2,'menu')]}])
     monkeypatch.setattr(vision,'vision_call',lambda _, **_kwargs: next(responses))
-    with pytest.raises(ValueError,match='没有找到可用玩法高光'):
+    with pytest.raises(ValueError,match='No usable gameplay highlights found'):
         vision.analyze(Path('unused'),Preferences(goal='highlight'))
 
 
@@ -103,7 +103,7 @@ def test_overlong_candidate_does_not_discard_valid_independent_events():
 def test_all_overlong_candidates_still_fail_without_inventing_clips():
     raw = candidate(0)
     raw['end'] = 46.3
-    with pytest.raises(ValueError, match='超出期望时长'):
+    with pytest.raises(ValueError, match='exceeds the expected duration'):
         vision.select_highlights([raw], 120, max_duration=40)
 
 

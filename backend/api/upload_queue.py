@@ -83,7 +83,7 @@ async def add_upload_task(
             priority=priority
         )
         
-        return {"task_id": task_id, "message": "任务已添加到队列"}
+        return {"task_id": task_id, "message": "Task added to queue"}
         
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -120,7 +120,7 @@ async def add_batch_upload_tasks(
         return {
             "task_ids": task_ids,
             "count": len(task_ids),
-            "message": f"已添加 {len(task_ids)} 个任务到队列"
+            "message": f"Added {len(task_ids)} tasks to the queue"
         }
         
     except Exception as e:
@@ -135,7 +135,7 @@ async def get_task_status(
     try:
         task_status = queue_service.get_task_status(task_id)
         if not task_status:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task not found")
         
         return task_status
         
@@ -153,7 +153,7 @@ async def cancel_task(
     try:
         success = queue_service.cancel_task(task_id)
         if not success:
-            raise HTTPException(status_code=404, detail="任务不存在或无法取消")
+            raise HTTPException(status_code=404, detail="Task not found or cannot be cancelled")
         
         return {"message": "任务已取消"}
         
@@ -187,7 +187,7 @@ async def retry_failed_task(
             raise HTTPException(status_code=404, detail="任务不存在")
         
         if task_status["status"] != "failed":
-            raise HTTPException(status_code=400, detail="只能重试失败的任务")
+            raise HTTPException(status_code=400, detail="Only failed tasks can be retried")
         
         # 重新添加任务
         new_task_id = queue_service.add_task(
@@ -201,7 +201,7 @@ async def retry_failed_task(
         
         return {
             "new_task_id": new_task_id,
-            "message": "任务已重新添加到队列"
+            "message": "Task re-added to queue"
         }
         
     except HTTPException:
@@ -258,7 +258,7 @@ async def clear_completed_tasks(
     try:
         # 这里可以添加清理逻辑
         # 由于任务完成后会自动从内存队列中移除，主要是清理数据库中的旧记录
-        return {"message": "已完成任务清理"}
+        return {"message": "Completed tasks cleaned up"}
         
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

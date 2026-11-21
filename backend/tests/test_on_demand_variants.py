@@ -263,7 +263,7 @@ def test_backup_only_dispatch_settles_instead_of_waiting_forever(monkeypatch):
     assert state['generation']['status'] == 'failed'
     assert state['analysis']['status'] == 'failed'
     assert state['generation']['completed_variant_count'] == 0
-    assert '备选' in state['generation']['error']
+    assert 'alternate segment' in state['generation']['error']
 
 
 def test_dispatch_missing_draft_is_terminal_without_render_callback(monkeypatch):
@@ -317,7 +317,7 @@ def test_on_demand_dispatch_failure_remains_retryable(monkeypatch, retry):
     def reject(*args, **kwargs):
         raise RuntimeError('private executor details')
     monkeypatch.setattr(jobs.executor, 'submit', reject)
-    with pytest.raises(ValueError, match='未能启动'):
+    with pytest.raises(ValueError, match='could not start'):
         (jobs.retry_variant if retry else jobs.produce_variant)('p1', 'v1')
     variant = state['output_variants'][0]
     assert variant['status'] == 'failed' and variant['needs_prepare']
@@ -377,7 +377,7 @@ def test_stale_failed_retry_preserves_a_concurrent_claim(tmp_path, monkeypatch, 
     monkeypatch.setattr(store, 'read', read_then_other_request)
     dispatched = []
     monkeypatch.setattr(jobs, '_dispatch_pending_variants', lambda pid: dispatched.append(pid))
-    with pytest.raises(ValueError, match='只有失败'):
+    with pytest.raises(ValueError, match='did not finish'):
         jobs.retry_variant('p1', 'v1')
     saved = read('p1')
     assert saved['output_variants'][0]['status'] == claimed_status

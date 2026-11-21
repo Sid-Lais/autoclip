@@ -27,20 +27,20 @@ def generate_thumbnails_for_projects():
         ).all()
         
         if not projects:
-            print("✅ 所有项目都已有缩略图")
+            print("✅ All projects already have thumbnails")
             return True
         
-        print(f"📋 找到 {len(projects)} 个需要生成缩略图的项目")
+        print(f"📋 Found {len(projects)} project(s) that need thumbnails")
         
         success_count = 0
         for project in projects:
             try:
-                print(f"🎬 正在为项目 '{project.name}' ({project.id}) 生成缩略图...")
+                print(f"🎬 Generating thumbnail for project '{project.name}' ({project.id})...")
                 
                 # 检查视频文件是否存在
                 video_path = Path(project.video_path)
                 if not video_path.exists():
-                    print(f"⚠️  视频文件不存在: {video_path}")
+                    print(f"⚠️  Video file does not exist: {video_path}")
                     continue
                 
                 # 生成缩略图
@@ -50,21 +50,21 @@ def generate_thumbnails_for_projects():
                     # 保存到数据库
                     project.thumbnail = thumbnail_data
                     db.commit()
-                    print(f"✅ 项目 '{project.name}' 缩略图生成成功")
+                    print(f"✅ Thumbnail generated for project '{project.name}'")
                     success_count += 1
                 else:
-                    print(f"❌ 项目 '{project.name}' 缩略图生成失败")
+                    print(f"❌ Failed to generate thumbnail for project '{project.name}'")
                     
             except Exception as e:
-                print(f"❌ 项目 '{project.name}' 处理失败: {e}")
+                print(f"❌ Failed to process project '{project.name}': {e}")
                 db.rollback()
                 continue
         
-        print(f"🎉 完成！成功为 {success_count}/{len(projects)} 个项目生成缩略图")
+        print(f"🎉 Done! Generated thumbnails for {success_count}/{len(projects)} project(s)")
         return True
         
     except Exception as e:
-        print(f"❌ 生成缩略图过程中发生错误: {e}")
+        print(f"❌ Error while generating thumbnails: {e}")
         db.rollback()
         return False
     finally:
@@ -77,20 +77,20 @@ def generate_thumbnail_for_project(project_id: str):
         project = db.query(Project).filter(Project.id == project_id).first()
         
         if not project:
-            print(f"❌ 项目 {project_id} 不存在")
+            print(f"❌ Project {project_id} does not exist")
             return False
         
         if not project.video_path:
-            print(f"❌ 项目 {project_id} 没有视频文件")
+            print(f"❌ Project {project_id} has no video file")
             return False
         
         # 检查视频文件是否存在
         video_path = Path(project.video_path)
         if not video_path.exists():
-            print(f"❌ 视频文件不存在: {video_path}")
+            print(f"❌ Video file does not exist: {video_path}")
             return False
         
-        print(f"🎬 正在为项目 '{project.name}' ({project.id}) 生成缩略图...")
+        print(f"🎬 Generating thumbnail for project '{project.name}' ({project.id})...")
         
         # 生成缩略图
         thumbnail_data = generate_project_thumbnail(project.id, video_path)
@@ -99,14 +99,14 @@ def generate_thumbnail_for_project(project_id: str):
             # 保存到数据库
             project.thumbnail = thumbnail_data
             db.commit()
-            print(f"✅ 项目 '{project.name}' 缩略图生成成功")
+            print(f"✅ Thumbnail generated for project '{project.name}'")
             return True
         else:
-            print(f"❌ 项目 '{project.name}' 缩略图生成失败")
+            print(f"❌ Failed to generate thumbnail for project '{project.name}'")
             return False
             
     except Exception as e:
-        print(f"❌ 处理项目 {project_id} 时发生错误: {e}")
+        print(f"❌ Error while processing project {project_id}: {e}")
         db.rollback()
         return False
     finally:
@@ -117,19 +117,19 @@ def main():
     if len(sys.argv) > 1:
         # 为指定项目生成缩略图
         project_id = sys.argv[1]
-        print(f"🚀 开始为项目 {project_id} 生成缩略图...")
+        print(f"🚀 Generating thumbnail for project {project_id}...")
         if generate_thumbnail_for_project(project_id):
-            print("🎉 缩略图生成完成！")
+            print("🎉 Thumbnail generation complete!")
         else:
-            print("❌ 缩略图生成失败")
+            print("❌ Failed to generate thumbnail")
             sys.exit(1)
     else:
         # 为所有项目生成缩略图
-        print("🚀 开始为所有项目生成缩略图...")
+        print("🚀 Generating thumbnails for all projects...")
         if generate_thumbnails_for_projects():
-            print("🎉 所有缩略图生成完成！")
+            print("🎉 All thumbnails generated!")
         else:
-            print("❌ 缩略图生成失败")
+            print("❌ Failed to generate thumbnail")
             sys.exit(1)
 
 if __name__ == "__main__":

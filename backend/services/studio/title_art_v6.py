@@ -76,7 +76,7 @@ def _headline(text,style,w,h,scale,y,accent):
         lines=lines_for(text,font,w*.78*min(scale,1))
         if len(lines)<=3:break
         size-=3
-        if size<minimum:raise UserFacingError('开头文字太长，请缩短或减少换行（最多三行）')
+        if size<minimum:raise UserFacingError('The headline text is too long; shorten it or use fewer line breaks (three lines at most)')
     faces=[]
     for i,line in enumerate(lines):
         face=_mask(line,_font(line,size),.25 if style=='arena' else 0,2 if style=='arena' else 0)
@@ -134,7 +134,7 @@ def _pixel(text,w,h,scale,y,accent):
     if latin:text=text.upper()
     font=ImageFont.truetype(str(FONTS/'PressStart2P-Regular.ttf'),8) if latin else font_for(text,20)
     lines=lines_for(text,font,96 if latin else 120)
-    if len(lines)>3:raise UserFacingError('开头文字太长，请缩短或减少换行（最多三行）')
+    if len(lines)>3:raise UserFacingError('The headline text is too long; shorten it or use fewer line breaks (three lines at most)')
     faces=[]
     for i,line in enumerate(lines):
         if latin:
@@ -182,7 +182,7 @@ def frosted_layers(text,w,h,scale=1,y=.12,accent=None):
         faces=[_mask(line,font) for line in lines]
         if len(lines)<=3 and sum(f.height for f in faces)+gap*(len(lines)-1)+pad*2<=h*.28:break
         size-=3
-        if size<minimum:raise UserFacingError('开头文字太长，请缩短或减少换行（最多三行）')
+        if size<minimum:raise UserFacingError('The headline text is too long; shorten it or use fewer line breaks (three lines at most)')
     cw=round(w*.84);ch=sum(f.height for f in faces)+gap*(len(faces)-1)+pad*2
     left=(w-cw)//2;top=max(round(h*.04),min(round(h*(y-.05)),h-round(h*.10)-ch))
     radius=max(4,round(w*.048));box=(left,top,left+cw,top+ch)
@@ -206,8 +206,8 @@ def frosted_layers(text,w,h,scale=1,y=.12,accent=None):
 
 
 def artwork(text,style,w,h,scale=1,y=.12,accent=None):
-    if w<16 or h<16 or w*h>16777216:raise UserFacingError('文字模板支持最大 1600 万像素画布，请使用 1080p 画幅')
-    if style not in STYLES:raise UserFacingError('未知文字模板')
+    if w<16 or h<16 or w*h>16777216:raise UserFacingError('Text templates support canvases of up to 16 megapixels; use a 1080p frame size')
+    if style not in STYLES:raise UserFacingError('Unknown text template')
     if not text.strip():return Image.new('RGBA',(w,h))
     if style=='comic':
         from .comic_art import artwork as comic

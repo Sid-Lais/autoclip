@@ -241,7 +241,7 @@ function defaultDetail(key: ReadinessLineKey, check: ReadinessCheck | null | und
   if (key === 'ffmpeg') return 'FFmpeg'
   if (key === 'visual') return '未启用'
   if (key === 'transcription') {
-    if (check?.model) return `本地 ${check.model}`
+    if (check?.model) return `Local ${check.model}`
     return '转写'
   }
   return check?.model || '—'

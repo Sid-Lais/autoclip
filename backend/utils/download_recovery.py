@@ -108,7 +108,7 @@ def download_with_recovery(url: str, options: dict):
             with yt_dlp.YoutubeDL(opts) as downloader:
                 result = downloader.download([url])
             if result:
-                raise RuntimeError('视频下载未完成，请检查网络后重试；已下载的分片将用于续传。')
+                raise RuntimeError('Video download did not finish. Check your network and try again; downloaded segments will be used to resume.')
             return result
         except (yt_dlp.utils.DownloadError, CookieLoadError) as error:
             if opts.get('cookiesfrombrowser') and _browser_cookie_permission_failure(error):
@@ -166,7 +166,7 @@ def extract_info_with_recovery(url: str, options: dict):
             with yt_dlp.YoutubeDL(opts) as ydl:
                 info = ydl.extract_info(url, download=False)
             if not isinstance(info, dict):
-                raise RuntimeError('无法读取视频信息，请检查链接后重试。')
+                raise RuntimeError('Could not read video information. Check the link and try again.')
             return info
         except (yt_dlp.utils.DownloadError, CookieLoadError) as error:
             if opts.get('cookiesfrombrowser') and _browser_cookie_permission_failure(error):

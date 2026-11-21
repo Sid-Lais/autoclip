@@ -53,7 +53,7 @@ class DesktopServiceManager:
         
         # 确保目录存在
         if not ensure_desktop_directories():
-            raise RuntimeError("创建桌面目录失败")
+            raise RuntimeError("Failed to create desktop directories")
 
         # 设置日志
         self._setup_logging()
@@ -309,20 +309,20 @@ def main():
     
     # 检查桌面模式
     if not is_desktop_mode():
-        print("❌ 此应用仅在桌面模式下运行")
+        print("❌ This application only runs in desktop mode")
         sys.exit(1)
     
     # 获取服务管理器
     manager = get_service_manager()
     config = manager.config
     
-    print(f"🚀 启动 AutoClip Desktop v{config.app_version}")
-    print(f"📁 数据目录: {config.paths.data_dir}")
-    print(f"🌐 服务地址: http://{config.host}:0 (自动分配端口)")
+    print(f"🚀 Starting AutoClip Desktop v{config.app_version}")
+    print(f"📁 Data directory: {config.paths.data_dir}")
+    print(f"🌐 Service address: http://{config.host}:0 (port auto-assigned)")
     
     # 设置信号处理
     def signal_handler(signum, frame):
-        print(f"\n🛑 收到停止信号 ({signum})，正在关闭服务...")
+        print(f"\n🛑 Stop signal received ({signum}), shutting down services...")
         if manager.is_running:
             manager.stop()
         sys.exit(0)
@@ -358,10 +358,10 @@ def main():
             time.sleep(1)
             
     except KeyboardInterrupt:
-        print("\n🛑 收到中断信号，正在关闭服务...")
+        print("\n🛑 Interrupt signal received, shutting down services...")
         manager.stop()
     except Exception as e:
-        print(f"❌ 服务运行失败: {e}")
+        print(f"❌ Service failed: {e}")
         manager.stop()
         sys.exit(1)
 

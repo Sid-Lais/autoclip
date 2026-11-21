@@ -39,7 +39,7 @@ async def get_tasks(
         return tasks
     except Exception as e:
         logger.exception("获取任务列表失败")
-        raise HTTPException(status_code=500, detail="获取任务列表失败，请稍后重试")
+        raise HTTPException(status_code=500, detail="Failed to get task list; please try again later")
 
 @router.get("/project/{project_id}", response_model=List[TaskResponse])
 async def get_project_tasks(
@@ -53,7 +53,7 @@ async def get_project_tasks(
         return tasks
     except Exception as e:
         logger.exception("获取项目任务失败: %s", project_id)
-        raise HTTPException(status_code=500, detail="获取项目任务失败，请稍后重试")
+        raise HTTPException(status_code=500, detail="Failed to get project tasks; please try again later")
 
 @router.get("/{task_id}", response_model=TaskResponse)
 async def get_task(
@@ -65,13 +65,13 @@ async def get_task(
         task_service = TaskService(db)
         task = task_service.get_task_by_id(task_id)
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task not found")
         return task
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("获取任务详情失败: %s", task_id)
-        raise HTTPException(status_code=500, detail="获取任务详情失败，请稍后重试")
+        raise HTTPException(status_code=500, detail="Failed to get task details; please try again later")
 
 @router.post("/", response_model=TaskResponse)
 async def create_task(
@@ -85,7 +85,7 @@ async def create_task(
         return task
     except Exception as e:
         logger.exception("创建任务失败")
-        raise HTTPException(status_code=500, detail="创建任务失败，请稍后重试")
+        raise HTTPException(status_code=500, detail="Failed to create task; please try again later")
 
 @router.put("/{task_id}", response_model=TaskResponse)
 async def update_task(
@@ -98,13 +98,13 @@ async def update_task(
         task_service = TaskService(db)
         task = task_service.update_task(task_id, task_data)
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task not found")
         return task
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("更新任务失败: %s", task_id)
-        raise HTTPException(status_code=500, detail="更新任务失败，请稍后重试")
+        raise HTTPException(status_code=500, detail="Failed to update task; please try again later")
 
 @router.delete("/{task_id}")
 async def delete_task(
@@ -116,13 +116,13 @@ async def delete_task(
         task_service = TaskService(db)
         success = task_service.delete_task(task_id)
         if not success:
-            raise HTTPException(status_code=404, detail="任务不存在")
-        return {"message": "任务删除成功"}
+            raise HTTPException(status_code=404, detail="Task not found")
+        return {"message": "Task deleted"}
     except HTTPException:
         raise
     except Exception as e:
         logger.exception("删除任务失败: %s", task_id)
-        raise HTTPException(status_code=500, detail="删除任务失败，请稍后重试")
+        raise HTTPException(status_code=500, detail="Failed to delete task; please try again later")
 
 @router.post("/{task_id}/submit")
 async def submit_task(
@@ -134,7 +134,7 @@ async def submit_task(
         task_service = TaskService(db)
         task = task_service.get_task_by_id(task_id)
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task not found")
         
         queue_service = TaskQueueService(db)
         task_type = str(task.task_type.value if hasattr(task.task_type, "value") else task.task_type)
@@ -143,7 +143,7 @@ async def submit_task(
             input_video_path = _get_task_config_value(task, "input_video_path")
             input_srt_path = _get_task_config_value(task, "input_srt_path")
             if not input_video_path:
-                raise HTTPException(status_code=400, detail="任务缺少 input_video_path 配置")
+                raise HTTPException(status_code=400, detail="Task is missing the input_video_path setting")
             from backend.api.v1 import transcription_gate
             # 1.5.7 gate before anything is queued, off the event loop.
             # Only the SRT the queue receives counts; input.srt beside the video is not passed on.
@@ -160,10 +160,10 @@ async def submit_task(
             collection_data = _get_task_config_value(task, "collection_data", [])
             result = queue_service.submit_collection_generation_task(task.project_id, collection_data)
         else:
-            raise HTTPException(status_code=400, detail=f"不支持的任务类型: {task_type}")
+            raise HTTPException(status_code=400, detail=f"Unsupported task type: {task_type}")
         
         return {
-            "message": "任务已提交到队列",
+            "message": "Task submitted to the queue",
             "task_id": task_id,
             "queue_task_id": result.get("task_id"),
             "celery_task_id": result.get("celery_task_id"),
@@ -172,7 +172,7 @@ async def submit_task(
         raise
     except Exception as e:
         logger.exception("提交任务失败: %s", task_id)
-        raise HTTPException(status_code=500, detail="提交任务失败，请稍后重试")
+        raise HTTPException(status_code=500, detail="Failed to submit task; please try again later")
 
 @router.post("/{task_id}/retry")
 async def retry_task(
@@ -184,7 +184,7 @@ async def retry_task(
         task_service = TaskService(db)
         task = task_service.get_task_by_id(task_id)
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task not found")
         if str(task.task_type.value if hasattr(task.task_type, "value") else task.task_type) == "video_processing":
             from backend.api.v1 import transcription_gate
             # 1.5.7 gate before resetting the task, off the event loop
@@ -200,7 +200,7 @@ async def retry_task(
             input_video_path = _get_task_config_value(task, "input_video_path")
             input_srt_path = _get_task_config_value(task, "input_srt_path")
             if not input_video_path:
-                raise HTTPException(status_code=400, detail="任务缺少 input_video_path 配置")
+                raise HTTPException(status_code=400, detail="Task is missing the input_video_path setting")
             result = queue_service.submit_video_processing_task(
                 project_id=task.project_id,
                 input_video_path=input_video_path,
@@ -213,10 +213,10 @@ async def retry_task(
             collection_data = _get_task_config_value(task, "collection_data", [])
             result = queue_service.submit_collection_generation_task(task.project_id, collection_data)
         else:
-            raise HTTPException(status_code=400, detail=f"不支持的任务类型: {task_type}")
+            raise HTTPException(status_code=400, detail=f"Unsupported task type: {task_type}")
         
         return {
-            "message": "任务已重新提交",
+            "message": "Task resubmitted",
             "task_id": task_id,
             "queue_task_id": result.get("task_id"),
             "celery_task_id": result.get("celery_task_id"),
@@ -225,7 +225,7 @@ async def retry_task(
         raise
     except Exception as e:
         logger.exception("重试任务失败: %s", task_id)
-        raise HTTPException(status_code=500, detail="重试任务失败，请稍后重试")
+        raise HTTPException(status_code=500, detail="Failed to retry task; please try again later")
 
 @router.get("/{task_id}/status")
 async def get_task_status(
@@ -237,7 +237,7 @@ async def get_task_status(
         task_service = TaskService(db)
         task = task_service.get_task_by_id(task_id)
         if not task:
-            raise HTTPException(status_code=404, detail="任务不存在")
+            raise HTTPException(status_code=404, detail="Task not found")
         
         return {
             "task_id": task_id,
@@ -251,5 +251,5 @@ async def get_task_status(
         raise
     except Exception as e:
         logger.exception("获取任务状态失败: %s", task_id)
-        raise HTTPException(status_code=500, detail="获取任务状态失败，请稍后重试")
+        raise HTTPException(status_code=500, detail="Failed to get task status; please try again later")
 

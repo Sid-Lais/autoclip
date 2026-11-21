@@ -37,7 +37,7 @@ def to_seconds(t: str) -> float:
     elif len(parts) == 2:
         h, (m, sec) = "0", parts
     else:
-        raise ValueError(f"无效时间: {t}")
+        raise ValueError(f"Invalid time: {t}")
     return int(h) * 3600 + int(m) * 60 + float(sec)
 
 
@@ -310,10 +310,10 @@ def refine_timeline(items: Sequence[Dict[str, Any]], srt_entries: Sequence[Dict[
         try:
             s0, e0 = to_seconds(it["start_time"]), to_seconds(it["end_time"])
         except (KeyError, ValueError, TypeError):
-            report["dropped"].append({"outline": _title(it), "reason": "时间格式无效"})
+            report["dropped"].append({"outline": _title(it), "reason": "Invalid time format"})
             continue
         if e0 <= s0:
-            report["dropped"].append({"outline": _title(it), "reason": "结束早于开始"})
+            report["dropped"].append({"outline": _title(it), "reason": "End is before start"})
             continue
         ops: List[str] = []
         if cues:
@@ -342,7 +342,7 @@ def refine_timeline(items: Sequence[Dict[str, Any]], srt_entries: Sequence[Dict[
             shorter = max(1e-6, min(prev["_e"] - prev["_s"], it["_e"] - it["_s"]))
             if overlap > 0 and overlap / shorter >= profile.overlap_merge_ratio:
                 _merge_into(prev, it)
-                report["merged"].append({"kept": _title(prev), "absorbed": _title(it), "reason": f"重叠 {overlap:.1f}s"})
+                report["merged"].append({"kept": _title(prev), "absorbed": _title(it), "reason": f"Overlap {overlap:.1f}s"})
                 continue
             if overlap > 0 and cues:
                 # 小重叠：后者起点推到前者终点之后的第一条 cue
@@ -352,7 +352,7 @@ def refine_timeline(items: Sequence[Dict[str, Any]], srt_entries: Sequence[Dict[
                     it["_ops"].append("shift_start")
                 else:
                     _merge_into(prev, it)
-                    report["merged"].append({"kept": _title(prev), "absorbed": _title(it), "reason": "重叠且无法后移"})
+                    report["merged"].append({"kept": _title(prev), "absorbed": _title(it), "reason": "Overlapping and cannot be shifted later"})
                     continue
         merged.append(it)
 
@@ -396,7 +396,7 @@ def refine_timeline(items: Sequence[Dict[str, Any]], srt_entries: Sequence[Dict[
                         nxt["_e"] - it["_s"] > profile.max_clip_sec:
                     break
                 _merge_into(it, nxt)
-                report["merged"].append({"kept": _title(it), "absorbed": _title(nxt), "reason": "过短，与后一段合并"})
+                report["merged"].append({"kept": _title(it), "absorbed": _title(nxt), "reason": "Too short; merged with the next segment"})
                 pending.pop(idx + 1)
             if it["_e"] - it["_s"] >= profile.min_clip_sec:
                 result.append(it)
@@ -404,9 +404,9 @@ def refine_timeline(items: Sequence[Dict[str, Any]], srt_entries: Sequence[Dict[
             if result and it["_s"] - result[-1]["_e"] <= profile.merge_gap_sec \
                     and (it["_e"] - result[-1]["_s"]) <= profile.max_clip_sec:
                 _merge_into(result[-1], it)
-                report["merged"].append({"kept": _title(result[-1]), "absorbed": _title(it), "reason": "过短，并入前一段"})
+                report["merged"].append({"kept": _title(result[-1]), "absorbed": _title(it), "reason": "Too short; merged into the previous segment"})
             else:
-                report["dropped"].append({"outline": _title(it), "reason": f"过短（{it['_e'] - it['_s']:.0f}s < {profile.min_clip_sec:.0f}s）且无法合并"})
+                report["dropped"].append({"outline": _title(it), "reason": f"Too short ({it['_e'] - it['_s']:.0f}s < {profile.min_clip_sec:.0f}s) and cannot be merged"})
         merged = result
 
     # 5) 收尾：写回字段、重新编号
@@ -513,7 +513,7 @@ def align_scores(clips: Sequence[Dict[str, Any]], llm_results: Any,
         score = _to_score(r.get("final_score")) if r else None
         if score is None:
             c["final_score"] = default_score
-            c["recommend_reason"] = (r or {}).get("recommend_reason") or "未评分（自动兜底）"
+            c["recommend_reason"] = (r or {}).get("recommend_reason") or "Not scored (automatic fallback)"
             c["score_source"] = "fallback"
             stats["fallback"] += 1
         else:

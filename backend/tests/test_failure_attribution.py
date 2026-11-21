@@ -2820,10 +2820,10 @@ def test_cloud_transcription_connection_failure_is_model_without_status(cloud_ad
 # --- ModelResponseInvalid: 200 + content failed our validation is MODEL (invalid_response) ---------------
 
 _INVALID_SITES = {
-    'backend/services/studio/intelligence.py': ('文字模型返回的内容不是有效 JSON', '视觉模型返回的候选格式无效', '模型返回重复候选标识',
-                                               '模型选段超出期望时长', '模型复核边界超出采样区间', '模型未返回成片方案'),
-    'backend/services/studio/subtitle_promo.py': ('推广方案格式无效', '推广方案引用了无效片段', '推广文案为空'),
-    'backend/utils/llm_client.py': ('无法从响应中解析出有效的JSON',),
+    'backend/services/studio/intelligence.py': ('The text model returned content that is not valid JSON', 'The vision model returned an invalid candidate format', 'The model returned duplicate candidate IDs',
+                                               'The model-selected segment exceeds the expected duration', 'The model-reviewed boundary exceeds the sampled range', 'The model did not return a finished-video plan'),
+    'backend/services/studio/subtitle_promo.py': ('The promo plan format is invalid', 'The promo plan referenced an invalid clip', 'The promo copy is empty'),
+    'backend/utils/llm_client.py': ('Could not parse valid JSON from the response',),
 }
 
 

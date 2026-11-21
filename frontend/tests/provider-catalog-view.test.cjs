@@ -97,7 +97,8 @@ test('unconnected presets stay visible and point at configure / compatible / gui
   assert.equal(view.catalogPreset('apimart').base_url, 'https://api.apimart.ai/v1')
   assert.equal(view.catalogPreset('apimart').docs_url, 'https://go.apimart.ai/tw-autoclip')
   assert.equal(view.connectKind(view.catalogPreset('siliconflow')), 'compatible')
-  assert.equal(view.connectKind(view.catalogPreset('anthropic')), 'guide')
+  assert.equal(view.connectKind(view.catalogPreset('minimax')), 'guide')
+  assert.equal(view.connectKind(view.catalogPreset('anthropic')), 'compatible') // Claude goes through its OpenAI-compatible endpoint
   assert.equal(view.connectKind(view.catalogPreset('whisper')), 'local_asr')
 })
 
@@ -130,7 +131,7 @@ test('opening a catalog provider creates a draft without treating an empty key a
   assert.equal(draft.base_url, catalog.providers.siliconflow.base_url)
   assert.equal(settings.connections.length, 0)
   assert.equal(view.isCatalogConnected(settings, view.catalogPreset('siliconflow')), false)
-  assert.equal(view.catalogDraftConnection(view.catalogPreset('anthropic')), undefined)
+  assert.equal(view.catalogDraftConnection(view.catalogPreset('minimax')), undefined)
   const created = view.ensureCatalogConnection(settings, view.catalogPreset('siliconflow'), undefined, () => 'conn-sf')
   assert.equal(created.changed, true)
   assert.equal(created.connection.provider, 'compatible')
@@ -207,7 +208,7 @@ test('unmatched custom gateways stay repairable and do not attach to a catalog p
 
 test('guide-only providers do not write a connection', () => {
   const settings = blank()
-  const result = view.ensureCatalogConnection(settings, view.catalogPreset('anthropic'))
+  const result = view.ensureCatalogConnection(settings, view.catalogPreset('minimax'))
   assert.equal(result.changed, false)
   assert.equal(result.connection, undefined)
   assert.equal(result.settings.connections.length, 0)

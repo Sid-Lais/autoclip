@@ -42,7 +42,7 @@ def start(project_id):
         if current['status'] in ('queued', 'running', 'completed'):
             return current
         if any(s['status'] in ('queued', 'running') for s in _states.values()):
-            raise UserFacingError('已有兼容预览正在生成，请稍后重试')
+            raise UserFacingError('A compatibility preview is already being generated. Please try again later')
         while len(_states) >= 64:
             del _states[next(iter(_states))]
         _states[token] = {'status': 'queued', 'project_id': project_id}
@@ -50,14 +50,14 @@ def start(project_id):
             _executor.submit(_convert, project_id, source, output, token)
         except Exception:
             _states.pop(token, None)
-            raise UserFacingError('兼容预览未能启动，请重试') from None
+            raise UserFacingError('The compatibility preview could not start. Please try again') from None
         return dict(_states[token])
 
 
 def ready_file(project_id):
     _, output, _ = _paths(project_id)
     if not output.is_file() or not output.stat().st_size:
-        raise FileNotFoundError('兼容预览尚未生成')
+        raise FileNotFoundError('The compatibility preview has not been generated yet')
     return output
 
 
@@ -96,6 +96,6 @@ def _convert(project_id: str, source: Path, output: Path, token: str):
     except Exception as error:
         capture_studio_exception(error, 'render')
         with _lock:
-            _states[token] = {'status': 'failed', 'error': '兼容预览生成失败，请检查视频文件后重试'}
+            _states[token] = {'status': 'failed', 'error': 'Compatibility preview generation failed. Check the video file and try again'}
     finally:
         temporary.unlink(missing_ok=True)

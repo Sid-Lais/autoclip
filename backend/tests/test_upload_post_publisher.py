@@ -119,7 +119,7 @@ def test_normalize_platforms_and_pick_preset():
     from backend.services import upload_post_publisher as up
 
     assert up.normalize_platforms(["TikTok", "youtube,instagram", "twitter", "tiktok"]) == ["tiktok", "youtube", "instagram", "x"]
-    with pytest.raises(ValueError, match="不支持的平台"):
+    with pytest.raises(ValueError, match="Unsupported platform"):
         up.normalize_platforms(["douyin"])
     with pytest.raises(ValueError):
         up.normalize_platforms([])
@@ -272,9 +272,9 @@ def test_platforms_follow_video_enum():
         "pinterest", "bluesky", "discord", "telegram", "google_business",
     ]
     assert up.normalize_platforms(["twitter"]) == ["x"]
-    with pytest.raises(ValueError, match="不支持的平台"):
+    with pytest.raises(ValueError, match="Unsupported platform"):
         up.normalize_platforms(["mastodon"])
-    with pytest.raises(ValueError, match="不支持的平台"):
+    with pytest.raises(ValueError, match="Unsupported platform"):
         up.normalize_platforms(["wordpress"])
 
 
@@ -284,7 +284,7 @@ def test_interrupted_job_fails_when_worker_is_gone(data_dir):
     up._remember_job({"job_id": "job-dead", "status": "running", "project_id": "p1", "clip_id": "2"})
     up._jobs.clear()
     job = up.get_publish_job("job-dead", refresh_remote=False)
-    assert job["status"] == "failed" and "中断" in job["error"]
+    assert job["status"] == "failed" and "interrupted" in job["error"]
     again = up.get_publish_job("job-dead", refresh_remote=False)
     assert again["status"] == "failed"
 
@@ -306,7 +306,7 @@ def test_cancel_scheduled_record(data_dir):
     assert session.calls[0][1].endswith("/api/uploadposts/schedule/job-9")
     again = up.list_records("p1")[0]
     assert again["status"] == "cancelled"
-    with pytest.raises(up.UploadPostError, match="还没发出"):
+    with pytest.raises(up.UploadPostError, match="not been sent"):
         up.cancel_record("p1", "req-sched", config=up.UploadPostConfig(api_key="k-1234567890"), session=session)
 
 
@@ -574,7 +574,7 @@ def test_an_english_platform_version_is_never_posted_with_a_chinese_title(data_d
                         lambda _p, _v: _variant_meta(video, "tiktok", title="自动版本"))
     session = _Session([])
     cfg = up.UploadPostConfig(api_key="k-1234567890", user="me", base_url="https://api.example.test")
-    with pytest.raises(up.UploadPostError, match="英文"):
+    with pytest.raises(up.UploadPostError, match="in English"):
         up.publish_clip(up.PublishRequest("p1", "studio-" + "a" * 32, ["tiktok"], output_variant_id="v1"),
                         config=cfg, session=session)
     assert not session.calls
@@ -588,7 +588,7 @@ def test_publish_landscape_variant_refuses_vertical_only_targets(data_dir, monke
                         lambda _p, _v: _variant_meta(video, "youtube_long"))
     session = _Session([])
     cfg = up.UploadPostConfig(api_key="k-1234567890", user="me", base_url="https://api.example.test")
-    with pytest.raises(up.UploadPostError, match="竖版"):
+    with pytest.raises(up.UploadPostError, match="vertical version"):
         up.publish_clip(up.PublishRequest("p1", "studio-" + "a" * 32, ["youtube", "tiktok"], output_variant_id="v1"),
                         config=cfg, session=session)
     assert not session.calls

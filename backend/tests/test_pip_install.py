@@ -23,9 +23,9 @@ def test_run_plan_stops_on_success_and_records_failures():
     switches = []
     code, failures = pip_install.run_plan([("pypi", "a"), ("mirror", "b")], lambda url: [url], run,
                                           on_switch=lambda old, new, why: switches.append((old, new, why)))
-    assert code == 0 and failures == ["pypi: 超时"]
+    assert code == 0 and failures == ["pypi: timed out"]
     assert seen == [("pypi", pip_install.PIP_OFFICIAL_TIMEOUT_SECONDS), ("mirror", pip_install.PIP_MIRROR_TIMEOUT_SECONDS)]
-    assert switches == [("pypi", "mirror", "pypi: 超时")]
+    assert switches == [("pypi", "mirror", "pypi: timed out")]
 
 
 def test_progress_parses_pip_output():
@@ -42,16 +42,16 @@ def test_progress_parses_pip_output():
     assert steps[0] is None
     percents = [s[0] for s in steps if s]
     assert percents == sorted(percents) and percents[0] > 5 and percents[-1] == 98
-    assert "从清华镜像下载 opencv_python_headless（38.9 MB）" in steps[2][1]
-    assert "已下载 2/2 个包，共 51.5 MB" in steps[4][1]
-    assert steps[5][1] == "正在安装依赖（清华镜像）…"
+    assert "Downloading opencv_python_headless (38.9 MB) from Tsinghua mirror" in steps[2][1]
+    assert "2/2 packages downloaded, 51.5 MB total" in steps[4][1]
+    assert steps[5][1] == "Installing dependencies (Tsinghua mirror)…"
 
 
 def test_progress_handles_kb_and_unsized_lines():
     progress = pip_install.PipProgress("pypi")
     progress.feed("Collecting click")
     step = progress.feed("Downloading click-8.5.0-py3-none-any.whl (125 kB)")
-    assert "0.1 MB" in step[1] and "官方 PyPI" in step[1]
+    assert "0.1 MB" in step[1] and "official PyPI" in step[1]
     assert progress.feed("Downloading something") is not None
 
 

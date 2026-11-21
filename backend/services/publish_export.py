@@ -60,7 +60,7 @@ def find_source_video(project_id: str) -> Path:
     vids = sorted(raw.glob("input.*"))
     if vids:
         return vids[0]
-    raise FileNotFoundError(f"项目 {project_id} 没有源视频（raw/input.*）")
+    raise FileNotFoundError(f"Project {project_id} has no source video (raw/input.*)")
 
 
 def find_source_srt(project_id: str) -> Optional[Path]:
@@ -84,7 +84,7 @@ def load_clip_meta(project_id: str, clip_id: str) -> Dict[str, Any]:
         for c in clips:
             if str(c.get("id")) == str(clip_id):
                 return c
-    raise FileNotFoundError(f"项目 {project_id} 没有切片 {clip_id}")
+    raise FileNotFoundError(f"Project {project_id} has no clip {clip_id}")
 
 
 def cjk_font_family(font: Path) -> str:
@@ -282,31 +282,31 @@ def _build_filter(req: ExportRequest, spec: Dict[str, Any], srt_path: Optional[P
 def export_clip(req: ExportRequest) -> Dict[str, Any]:
     """同步导出一条切片。幂等：同参数已存在直接返回。"""
     if req.preset not in PRESETS:
-        raise ValueError(f"未知预设: {req.preset}（可选 {', '.join(PRESETS)}）")
+        raise ValueError(f"Unknown preset: {req.preset} (choose from {', '.join(PRESETS)})")
     spec = PRESETS[req.preset]
     if req.preset == '1080p60' and req.layout not in (None, 'fit'):
-        raise ValueError("1080p60 使用固定横屏等比适配，不支持覆盖画幅")
+        raise ValueError("1080p60 uses fixed landscape fit and does not support overriding the frame layout")
     clip = load_clip_meta(req.project_id, req.clip_id)
     studio = clip.get('source_type') == 'studio'
     if studio and req.preset != '1080p60':
         duration = float(clip['duration_sec'])
         if spec.get('max_sec') and duration > spec['max_sec']:
-            raise ValueError(f"成片超过 {req.preset} 的 {spec['max_sec']} 秒限制，请回编辑器调整后重新导出")
+            raise ValueError(f"The video exceeds the {spec['max_sec']} second limit of {req.preset}; go back to the editor to adjust it and export again")
         return {'ok': True, 'path': clip['video_path'], 'cached': True, 'preset': 'studio',
                 'clip_id': req.clip_id, 'title': clip['title'], 'duration_sec': duration,
                 'studio_job_id': clip['studio_job_id'], 'revision': clip['revision'],
                 'width': clip['width'], 'height': clip['height'],
-                'warnings': [*clip['warnings'], '使用已导出的成片，保留原有画幅、文字和声音，不重复渲染']}
+                'warnings': [*clip['warnings'], 'Using the already exported video; keeping its existing frame layout, text and audio without re-rendering']}
     video = Path(clip['video_path']) if studio else find_source_video(req.project_id)
     start = 0 if studio else to_seconds(clip["start_time"])
     end = float(clip['duration_sec']) if studio else to_seconds(clip["end_time"])
     duration = max(0.1, end - start)
     warnings: List[str] = []
     if studio:
-        warnings.append("Studio 成片按 1080p60 重编码，保留已渲染的文字与声音，不重复烧录字幕和标题卡")
+        warnings.append("The Studio video is re-encoded as 1080p60, keeping the already rendered text and audio without re-burning subtitles and the title card")
     if spec.get("max_sec") and duration > spec["max_sec"]:
         duration = float(spec["max_sec"])
-        warnings.append(f"按时长上限截到 {spec['max_sec']}s（{req.preset}）")
+        warnings.append(f"Trimmed to the {spec['max_sec']}s duration limit ({req.preset})")
 
     title = str(clip.get("generated_title") or clip.get("title") or clip.get("outline") or f"切片{req.clip_id}")
     from backend.core.path_utils import get_project_directory
@@ -336,7 +336,7 @@ def export_clip(req: ExportRequest) -> Dict[str, Any]:
 
     font = resolve_cjk_font()
     if req.title_card and not studio and not font:
-        warnings.append("没找到中文字体，已跳过标题卡")
+        warnings.append("No CJK font found; title card skipped")
     tmpdir = Path(tempfile.mkdtemp(prefix="ac-export-"))
     srt_file = None
     title_file = None
@@ -351,7 +351,7 @@ def export_clip(req: ExportRequest) -> Dict[str, Any]:
                 srt_file = tmpdir / "clip.srt"
                 srt_file.write_text(body, encoding="utf-8")
             else:
-                warnings.append("没有可用字幕，成片不烧字")
+                warnings.append("No usable subtitles; video exported without burned-in subtitles")
         if req.title_card and not studio and font:
             title_file = tmpdir / "title.txt"
             title_file.write_text(title[:40], encoding="utf-8")
@@ -376,12 +376,12 @@ def export_clip(req: ExportRequest) -> Dict[str, Any]:
         cmd, priority = render_limits.low_priority(cmd)
         proc = subprocess.run(cmd, capture_output=True, text=True, encoding="utf-8", errors="ignore", **priority)
         if proc.returncode != 0 or not temp_output.exists() or temp_output.stat().st_size == 0:
-            raise RuntimeError((proc.stderr or proc.stdout or "ffmpeg 失败")[-800:])
+            raise RuntimeError((proc.stderr or proc.stdout or "ffmpeg failed")[-800:])
         from backend.services.output_branding import append_outro
         info = _probe(temp_output)
         append_outro(temp_output, out_path, width=int(info.get('width') or 0), height=int(info.get('height') or 0), enabled=req.brand_outro)
         if not out_path.exists() or out_path.stat().st_size == 0:
-            raise RuntimeError('最终成片文件为空')
+            raise RuntimeError('The final video file is empty')
 
         info = _probe(out_path)
         result = {

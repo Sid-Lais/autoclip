@@ -215,7 +215,7 @@ def test_test_api_endpoint_still_validates_official_key(monkeypatch, fake_openai
     result = asyncio.run(settings_api.test_api_connection(request))
 
     assert result["success"] is False
-    assert "过短" in result["error"]
+    assert "too short" in result["error"]
 
 
 def test_settings_file_provider_wins_over_env(manager_env, monkeypatch):

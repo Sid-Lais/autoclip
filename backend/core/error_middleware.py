@@ -149,7 +149,7 @@ def handle_http_exception(exc: HTTPException, request_id: str = None) -> JSONRes
     elif isinstance(detail, str):
         from backend.core.log_redaction import redact_text
         detail = redact_text(detail)
-    message = detail if isinstance(detail, str) else "请求失败"
+    message = detail if isinstance(detail, str) else "Request failed"
     return create_error_response(
         status_code=exc.status_code,
         error_code=f"HTTP_{exc.status_code}",
@@ -201,16 +201,16 @@ def _loc_is_secret(loc) -> bool:
 _CJK = re.compile(r"[\u4e00-\u9fff]")
 _PYDANTIC_PREFIXES = ("Value error, ", "Assertion failed, ")
 _TYPE_HINTS = {
-    "missing": "缺少必填项，请补全后再保存",
-    "string_type": "这里需要填写文字",
-    "int_parsing": "这里需要填写整数", "int_type": "这里需要填写整数",
-    "float_parsing": "这里需要填写数字", "float_type": "这里需要填写数字",
-    "bool_parsing": "这里只能选是或否", "bool_type": "这里只能选是或否",
-    "literal_error": "选项不在可选范围内，请重新选择", "enum": "选项不在可选范围内，请重新选择",
-    "json_invalid": "请求内容格式不对，请刷新页面后重试",
-    "list_type": "这里的格式不对，请重新选择", "dict_type": "这里的格式不对，请重新填写",
-    "model_type": "这里的格式不对，请重新填写",
-    "url_parsing": "地址格式不对，请填写完整的 http(s):// 地址", "url_scheme": "地址格式不对，请填写完整的 http(s):// 地址",
+    "missing": "Required field is missing. Please fill it in before saving",
+    "string_type": "Text is required here",
+    "int_parsing": "A whole number is required here", "int_type": "A whole number is required here",
+    "float_parsing": "A number is required here", "float_type": "A number is required here",
+    "bool_parsing": "Only yes or no is allowed here", "bool_type": "Only yes or no is allowed here",
+    "literal_error": "The option is not in the allowed range. Please choose again", "enum": "The option is not in the allowed range. Please choose again",
+    "json_invalid": "The request content is malformed. Please refresh the page and try again",
+    "list_type": "The format here is wrong. Please choose again", "dict_type": "The format here is wrong. Please fill it in again",
+    "model_type": "The format here is wrong. Please fill it in again",
+    "url_parsing": "Invalid address format. Please enter a full http(s):// address", "url_scheme": "Invalid address format. Please enter a full http(s):// address",
 }
 
 
@@ -224,18 +224,18 @@ def validation_message(error: dict) -> str:
             msg = msg[len(prefix):]
     if _loc_is_secret(loc):
         if kind == "string_too_long":
-            return "密钥太长，请检查是否粘贴错了"
+            return "The key is too long. Please check that it was pasted correctly"
         if kind == "missing":
-            return "请填写密钥"
-        return "密钥格式不对，请重新粘贴"
+            return "Please enter the key"
+        return "The key format is wrong. Please paste it again"
     if kind == "string_too_long":
         limit = (error.get("ctx") or {}).get("max_length")
-        return f"内容太长（最多 {limit} 个字符），请检查是否粘贴错了" if limit else "内容太长，请检查是否粘贴错了"
+        return f"Content is too long (at most {limit} characters). Please check that it was pasted correctly" if limit else "Content is too long. Please check that it was pasted correctly"
     if kind == "string_too_short":
-        return "内容太短，请补全后再保存"
-    if _CJK.search(msg):
-        return msg  # our own validators already speak Chinese
-    return _TYPE_HINTS.get(kind) or "填写的内容格式不对，请检查后重试"
+        return "Content is too short. Please complete it before saving"
+    if kind == "value_error" or _CJK.search(msg):
+        return msg  # our own validators already write user-facing messages
+    return _TYPE_HINTS.get(kind) or "The content format is wrong. Please check and try again"
 
 
 def handle_validation_error(exc: RequestValidationError, request_id: str = None) -> JSONResponse:
@@ -265,7 +265,7 @@ def handle_validation_error(exc: RequestValidationError, request_id: str = None)
     return create_error_response(
         status_code=422,
         error_code="VALIDATION_ERROR",
-        message="请求参数验证失败",
+        message="Request parameter validation failed",
         details={"errors": errors},
         request_id=request_id,
         detail=errors,
@@ -296,7 +296,7 @@ def handle_generic_exception(exc: Exception, request_id: str = None) -> JSONResp
     return create_error_response(
         status_code=500,
         error_code="INTERNAL_SERVER_ERROR",
-        message="服务器内部错误",
+        message="Internal server error",
         details={"exception_type": type(exc).__name__},
         request_id=request_id
     )

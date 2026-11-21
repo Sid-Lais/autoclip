@@ -38,16 +38,16 @@ class ProcessingContext:
     def validate_context(self):
         """验证上下文的有效性"""
         if not self.project_id:
-            raise ValueError("project_id不能为空")
+            raise ValueError("project_id cannot be empty")
         if not self.task_id:
-            raise ValueError("task_id不能为空")
+            raise ValueError("task_id cannot be empty")
         
         logger.debug(f"ProcessingContext验证通过: project_id={self.project_id}, task_id={self.task_id}")
     
     def set_srt_path(self, srt_path: Path):
         """设置SRT文件路径"""
         if not srt_path.exists():
-            raise FileNotFoundError(f"SRT文件不存在: {srt_path}")
+            raise FileNotFoundError(f"SRT file not found: {srt_path}")
         self.srt_path = srt_path
         logger.debug(f"设置SRT路径: {srt_path}")
     

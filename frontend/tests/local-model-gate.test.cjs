@@ -17,8 +17,8 @@ test('belowLocalAnalysisGate uses params and context floors', () => {
   assert.equal(gate.belowLocalAnalysisGate({ id: 'qwen2.5:14b' }), false)
 })
 
-test('localModelSizeLabel shows 未知 for LM Studio without size', () => {
-  assert.equal(gate.localModelSizeLabel({ id: 'mystery-chat' }, 'lmstudio'), '未知')
+test('localModelSizeLabel shows Unknown for LM Studio without size', () => {
+  assert.equal(gate.localModelSizeLabel({ id: 'mystery-chat' }, 'lmstudio'), 'Unknown')
   assert.match(gate.localModelSizeLabel({ id: 'qwen2.5:7b', context_tokens: 32768 }, 'ollama'), /7B/)
   assert.match(gate.localModelSizeLabel({ id: 'qwen2.5:7b', context_tokens: 32768 }, 'ollama'), /32k/)
 })

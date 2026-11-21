@@ -50,7 +50,7 @@ export function trialEstimateCopy(result: TrialResultLike | null | undefined): s
   const m = result.trial_estimate_minutes
   if (typeof n !== 'number' || typeof m !== 'number') return ''
   // Concrete Chinese string remains the i18n key fallback when templates are missing.
-  return `预计 30 分钟素材约需 ${n} 次请求、约 ${m} 分钟`
+  return `For ~30 min of footage: about ${n} requests, ~${m} min`
 }
 
 export function trialEstimateParts(result: TrialResultLike | null | undefined): { n: number; m: number } | null {

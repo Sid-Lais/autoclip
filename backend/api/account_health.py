@@ -56,7 +56,7 @@ async def check_single_account_health(
         # 检查账号是否存在
         account = db.query(BilibiliAccount).filter(BilibiliAccount.id == account_id).first()
         if not account:
-            raise HTTPException(status_code=404, detail="账号不存在")
+            raise HTTPException(status_code=404, detail="Account not found")
         
         # 如果不强制检查且最近检查过，返回缓存结果
         if not force_check and account.last_health_check:
@@ -66,7 +66,7 @@ async def check_single_account_health(
                     account_id=account.id,
                     username=account.username,
                     status=account.health_status or AccountHealthStatus.UNKNOWN,
-                    message=account.health_details.get("message", "缓存结果") if account.health_details else "缓存结果",
+                    message=account.health_details.get("message", "Cached result") if account.health_details else "Cached result",
                     details=account.health_details or {},
                     last_check=account.last_health_check,
                     expires_in=account.health_details.get("cookie", {}).get("expires_in") if account.health_details else None
@@ -88,7 +88,7 @@ async def check_single_account_health(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"检查失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Check failed: {str(e)}")
 
 @router.post("/health/check", response_model=HealthSummaryResponse)
 async def check_multiple_accounts_health(
@@ -129,7 +129,7 @@ async def check_multiple_accounts_health(
                         account_id=account.id,
                         username=account.username,
                         status=account.health_status or AccountHealthStatus.UNKNOWN,
-                        message=account.health_details.get("message", "缓存结果") if account.health_details else "缓存结果",
+                        message=account.health_details.get("message", "Cached result") if account.health_details else "Cached result",
                         details=account.health_details or {},
                         last_check=account.last_health_check,
                         expires_in=account.health_details.get("cookie", {}).get("expires_in") if account.health_details else None
@@ -173,7 +173,7 @@ async def check_multiple_accounts_health(
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"批量检查失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Batch check failed: {str(e)}")
 
 @router.get("/health/summary", response_model=HealthSummaryResponse)
 async def get_health_summary(db: Session = Depends(get_db)):
@@ -212,7 +212,7 @@ async def get_health_summary(db: Session = Depends(get_db)):
                 account_id=account.id,
                 username=account.username,
                 status=status,
-                message=account.health_details.get("message", "未检查") if account.health_details else "未检查",
+                message=account.health_details.get("message", "Not checked") if account.health_details else "Not checked",
                 details=account.health_details or {},
                 last_check=account.last_health_check or datetime.now(),
                 expires_in=account.health_details.get("cookie", {}).get("expires_in") if account.health_details else None
@@ -229,7 +229,7 @@ async def get_health_summary(db: Session = Depends(get_db)):
         )
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取摘要失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get summary: {str(e)}")
 
 @router.post("/health/refresh-cookie", response_model=CookieRefreshResponse)
 async def refresh_account_cookie(
@@ -242,7 +242,7 @@ async def refresh_account_cookie(
         # 检查账号是否存在
         account = db.query(BilibiliAccount).filter(BilibiliAccount.id == request.account_id).first()
         if not account:
-            raise HTTPException(status_code=404, detail="账号不存在")
+            raise HTTPException(status_code=404, detail="Account not found")
         
         if request.auto_refresh:
             # 异步执行自动刷新
@@ -252,7 +252,7 @@ async def refresh_account_cookie(
             
             return CookieRefreshResponse(
                 success=True,
-                message="已启动自动刷新任务，请稍后查看结果",
+                message="Automatic refresh task started. Please check the result later",
                 account_id=request.account_id,
                 username=account.username
             )
@@ -270,7 +270,7 @@ async def refresh_account_cookie(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"刷新Cookie失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to refresh cookie: {str(e)}")
 
 @router.post("/health/schedule-check")
 async def schedule_health_check(
@@ -288,7 +288,7 @@ async def schedule_health_check(
             
             return {
                 "success": True,
-                "message": f"已调度 {len(account_ids)} 个账号的健康检查任务",
+                "message": f"Health check scheduled for {len(account_ids)} accounts",
                 "account_count": len(account_ids)
             }
         else:
@@ -299,11 +299,11 @@ async def schedule_health_check(
             
             return {
                 "success": True,
-                "message": "已调度所有账号的健康检查任务"
+                "message": "Health check scheduled for all accounts"
             }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"调度任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to schedule task: {str(e)}")
 
 @router.get("/health/status/{account_id}")
 async def get_account_status(
@@ -314,7 +314,7 @@ async def get_account_status(
     try:
         account = db.query(BilibiliAccount).filter(BilibiliAccount.id == account_id).first()
         if not account:
-            raise HTTPException(status_code=404, detail="账号不存在")
+            raise HTTPException(status_code=404, detail="Account not found")
         
         return {
             "account_id": account.id,
@@ -332,4 +332,4 @@ async def get_account_status(
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取状态失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get status: {str(e)}")

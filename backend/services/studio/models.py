@@ -1,3 +1,4 @@
+from backend.services.studio.range_import import SourceRange
 from backend.core.failure_codes import UserFacingError
 from typing import Literal
 
@@ -31,7 +32,7 @@ class Scene(BaseModel):
     framing_adjusted: bool = False
     model_config = ConfigDict(extra='forbid', allow_inf_nan=False)
     id: str = Field(pattern=r'^[a-zA-Z0-9_-]+$', min_length=1, max_length=100)
-    label: str = Field(default='片段', max_length=120)
+    label: str = Field(default='Clip', max_length=120)
     start: float = Field(ge=0)
     end: float = Field(gt=0)
     evidence: str = Field(default='', max_length=1000)
@@ -43,7 +44,7 @@ class Scene(BaseModel):
     @model_validator(mode='after')
     def interval(self):
         if self.end - self.start < .1:
-            raise UserFacingError('片段至少需要 0.1 秒')
+            raise UserFacingError('A clip must be at least 0.1 seconds long')
         return self
 
 class PackagingCue(BaseModel):
@@ -146,25 +147,25 @@ class Packaging(BaseModel):
     def short_title_lines(self):
         self.title_lines = [line.strip() for line in self.title_lines if line.strip()]
         if any(len(line) > 40 for line in self.title_lines):
-            raise UserFacingError('标题每行最多 40 个字符')
+            raise UserFacingError('Each title line can have at most 40 characters')
         classic = self.template in _CLASSIC_TEMPLATES
         html = self.template in _HTML_TEMPLATES
         if not classic and not html:
-            raise UserFacingError('未知包装模板')
+            raise UserFacingError('Unknown packaging template')
         if html and self.version != 2:
-            raise UserFacingError('HTML 模板需要 packaging version 2')
+            raise UserFacingError('HTML templates require packaging version 2')
         if html:
             from backend.services.studio.templates.registry import get
             get(self.template)
         extended = bool(self.kicker or self.emphasis or self.numbers or self.gloss)
         if self.version == 1 and extended:
-            raise UserFacingError('version 1 不包含扩展包装字段')
+            raise UserFacingError('version 1 does not include extended packaging fields')
         if classic:
             allowed = _CLASSIC_STYLES[self.template]
             if self.style is not None and self.style not in allowed:
-                raise UserFacingError('这个模板不支持所选样式')
+                raise UserFacingError('This template does not support the selected style')
         elif self.style is not None:
-            raise UserFacingError('这个模板不支持所选样式')
+            raise UserFacingError('This template does not support the selected style')
         return self
 
 
@@ -200,13 +201,13 @@ class Draft(BaseModel):
     @model_validator(mode='after')
     def title_version(self):
         if self.title_template_version == 6 and self.title_style in ('plain', 'impact', 'card'):
-            raise UserFacingError('文字模板版本 6 仅支持六款设计预设')
+            raise UserFacingError('Text template version 6 only supports the six design presets')
         if self.title_template_version in (4, 5) and self.title_style != 'comic':
-            raise UserFacingError('文字模板版本 4/5 仅支持漫画冲击')
+            raise UserFacingError('Text template version 4/5 only supports Comic Impact')
         if self.title_style == 'editorial' and self.title_template_version < 2:
-            raise UserFacingError('极简大字需要文字模板版本 2 或更新')
+            raise UserFacingError('Editorial big text requires text template version 2 or newer')
         if self.title_style in ('pixel', 'frosted') and self.title_template_version not in (3, 6):
-            raise UserFacingError('像素与磨砂模板需要文字模板版本 3 或 6')
+            raise UserFacingError('Pixel and frosted templates require text template version 3 or 6')
         return self
 
 class CreateDraft(BaseModel):
@@ -228,7 +229,7 @@ class DuplicateDraft(BaseModel):
     def valid_title(self):
         self.title = self.title.strip()
         if not self.title:
-            raise UserFacingError('请填写新版本名称')
+            raise UserFacingError('Enter a name for the new version')
         return self
 
 
@@ -339,6 +340,8 @@ class ImportOptions(BaseModel):
     recommended_template: Literal['editorial', 'street', 'classic'] | None = None
     branding: BrandingOptions = Field(default_factory=BrandingOptions)
     source_window: SourceWindow | None = None
+    # Long-video mode: the project's source is one downloaded range of this absolute span (seconds).
+    source_range: SourceRange | None = None
 
     @model_validator(mode='after')
     def unique_platforms(self):
@@ -371,5 +374,5 @@ class ConfirmPlan(BaseModel):
     @model_validator(mode='after')
     def unique_goals(self):
         if len(set(self.goals)) != len(self.goals):
-            raise UserFacingError('制作类型不能重复')
+            raise UserFacingError('Output types cannot be repeated')
         return self

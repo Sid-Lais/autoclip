@@ -72,7 +72,7 @@ def test_saved_document_is_ready_without_a_provider_call(monkeypatch):
     assert result['analysis_mode'] == 'auto'
     assert result['ready'] is True
     assert_check(result['checks']['analysis'], ok=True, code='configured', repair='none', label='qwen2.5:7b', trial_ok=None)
-    assert_check(result['checks']['transcription'], ok=True, code='whisper_installed', repair='none', label='本地 base')
+    assert_check(result['checks']['transcription'], ok=True, code='whisper_installed', repair='none', label='Local base')
     assert_check(result['checks']['visual'], ok=True, code='optional', repair='none', label='未启用')
     assert_check(result['checks']['ffmpeg'], ok=True, code='available', repair='none', label='FFmpeg')
     assert 'sk-test-key' not in json.dumps(result)
@@ -126,7 +126,7 @@ def test_cloud_connection_without_a_key_is_not_ready(monkeypatch):
         transcription=Transcription(provider='cloud', model='whisper-1', connection_id='asr'),
     ))
     assert result['checks']['analysis']['ok'] is True
-    assert_check(result['checks']['transcription'], ok=False, code='cloud_not_configured', repair='settings_transcription', label='云端 whisper-1')
+    assert_check(result['checks']['transcription'], ok=False, code='cloud_not_configured', repair='settings_transcription', label='Cloud whisper-1')
 
 
 def test_configured_cloud_asr_skips_local_whisper(monkeypatch):
@@ -137,7 +137,7 @@ def test_configured_cloud_asr_skips_local_whisper(monkeypatch):
         connections=[analysis, speech],
         transcription=Transcription(provider='cloud', model='whisper-1', connection_id='asr'),
     ))
-    assert_check(result['checks']['transcription'], ok=True, code='cloud_configured', repair='none', label='云端 whisper-1')
+    assert_check(result['checks']['transcription'], ok=True, code='cloud_configured', repair='none', label='Cloud whisper-1')
 
 
 def test_sensevoice_ready_skips_whisper_install(monkeypatch):
@@ -146,15 +146,15 @@ def test_sensevoice_ready_skips_whisper_install(monkeypatch):
     result = report_for(monkeypatch, document(
         transcription=Transcription(provider='sensevoice_local', model='SenseVoiceSmall'),
     ))
-    assert_check(result['checks']['transcription'], ok=True, code='sensevoice_ready', repair='none', label='本地 SenseVoice')
+    assert_check(result['checks']['transcription'], ok=True, code='sensevoice_ready', repair='none', label='Local SenseVoice')
 
 
 def test_missing_whisper_offers_install(monkeypatch):
     monkeypatch.setattr('backend.services.whisper_runtime.get_status', lambda: {'status': 'not_installed'})
     result = report_for(monkeypatch, document())
-    assert_check(result['checks']['transcription'], ok=False, code='whisper_not_installed', repair='install_whisper', label='本地 base')
+    assert_check(result['checks']['transcription'], ok=False, code='whisper_not_installed', repair='install_whisper', label='Local base')
     monkeypatch.setattr('backend.services.whisper_runtime.get_status', lambda: {'status': 'installing'})
-    assert_check(report_for(monkeypatch, document())['checks']['transcription'], ok=False, code='whisper_installing', repair='none', label='本地 base')
+    assert_check(report_for(monkeypatch, document())['checks']['transcription'], ok=False, code='whisper_installing', repair='none', label='Local base')
 
 
 @pytest.mark.own_whisper_status  # simulates its own Whisper runtime / model state
@@ -163,17 +163,17 @@ def test_runtime_without_the_selected_model_is_not_ready(monkeypatch, isolated):
     from backend.services.whisper_model_manager import get_model_manager
     small = document(transcription=Transcription(model='small'))
     assert_check(report_for(monkeypatch, small)['checks']['transcription'],
-                 ok=False, code='whisper_model_missing', repair='install_whisper', model='small', label='本地 small')
+                 ok=False, code='whisper_model_missing', repair='install_whisper', model='small', label='Local small')
     manager = get_model_manager()
     manager._download_state['small'] = {'status': 'downloading', 'progress': 0, 'error': None}
     assert_check(report_for(monkeypatch, small)['checks']['transcription'],
-                 ok=False, code='whisper_model_downloading', repair='none', model='small', label='本地 small')
+                 ok=False, code='whisper_model_downloading', repair='none', model='small', label='Local small')
     manager._download_state['small'] = {'status': 'error', 'progress': 0, 'error': 'timeout'}
     assert_check(report_for(monkeypatch, small)['checks']['transcription'],
-                 ok=False, code='whisper_model_failed', repair='install_whisper', model='small', label='本地 small')
+                 ok=False, code='whisper_model_failed', repair='install_whisper', model='small', label='Local small')
     model_snapshot(isolated, 'small')
     assert_check(report_for(monkeypatch, small)['checks']['transcription'],
-                 ok=True, code='whisper_installed', repair='none', label='本地 small')
+                 ok=True, code='whisper_installed', repair='none', label='Local small')
 
 
 @pytest.mark.own_whisper_status  # simulates its own Whisper runtime / model state
@@ -323,7 +323,7 @@ def test_completed_download_flips_readiness_immediately(monkeypatch, isolated):
     manager._download_state['small'] = {'status': 'downloaded', 'progress': 100, 'error': None}
     try:
         assert_check(report_for(monkeypatch, small)['checks']['transcription'],
-                     ok=True, code='whisper_installed', repair='none', label='本地 small')
+                     ok=True, code='whisper_installed', repair='none', label='Local small')
     finally:
         manager._download_state.pop('small', None)
 
@@ -349,13 +349,13 @@ def test_separate_vision_validation_gates_readiness_and_runtime(mode, status):
     if blocked:
         assert_check(result['checks']['visual'], ok=False, code='validation_failed', repair='settings_vision', label='gpt-4o')
         for read in (readiness.ensure_analysis_usable, lambda: ai.require_analysis(ai.load()), vision_settings.effective):
-            with pytest.raises(ValueError, match='未通过校验'):
+            with pytest.raises(ValueError, match='did not pass validation'):
                 read()
     else:
         readiness.ensure_analysis_usable()
     if status == 'failed':
         # A confirmation can explicitly request vision even when the saved mode is subtitle.
-        with pytest.raises(ValueError, match='未通过校验'):
+        with pytest.raises(ValueError, match='did not pass validation'):
             vision_settings.effective()
     assert ai.path().read_bytes() == original
 
@@ -369,7 +369,7 @@ def test_f5_labels_and_trial_ok_on_analysis(monkeypatch):
         transcription=Transcription(model='small'),
     ))
     assert_check(result['checks']['analysis'], ok=True, code='configured', label='deepseek-chat', trial_ok=True)
-    assert result['checks']['transcription']['label'] == '本地 small'
+    assert result['checks']['transcription']['label'] == 'Local small'
 
     failed = Connection(id='ai', name='OpenAI', provider='openai', api_key='sk-test-key', trial_status='failed')
     failed_report = report_for(monkeypatch, document(

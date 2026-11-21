@@ -45,7 +45,7 @@ class VisionSettingsInput(BaseModel):
             return value
         parsed = urlparse(value)
         if parsed.scheme not in ('http', 'https') or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
-            raise UserFacingError('请填写完整的 HTTP(S) 接口根地址，不包含密钥或查询参数')
+            raise UserFacingError('Enter a full HTTP(S) endpoint base URL without keys or query parameters')
         return value
 
     @model_validator(mode='after')
@@ -53,9 +53,9 @@ class VisionSettingsInput(BaseModel):
         self.model = self.model.strip()
         if self.mode == 'custom':
             if not self.base_url:
-                raise UserFacingError('请填写完整的 HTTP(S) 接口根地址，不包含密钥或查询参数')
+                raise UserFacingError('Enter a full HTTP(S) endpoint base URL without keys or query parameters')
             if not self.model:
-                raise UserFacingError('请填写模型名称')
+                raise UserFacingError('Enter a model name')
         return self
 
 
@@ -108,7 +108,7 @@ def effective():
     try:
         settings = ai.load()
     except Exception:
-        raise UserFacingError('已保存的模型配置需要修复，请到「设置 → 服务商与模型」修复并保存后再生成。') from None
+        raise UserFacingError('The saved model configuration needs repair. Go to "Settings → Providers & Models", fix and save it, then generate again.') from None
     if settings:
         endpoint = ai.vision_endpoint(settings)
         binding = settings.vision or settings.analysis
@@ -188,7 +188,7 @@ def _resolve(body):
     if body.mode == 'text_model':
         resolved = _with_text_model(stored)
         if not resolved['base_url'] or not resolved['model']:
-            raise UserFacingError('当前文本模型不支持图片接口测试，请先保存 AI 模型设置，或另选视觉模型')
+            raise UserFacingError('The current text model does not support the image endpoint test. Save your AI model settings first, or choose another vision model')
         return resolved
     return stored
 
@@ -218,11 +218,11 @@ def test(body):
     image = b'\x89PNG\r\n\x1a\n' + chunk(b'IHDR', struct.pack('!2I5B', 32, 32, 8, 2, 0, 0, 0)) + chunk(b'IDAT', zlib.compress((b'\0' + b'\xff\0\0' * 32) * 32)) + chunk(b'IEND', b'')
     result = vision_call([{'type': 'text', 'text': 'Identify the dominant color of this test image. Return only JSON: {"color":"red|green|blue|other"}.'}, {'type': 'image_url', 'image_url': {'url': 'data:image/png;base64,' + base64.b64encode(image).decode()}}], config=config)
     if result.get('color', '').lower() != 'red':
-        raise UserFacingError('接口已响应，但图像识别测试未通过；请确认所选模型支持图片输入')
+        raise UserFacingError('The endpoint responded, but the image recognition test did not pass; make sure the selected model supports image input')
     # 记下通过验证的端点。只有已保存的配置才更新标记，未保存的表单值测试通过不落盘。
     with _lock:
         saved = _saved()
         if saved is not None and _fingerprint(_with_text_model(saved) if saved['mode'] == 'text_model' else saved) == _fingerprint(config):
             saved['verified'] = {'fingerprint': _fingerprint(config), 'at': datetime.now(timezone.utc).isoformat()}
             _write(saved)
-    return {'ok': True, 'message': '连接与图片理解测试通过', 'model': config.get('model', '')}
+    return {'ok': True, 'message': 'Connection and image understanding test passed', 'model': config.get('model', '')}

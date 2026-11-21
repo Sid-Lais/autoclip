@@ -124,7 +124,7 @@ class Connection(BaseModel):
     def provider_supported(cls, value):
         from backend.core.cloud_presets import CLOUD_PRESETS
         if value not in {'dashscope', 'openai', 'compatible', 'gemini', 'siliconflow', 'ollama', 'lmstudio', *CLOUD_PRESETS}:
-            raise ValueError('请选择支持的服务类型；自定义服务请选择 OpenAI 兼容')
+            raise ValueError('Choose a supported provider type; for a custom service choose OpenAI-compatible')
         return value
 
     @model_validator(mode='after')
@@ -133,7 +133,7 @@ class Connection(BaseModel):
             from backend.core.provider_presets import get_provider
             preset = get_provider(self.catalog_provider_id)
             if not preset or preset.base_url or preset.protocol == 'local' or self.provider != 'compatible':
-                raise ValueError('请选择需要自定义接口地址的服务商')
+                raise ValueError('Choose a provider that needs a custom endpoint URL')
         return self
 
     @field_validator('image_api', mode='before')
@@ -153,7 +153,7 @@ class Connection(BaseModel):
     @model_validator(mode='after')
     def custom_requires_url(self):
         if self.provider == 'compatible' and not self.base_url:
-            raise ValueError('请填写自定义服务的接口地址')
+            raise ValueError('Enter the endpoint URL of the custom service')
         return self
 
     @field_validator('base_url', 'image_base_url')
@@ -165,9 +165,9 @@ class Connection(BaseModel):
         if value:
             parsed = urlparse(value)
             if parsed.scheme not in ('http', 'https') or not parsed.hostname or parsed.username or parsed.password or parsed.query or parsed.fragment:
-                raise ValueError('请填写不含密钥或查询参数的 HTTP(S) 接口地址')
+                raise ValueError('Enter an HTTP(S) endpoint URL without keys or query parameters')
             if is_console_host(parsed.hostname):
-                raise ValueError('这是控制台或官网地址，不是模型接口')
+                raise ValueError('This is a console or website address, not a model endpoint')
         return value
 
     @model_validator(mode='after')
@@ -186,7 +186,7 @@ class Connection(BaseModel):
     @classmethod
     def nonblank(cls, value):
         if not value.strip():
-            raise ValueError('名称不能为空')
+            raise ValueError('Name cannot be empty')
         return value.strip()
 
     @field_validator('validation_error_type')
@@ -217,7 +217,7 @@ class Assignment(BaseModel):
     @classmethod
     def model_not_blank(cls, value):
         if not value.strip():
-            raise ValueError('请选择或输入模型 ID')
+            raise ValueError('Choose or enter a model ID')
         return value.strip()
 
     @model_validator(mode='after')
@@ -237,17 +237,17 @@ class Transcription(BaseModel):
     def valid_selection(self):
         self.model = self.model.strip()
         if not self.model:
-            raise ValueError('请选择转写模型')
+            raise ValueError('Choose a transcription model')
         if self.provider == 'whisper_local':
             if self.model not in {'tiny', 'base', 'small', 'medium', 'large', 'large-v3'}:
-                raise ValueError('请选择本地 Whisper 模型')
+                raise ValueError('Choose a local Whisper model')
             self.connection_id = None
         elif self.provider == 'sensevoice_local':
             if self.model != 'SenseVoiceSmall':
-                raise ValueError('请选择本地 SenseVoiceSmall 模型')
+                raise ValueError('Choose the local SenseVoiceSmall model')
             self.connection_id = None
         elif not self.connection_id:
-            raise ValueError('请选择转写供应商')
+            raise ValueError('Choose a transcription provider')
         return self
 
 
@@ -301,25 +301,25 @@ class ModelSettings(BaseModel):
     def consistent(self):
         ids = [c.id for c in self.connections]
         if len(ids) != len(set(ids)):
-            raise ValueError('服务连接 ID 不能重复')
+            raise ValueError('Service connection IDs must be unique')
         for binding in (self.analysis, self.vision, self.cover):
             if binding and binding.connection_id not in ids:
-                raise ValueError('模型引用的服务已被移除，请先重新选择模型')
+                raise ValueError('The service referenced by the model has been removed. Please choose a model again')
         if self.transcription and self.transcription.provider == 'cloud':
             connection = next((c for c in self.connections if c.id == self.transcription.connection_id), None)
             if not connection:
-                raise ValueError('转写模型引用的服务已被移除')
+                raise ValueError('The service referenced by the transcription model has been removed')
             from backend.core.asr_model_catalog import adapter
             if not adapter(connection.provider, self.transcription.model):
-                raise ValueError('该 ASR 模型的字幕时间戳接口尚未适配，请选择其他转写模型')
+                raise ValueError('The subtitle timestamp API of this ASR model is not supported yet. Please choose another transcription model')
         if self.cover_follows_analysis is None:
             self.cover_follows_analysis = bool(
                 self.cover and self.analysis and self.cover.connection_id == self.analysis.connection_id)
         if (self.cover_follows_analysis and self.cover and self.analysis
                 and self.cover.connection_id != self.analysis.connection_id):
-            raise ValueError('跟随分析的封面必须使用分析服务连接')
+            raise ValueError('The cover that follows analysis must use the analysis service connection')
         if self.cover_enabled and not self.cover:
-            raise ValueError('请选择封面生图模型')
+            raise ValueError('Choose a cover image generation model')
         if self.analysis_mode == 'subtitle':
             self.allow_visual_screening = False
         return self
@@ -388,27 +388,27 @@ def endpoint_provider_ready(connection: Connection) -> bool:
 def connection_for(settings: ModelSettings, assignment: Assignment) -> Connection:
     connection = next((c for c in settings.connections if c.id == assignment.connection_id), None)
     if connection is None:
-        raise ValueError('模型引用的服务连接已缺失，请到「设置 → 服务商与模型」重新选择并保存，完成修复后再生成。')
+        raise ValueError('The service connection referenced by the model is missing. Go to "Settings → Providers and models", choose and save it again, then generate again.')
     if not endpoint_provider_ready(connection):
-        raise ValueError('请填写服务商接口地址并通过连接验证后再生成。')
+        raise ValueError('Enter the provider endpoint URL and pass the connection check before generating.')
     return connection
 
 
 def ensure_runtime_bindings(settings: ModelSettings, *, require_vision: bool = False) -> None:
     """A lost explicit assignment is never consent to borrow another provider."""
     if {'analysis_configuration_invalid', 'vision_configuration_invalid'} & set(settings._migration_warnings):
-        raise ValueError('分析或视觉模型引用的服务连接已缺失或配置无效，请到「设置 → 服务商与模型」修复并保存后再生成。')
+        raise ValueError('The service connection referenced by the analysis or vision model is missing or invalid. Go to "Settings → Providers and models", fix and save it, then generate again.')
     for binding in (settings.analysis, settings.vision):
         if binding is not None:
             connection = connection_for(settings, binding)
             if connection.validation_status == 'failed' and (binding is settings.analysis or settings.analysis_mode == 'visual' or require_vision):
-                raise ValueError('当前模型连接未通过校验。请到「设置 → 服务商与模型」修复密钥或地址后再生成。')
+                raise ValueError('The current model connection did not pass validation. Go to "Settings → Providers and models", fix the key or endpoint, then generate again.')
 
 
 def require_analysis(settings: ModelSettings) -> Assignment:
     ensure_runtime_bindings(settings)
     if settings.analysis is None:
-        raise ValueError('分析模型配置需要修复，请到「设置 → 服务商与模型」选择服务连接和模型并保存后再生成。')
+        raise ValueError('The analysis model configuration needs repair. Go to "Settings → Providers and models", choose a service connection and model, save, then generate again.')
     return settings.analysis
 
 
@@ -424,7 +424,7 @@ def chat_endpoint(connection: Connection, model: str) -> dict:
     else:
         base = official_chat_url(connection.provider)
         if not base:
-            raise ValueError('请填写服务商接口地址')
+            raise ValueError('Enter the provider endpoint URL')
     if connection.provider == 'dashscope' and connection.base_url and (urlparse(base).hostname or '').endswith('.aliyuncs.com'):
         # Dedicated Bailian endpoints are pasted as a host or its native /api/v1 path; text models
         # use the OpenAI-compatible path on the same host (speech recognition uses /api/v1).
@@ -575,7 +575,7 @@ def save(settings: ModelSettings) -> dict:
             'acked_catalog_version': max(settings.acked_catalog_version, previous.acked_catalog_version, current_catalog_version()),
         })
         if not resolved.analysis:
-            raise ValueError('请选择高光分析模型')
+            raise ValueError('Choose a highlight analysis model')
         # Visual-follow without vision: persist (marked red) and block at generation.
         target = path()
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -647,13 +647,13 @@ def migrate_legacy() -> ModelSettings:
     vision = None
     if v.get('mode') == 'custom' and v.get('base_url') and v.get('model'):
         try:
-            connection = Connection(id='legacy-vision', name='视觉服务', base_url=v['base_url'], api_key=v.get('api_key', ''))
+            connection = Connection(id='legacy-vision', name='Vision service', base_url=v['base_url'], api_key=v.get('api_key', ''))
             vision, warning = _legacy_assignment(connection, v.get('model') or '', 'vision', 'multimodal')
             connections.append(connection)
             if warning:
                 migration_warnings.append(warning)
         except ValidationError:
-            salvaged = try_connection(id='legacy-vision', name='视觉服务', base_url='', api_key=v.get('api_key', ''))
+            salvaged = try_connection(id='legacy-vision', name='Vision service', base_url='', api_key=v.get('api_key', ''))
             if salvaged:
                 vision, _warning = _legacy_assignment(salvaged, '', 'vision', 'multimodal')
                 connections.append(salvaged)
@@ -678,7 +678,7 @@ def migrate_legacy() -> ModelSettings:
                         'gemini': 'gemini', 'grok': 'grok', 'glm': 'glm'}.get(cfg.provider, 'openai')
                 try:
                     connection = Connection(
-                        id='legacy-cover', name='封面服务', provider=kind,
+                        id='legacy-cover', name='Cover service', provider=kind,
                         api_key=cfg.api_key,
                         image_api='auto' if kind in {'gemini', 'grok', 'glm'} else cfg.provider,
                         base_url=cfg.base_url if kind != 'dashscope' else '',
@@ -690,7 +690,7 @@ def migrate_legacy() -> ModelSettings:
                         migration_warnings.append(warning)
                 except ValidationError:
                     salvaged = try_connection(
-                        id='legacy-cover', name='封面服务', provider=kind,
+                        id='legacy-cover', name='Cover service', provider=kind,
                         api_key=cfg.api_key,
                         image_api='auto' if kind in {'gemini', 'grok', 'glm'} else cfg.provider,
                         base_url='',

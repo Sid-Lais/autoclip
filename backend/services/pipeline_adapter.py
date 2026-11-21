@@ -160,28 +160,28 @@ class PipelineAdapter:
         # 检查API密钥
         api_config = config_manager.get_api_config()
         if not api_config.api_key and not os.getenv("DASHSCOPE_API_KEY"):
-            errors.append("缺少API密钥配置")
+            errors.append("Missing API key configuration")
         
         # 检查项目目录
         if not self.project_paths["project_base"].exists():
-            errors.append(f"项目目录不存在: {self.project_paths['project_base']}")
+            errors.append(f"Project directory does not exist: {self.project_paths['project_base']}")
         
         # 检查输入文件
         input_video = self.project_paths["input_dir"] / "input.mp4"
         input_srt = self.path_manager.get_srt_path() if self.compat_mode else self.project_paths["input_dir"] / "input.srt"
         
         if not self.compat_mode and not input_video.exists():
-            errors.append(f"视频文件不存在: {input_video}")
+            errors.append(f"Video file does not exist: {input_video}")
         
         if not input_srt.exists():
-            errors.append(f"SRT文件不存在: {input_srt}")
+            errors.append(f"SRT file does not exist: {input_srt}")
         
         # 检查提示词文件
         if not self.compat_mode:
             prompt_files = get_prompt_files()
             for key, path in prompt_files.items():
                 if not path.exists():
-                    errors.append(f"提示词文件不存在: {path}")
+                    errors.append(f"Prompt file does not exist: {path}")
         
         return errors
 
@@ -213,7 +213,7 @@ class PipelineAdapter:
             "step6_video": self.adapt_step6_video,
         }
         if step_name not in adapters:
-            raise ValueError(f"未知步骤: {step_name}")
+            raise ValueError(f"Unknown step: {step_name}")
         return adapters[step_name](**kwargs)
 
     def execute_step(self, step_name: str, **kwargs) -> Dict[str, Any]:
@@ -222,7 +222,7 @@ class PipelineAdapter:
     def adapt_step1_outline(self, srt_path: Optional[Path] = None, **kwargs) -> Dict[str, Any]:
         srt_path = Path(srt_path or self.path_manager.get_srt_path())
         if not srt_path.exists():
-            raise FileNotFoundError(f"SRT文件不存在: {srt_path}")
+            raise FileNotFoundError(f"SRT file does not exist: {srt_path}")
         return {
             "srt_path": srt_path,
             "metadata_dir": self.path_manager.metadata_dir,
@@ -291,12 +291,12 @@ class PipelineAdapter:
             
             # 执行6步流水线
             steps = [
-                ("step1_outline", "大纲提取", self._execute_step1),
-                ("step2_timeline", "时间线提取", self._execute_step2),
-                ("step3_scoring", "内容评分", self._execute_step3),
-                ("step4_title", "标题生成", self._execute_step4),
-                ("step5_clustering", "主题聚类", self._execute_step5),
-                ("step6_video", "视频生成", self._execute_step6)
+                ("step1_outline", "Outline extraction", self._execute_step1),
+                ("step2_timeline", "Timeline extraction", self._execute_step2),
+                ("step3_scoring", "Content scoring", self._execute_step3),
+                ("step4_title", "Title generation", self._execute_step4),
+                ("step5_clustering", "Topic clustering", self._execute_step5),
+                ("step6_video", "Video generation", self._execute_step6)
             ]
             
             total_steps = len(steps)
@@ -307,15 +307,15 @@ class PipelineAdapter:
                     
                     # 更新进度 - 步骤开始
                     progress = int((i / total_steps) * 100)
-                    await self._update_progress(progress, f"开始执行: {step_desc}")
+                    await self._update_progress(progress, f"Starting: {step_desc}")
                     
                     # 执行步骤
                     result = await step_func()
                     
                     if result.get("status") == "failed":
-                        error_msg = result.get("message", "步骤执行失败")
+                        error_msg = result.get("message", "Step execution failed")
                         logger.error(f"步骤 {step_name} 执行失败: {error_msg}")
-                        return {"status": "failed", "message": f"{step_desc}失败: {error_msg}"}
+                        return {"status": "failed", "message": f"{step_desc} failed: {error_msg}"}
                     
                     # 保存步骤结果
                     self.step_results[step_name] = result
@@ -323,10 +323,10 @@ class PipelineAdapter:
                     
                     # 更新进度 - 步骤完成
                     progress = int(((i + 1) / total_steps) * 100)
-                    await self._update_progress(progress, f"完成: {step_desc}")
+                    await self._update_progress(progress, f"Completed: {step_desc}")
                     
                 except Exception as e:
-                    error_msg = f"步骤 {step_name} 执行异常: {str(e)}"
+                    error_msg = f"Step {step_name} raised an exception: {str(e)}"
                     logger.error(error_msg)
                     return {"status": "failed", "message": error_msg}
             
@@ -339,13 +339,13 @@ class PipelineAdapter:
             logger.info(f"项目 {self.project_id} 处理完成")
             return {
                 "status": "success",
-                "message": "项目处理完成",
+                "message": "Project processing complete",
                 "project_id": self.project_id,
                 "results": self.step_results
             }
             
         except Exception as e:
-            error_msg = f"项目处理失败: {str(e)}"
+            error_msg = f"Project processing failed: {str(e)}"
             logger.error(error_msg)
             return {"status": "failed", "message": error_msg}
         finally:
@@ -414,7 +414,7 @@ class PipelineAdapter:
             output_path = self.project_paths["metadata_dir"] / "step2_timeline.json"
             
             if not outline_path.exists():
-                return {"status": "failed", "message": "步骤1结果文件不存在"}
+                return {"status": "failed", "message": "Step 1 result file does not exist"}
             
             video_category = self._video_category()
             prompt_files = get_prompt_files(video_category)
@@ -439,7 +439,7 @@ class PipelineAdapter:
             output_path = self.project_paths["metadata_dir"] / "step3_scoring.json"
             
             if not timeline_path.exists():
-                return {"status": "failed", "message": "步骤2结果文件不存在"}
+                return {"status": "failed", "message": "Step 2 result file does not exist"}
             
             video_category = self._video_category()
             prompt_files = get_prompt_files(video_category)
@@ -464,7 +464,7 @@ class PipelineAdapter:
             output_path = self.project_paths["metadata_dir"] / "step4_titles.json"
             
             if not scoring_path.exists():
-                return {"status": "failed", "message": "步骤3结果文件不存在"}
+                return {"status": "failed", "message": "Step 3 result file does not exist"}
             
             video_category = self._video_category()
             prompt_files = get_prompt_files(video_category)
@@ -489,7 +489,7 @@ class PipelineAdapter:
             output_path = self.project_paths["metadata_dir"] / "step5_collections.json"
             
             if not titles_path.exists():
-                return {"status": "failed", "message": "步骤4结果文件不存在"}
+                return {"status": "failed", "message": "Step 4 result file does not exist"}
             
             video_category = self._video_category()
             prompt_files = get_prompt_files(video_category)
@@ -515,11 +515,11 @@ class PipelineAdapter:
             input_video_path = self.project_paths["input_dir"] / "input.mp4"
             
             if not titles_path.exists():
-                return {"status": "failed", "message": "步骤4结果文件不存在"}
+                return {"status": "failed", "message": "Step 4 result file does not exist"}
             if not collections_path.exists():
-                return {"status": "failed", "message": "步骤5结果文件不存在"}
+                return {"status": "failed", "message": "Step 5 result file does not exist"}
             if not input_video_path.exists():
-                return {"status": "failed", "message": "输入视频文件不存在"}
+                return {"status": "failed", "message": "Input video file does not exist"}
             
             result = run_step6_video(
                 clips_with_titles_path=titles_path,
@@ -677,9 +677,9 @@ class PipelineAdapter:
                             project_id=self.project_id,
                             name=collection_data['collection_title'],
                             description=collection_data.get('collection_summary', ''),
-                            theme="投资理财",
+                            theme="Investing & Finance",
                             status=CollectionStatus.COMPLETED,
-                            tags=["投资", "理财", "策略"],
+                            tags=["Investing", "Finance", "Strategy"],
                             collection_metadata={
                                 'clip_ids': full_clip_ids,  # 使用完整的切片ID
                                 'simplified_clip_ids': simplified_clip_ids,  # 保留原始简化ID

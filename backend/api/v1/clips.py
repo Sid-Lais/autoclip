@@ -35,12 +35,12 @@ async def update_clip_title(
             raise HTTPException(status_code=400, detail="标题不能为空")
         
         if len(new_title) > 200:
-            raise HTTPException(status_code=400, detail="标题长度不能超过200个字符")
+            raise HTTPException(status_code=400, detail="Title cannot exceed 200 characters")
         
         # 更新切片标题
         clip = clip_service.update_clip(clip_id, ClipUpdate(title=new_title))
         if not clip:
-            raise HTTPException(status_code=404, detail="切片不存在")
+            raise HTTPException(status_code=404, detail="Clip not found")
         
         # 返回更新后的切片信息
         return ClipResponse(
@@ -65,7 +65,7 @@ async def update_clip_title(
         raise
     except Exception as e:
         logger.error(f"更新切片标题失败: {e}")
-        raise HTTPException(status_code=500, detail=f"更新切片标题失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update clip title: {str(e)}")
 
 
 @router.post("/{clip_id}/generate-title", response_model=dict)
@@ -78,13 +78,13 @@ async def generate_clip_title(
         # 获取切片信息
         clip = clip_service.get(clip_id)
         if not clip:
-            raise HTTPException(status_code=404, detail="切片不存在")
+            raise HTTPException(status_code=404, detail="Clip not found")
         
         # 直接从clip_metadata获取内容，不需要从文件系统获取
         clip_metadata = getattr(clip, 'clip_metadata', {}) or {}
         
         if not clip_metadata:
-            raise HTTPException(status_code=404, detail="切片元数据不存在")
+            raise HTTPException(status_code=404, detail="Clip metadata not found")
         
         # 准备LLM输入数据
         llm_input = [{
@@ -108,13 +108,13 @@ async def generate_clip_title(
         raw_response = llm_client.call_with_retry(title_prompt, llm_input)
         
         if not raw_response:
-            raise HTTPException(status_code=500, detail="LLM调用失败")
+            raise HTTPException(status_code=500, detail="LLM call failed")
         
         # 解析LLM响应
         titles_map = llm_client.parse_json_response(raw_response)
         
         if not isinstance(titles_map, dict) or clip_id not in titles_map:
-            raise HTTPException(status_code=500, detail="LLM返回格式错误")
+            raise HTTPException(status_code=500, detail="LLM returned an invalid format")
         
         generated_title = titles_map[clip_id]
         
@@ -128,7 +128,7 @@ async def generate_clip_title(
         raise
     except Exception as e:
         logger.error(f"生成切片标题失败: {e}")
-        raise HTTPException(status_code=500, detail=f"生成切片标题失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to generate clip title: {str(e)}")
 
 
 @router.post("/", response_model=ClipResponse)
@@ -267,7 +267,7 @@ async def cleanup_duplicate_clips(
         clips_metadata_file = project_dir / "metadata" / "clips_metadata.json"
         
         if not clips_metadata_file.exists():
-            raise HTTPException(status_code=404, detail="切片元数据文件不存在")
+            raise HTTPException(status_code=404, detail="Clip metadata file not found")
         
         with open(clips_metadata_file, 'r', encoding='utf-8') as f:
             original_clips = json.load(f)
@@ -304,7 +304,7 @@ async def cleanup_duplicate_clips(
             "db_before_count": len(db_clips),
             "kept_count": kept_count,
             "deleted_count": deleted_count,
-            "message": f"清理完成：保留 {kept_count} 个，删除 {deleted_count} 个重复切片"
+            "message": f"Cleanup complete: kept {kept_count}, deleted {deleted_count} duplicate clip(s)"
         }
         
     except HTTPException:
@@ -312,7 +312,7 @@ async def cleanup_duplicate_clips(
     except Exception as e:
         logger.error(f"清理重复切片失败: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"清理失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Cleanup failed: {str(e)}")
 
 
 @router.post("/resync-project")
@@ -352,7 +352,7 @@ async def resync_project_clips(
             "project_name": project.name,
             "deleted_count": deleted_count,
             "synced_count": synced_count,
-            "message": f"重新同步完成：删除 {deleted_count} 个，同步 {synced_count} 个切片"
+            "message": f"Resync complete: deleted {deleted_count}, synced {synced_count} clip(s)"
         }
         
     except HTTPException:
@@ -360,4 +360,4 @@ async def resync_project_clips(
     except Exception as e:
         logger.error(f"重新同步切片失败: {e}")
         db.rollback()
-        raise HTTPException(status_code=500, detail=f"重新同步失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Resync failed: {str(e)}")

@@ -236,7 +236,7 @@ class WebSocketGatewayService:
             await manager.send_personal_message({
                 "type": "subscription_confirmed",
                 "task_id": task_id,
-                "message": f"已订阅任务 {task_id} 的进度更新",
+                "message": f"Subscribed to progress updates for task {task_id}",
                 "timestamp": datetime.utcnow().isoformat()
             }, user_id)
             
@@ -281,7 +281,7 @@ class WebSocketGatewayService:
             await manager.send_personal_message({
                 "type": "unsubscription_confirmed",
                 "task_id": task_id,
-                "message": f"已取消订阅任务 {task_id} 的进度更新",
+                "message": f"Unsubscribed from progress updates for task {task_id}",
                 "timestamp": datetime.utcnow().isoformat()
             }, user_id)
             

@@ -57,7 +57,7 @@ def cleanup_expired_data(self, days: int = 30) -> Dict[str, Any]:
                 cleanup_results['tasks_cleaned'] = tasks_cleaned
                 logger.info(f"清理了 {tasks_cleaned} 个过期任务")
             except Exception as e:
-                error_msg = f"清理任务失败: {str(e)}"
+                error_msg = f"Failed to clean up tasks: {str(e)}"
                 logger.error(error_msg)
                 cleanup_results['errors'].append(error_msg)
             
@@ -67,7 +67,7 @@ def cleanup_expired_data(self, days: int = 30) -> Dict[str, Any]:
                 cleanup_results['projects_cleaned'] = projects_cleaned
                 logger.info(f"清理了 {projects_cleaned} 个过期项目")
             except Exception as e:
-                error_msg = f"清理项目失败: {str(e)}"
+                error_msg = f"Failed to clean up projects: {str(e)}"
                 logger.error(error_msg)
                 cleanup_results['errors'].append(error_msg)
             
@@ -77,7 +77,7 @@ def cleanup_expired_data(self, days: int = 30) -> Dict[str, Any]:
                 cleanup_results['files_cleaned'] = files_cleaned
                 logger.info(f"清理了 {files_cleaned} 个孤立文件")
             except Exception as e:
-                error_msg = f"清理文件失败: {str(e)}"
+                error_msg = f"Failed to clean up files: {str(e)}"
                 logger.error(error_msg)
                 cleanup_results['errors'].append(error_msg)
             
@@ -87,7 +87,7 @@ def cleanup_expired_data(self, days: int = 30) -> Dict[str, Any]:
                 cleanup_results['temp_files_cleaned'] = temp_files_cleaned
                 logger.info(f"清理了 {temp_files_cleaned} 个临时文件")
             except Exception as e:
-                error_msg = f"清理临时文件失败: {str(e)}"
+                error_msg = f"Failed to clean up temp files: {str(e)}"
                 logger.error(error_msg)
                 cleanup_results['errors'].append(error_msg)
             

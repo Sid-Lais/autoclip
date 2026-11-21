@@ -34,8 +34,8 @@ def create_initial_data():
         
         # 创建测试项目
         test_project = Project(
-            name="测试项目",
-            description="这是一个测试项目，用于验证系统功能",
+            name="Test Project",
+            description="This is a test project used to verify system functionality",
             project_type=ProjectType.KNOWLEDGE,
             status=ProjectStatus.PENDING,
             processing_config={
@@ -50,21 +50,21 @@ def create_initial_data():
         
         # 创建测试任务
         test_task = Task(
-            name="测试任务",
-            description="测试处理任务",
+            name="Test Task",
+            description="Test processing task",
             task_type=TaskType.VIDEO_PROCESSING,
             project_id=test_project.id,
             status=TaskStatus.PENDING,
             progress=0,
-            current_step="等待开始",
+            current_step="Waiting to start",
             total_steps=6
         )
         db.add(test_task)
         
         # 创建测试切片
         test_clip = Clip(
-            title="测试切片",
-            content="这是一个测试切片的内容",
+            title="Test Clip",
+            content="This is the content of a test clip",
             start_time=0,
             end_time=30,
             score=0.8,
@@ -74,8 +74,8 @@ def create_initial_data():
         
         # 创建测试合集
         test_collection = Collection(
-            title="测试合集",
-            description="这是一个测试合集",
+            title="Test Collection",
+            description="This is a test collection",
             project_id=test_project.id
         )
         db.add(test_collection)

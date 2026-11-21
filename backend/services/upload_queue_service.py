@@ -106,7 +106,7 @@ class UploadQueueService:
             if not account_id:
                 best_account = self.bilibili_account_service.select_best_account()
                 if not best_account:
-                    raise ValueError("没有可用的B站账号")
+                    raise ValueError("No Bilibili account available")
                 task.account_id = best_account.id
             
             self.task_queue[task_id] = task
@@ -376,7 +376,7 @@ def upload_video_task(self, task_id: str, video_path: str, title: str,
                     'bv_id': upload_record.bv_id,
                     'upload_record_id': upload_record.id
                 }
-            raise Exception(upload_record.error_message or "上传失败")
+            raise Exception(upload_record.error_message or "Upload failed")
 
     except Exception as e:
         logger.error(f"Celery上传任务失败: {e}")

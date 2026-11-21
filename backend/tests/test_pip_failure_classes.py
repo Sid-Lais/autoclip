@@ -60,11 +60,11 @@ def test_stream_classifies_real_pip_output(text, expected):
 
 
 @pytest.mark.parametrize("code,failures,expected", [
-    (NETWORK_EXIT, ["pypi: 网络不通", "mirror: 网络不通"], "pip_network"),
-    (NETWORK_EXIT, ["pypi: 超时", "mirror: 网络不通"], "pip_network"),
-    (TIMEOUT_EXIT, ["pypi: 网络不通", "mirror: 超时"], "pip_network"),
-    (TIMEOUT_EXIT, ["pypi: 超时", "mirror: 超时"], "pip_timeout"),
-    (NO_WHEEL_EXIT, ["pypi: 网络不通", "mirror: 没有可用 wheel"], "pip_no_wheel"),
+    (NETWORK_EXIT, ["pypi: network unreachable", "mirror: network unreachable"], "pip_network"),
+    (NETWORK_EXIT, ["pypi: timed out", "mirror: network unreachable"], "pip_network"),
+    (TIMEOUT_EXIT, ["pypi: network unreachable", "mirror: timed out"], "pip_network"),
+    (TIMEOUT_EXIT, ["pypi: timed out", "mirror: timed out"], "pip_timeout"),
+    (NO_WHEEL_EXIT, ["pypi: network unreachable", "mirror: no usable wheel"], "pip_no_wheel"),
     (SOURCE_BUILD_EXIT, ["mirror: 需要源码编译"], "pip_source_build"),
     (CANCEL_EXIT, ["pypi: 已取消"], "pip_cancelled"),
     (1, ["pypi: 退出码 1"], "pip_failed"),
@@ -74,7 +74,7 @@ def test_error_code(code, failures, expected):
 
 
 def test_network_message_mentions_network_proxy_and_pip_index_url():
-    message = pip_install.failure_message(NETWORK_EXIT, ["pypi: 网络不通", "mirror: 网络不通"], "人物识别组件")
+    message = pip_install.failure_message(NETWORK_EXIT, ["pypi: network unreachable", "mirror: network unreachable"], "people-detection component")
     assert "网络" in message and "代理" in message and "PIP_INDEX_URL" in message
     assert "预编译包" not in message and "更新到最新版" not in message
 
@@ -102,7 +102,7 @@ def test_whisper_both_indexes_blocked_says_network(tmp_path, monkeypatch):
     with whisper_runtime._state_lock:
         state = dict(whisper_runtime._state)
     assert state["status"] == "error" and state["error_code"] == "pip_network"
-    assert "PIP_INDEX_URL" in state["message"] and "预编译包" not in state["message"]
+    assert "PIP_INDEX_URL" in state["message"] and "prebuilt package" not in state["message"]
     whisper_runtime._set_state(status="unknown", progress=0, message="", error_code="")
 
 
@@ -115,7 +115,7 @@ def test_every_stage_names_the_mirror_after_a_switch():
         "Successfully installed numpy-2.2.6 opencv-python-headless-4.12.0.88",
     ]) if step]
     assert len(messages) == 4
-    assert all("清华镜像" in m for m in messages), messages
+    assert all("Tsinghua mirror" in m for m in messages), messages
 
 
 def test_framing_progress_after_mirror_switch_names_the_mirror(tmp_path, monkeypatch):
@@ -135,7 +135,7 @@ def test_framing_progress_after_mirror_switch_names_the_mirror(tmp_path, monkeyp
     monkeypatch.setattr(pip_install, "stream", fake_stream)
     monkeypatch.setattr(framing, "is_installed", lambda: True)
     framing._do_install(None)
-    after = [m for m in seen if m][seen.index(next(m for m in seen if m and "改用" in m)) + 1:]
-    stages = [m for m in after if m.startswith("正在") and m != "正在连接清华镜像…"]
-    assert stages and all("清华镜像" in m for m in stages), after
+    after = [m for m in seen if m][seen.index(next(m for m in seen if m and "switching to" in m)) + 1:]
+    stages = [m for m in after if m.startswith(("Resolving", "Downloading", "Installing", "Finishing"))]
+    assert stages and all("Tsinghua mirror" in m for m in stages), after
     framing._set_state(status="unknown", progress=0, message="", error_code="")

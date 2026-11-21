@@ -40,7 +40,7 @@ class TaskSubmissionService:
                 'success': True,
                 'task_id': celery_task.id,
                 'status': 'PENDING',
-                'message': '视频流水线任务已提交'
+                'message': 'Video pipeline task submitted'
             }
             
         except Exception as e:
@@ -48,7 +48,7 @@ class TaskSubmissionService:
             return {
                 'success': False,
                 'error': str(e),
-                'message': '任务提交失败'
+                'message': 'Task submission failed'
             }
     
     @staticmethod
@@ -80,7 +80,7 @@ class TaskSubmissionService:
                 'task_id': celery_task.id,
                 'step': step,
                 'status': 'PENDING',
-                'message': f'步骤 {step} 任务已提交'
+                'message': f'Step {step} task submitted'
             }
             
         except Exception as e:
@@ -88,6 +88,6 @@ class TaskSubmissionService:
             return {
                 'success': False,
                 'error': str(e),
-                'message': '任务提交失败'
+                'message': 'Task submission failed'
             }
 

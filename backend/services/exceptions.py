@@ -162,7 +162,7 @@ def handle_service_error(func):
         except Exception as e:
             # 将其他异常包装为ServiceError
             logger.error(f"未处理的异常: {e}")
-            raise SystemError(f"系统错误: {str(e)}", cause=e)
+            raise SystemError(f"System error: {str(e)}", cause=e)
     return wrapper
 
 

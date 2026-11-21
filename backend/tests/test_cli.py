@@ -63,12 +63,12 @@ def test_api_key_flag_warns_and_env_is_the_default(capsys, monkeypatch):
     flagged = _llm_override(Namespace(provider=None, model=None, base_url=None, api_key='flag-secret'))
     err = capsys.readouterr().err
     assert flagged.api_key == 'flag-secret'
-    assert '弃用' in err and 'AUTOCLIP_API_KEY' in err
+    assert 'deprecated' in err and 'AUTOCLIP_API_KEY' in err
     with pytest.raises(SystemExit) as result:
         build_parser().parse_args(['run', '--help'])
     assert result.value.code == 0
     help_text = capsys.readouterr().out
-    assert '弃用' in help_text and 'AUTOCLIP_API_KEY' in help_text
+    assert 'Deprecated' in help_text and 'AUTOCLIP_API_KEY' in help_text
 
 
 def test_parser_run_accepts_provider_presets():

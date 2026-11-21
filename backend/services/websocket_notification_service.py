@@ -110,7 +110,7 @@ class WebSocketNotificationService:
                 task_id=task_id,
                 status="running",
                 progress=0,
-                message="开始处理项目"
+                message="Project processing started"
             )
             
             # 广播给所有连接的用户
@@ -170,7 +170,7 @@ class WebSocketNotificationService:
                 task_id=task_id,
                 status="completed",
                 progress=100,
-                message="项目处理完成"
+                message="Project processing complete"
             )
             
             # 广播给所有连接的用户
@@ -209,7 +209,7 @@ class WebSocketNotificationService:
             logger.error(f"发送处理错误通知失败: {e}")
     
     @staticmethod
-    async def send_processing_started(project_id: str, message: str = "开始视频处理流程"):
+    async def send_processing_started(project_id: str, message: str = "Starting video processing"):
         """发送处理开始通知（别名方法）"""
         await WebSocketNotificationService.send_project_update(
             project_id=project_id,

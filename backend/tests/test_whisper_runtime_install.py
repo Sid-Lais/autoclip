@@ -48,7 +48,7 @@ def test_source_build_stops_immediately():
 def test_missing_wheel_is_reported_as_such():
     code, _ = wr._stream(_script(["ERROR: Could not find a version that satisfies the requirement av==18.1.0"], 1), 30, 30)
     assert code == wr.NO_WHEEL_EXIT
-    assert "预编译包" in wr._failure_message(code, ["pypi: 没有可用 wheel"])
+    assert "prebuilt package" in wr._failure_message(code, ["pypi: no usable wheel"])
 
 
 def test_silent_pip_times_out():

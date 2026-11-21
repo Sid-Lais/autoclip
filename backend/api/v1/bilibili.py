@@ -67,7 +67,7 @@ async def parse_bilibili_video(
         # 验证URL格式
         downloader = BilibiliDownloader(browser=browser)
         if not downloader.validate_bilibili_url(url):
-            raise HTTPException(status_code=400, detail="无效的B站视频链接")
+            raise HTTPException(status_code=400, detail="Invalid Bilibili video link")
         
         # 获取真实的视频信息
         video_info = await downloader.get_video_info(url)
@@ -90,7 +90,7 @@ async def parse_bilibili_video(
         
     except Exception as e:
         logger.error(f"解析B站视频失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"解析失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Parse failed: {str(e)}")
 
 @router.post("/download")
 async def create_bilibili_download_task(request: BilibiliDownloadRequest):
@@ -206,7 +206,7 @@ async def create_bilibili_download_task(request: BilibiliDownloadRequest):
                 "project_id": project_id,
                 "task_id": task_id,
                 "status": "created",
-                "message": "项目已创建，正在下载中..."
+                "message": "Project created, downloading..."
             }
             
         finally:
@@ -214,13 +214,13 @@ async def create_bilibili_download_task(request: BilibiliDownloadRequest):
         
     except Exception as e:
         logger.error(f"创建下载任务失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"创建任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create task: {str(e)}")
 
 @router.get("/tasks/{task_id}")
 async def get_bilibili_task_status(task_id: str):
     """获取下载任务状态"""
     if task_id not in download_tasks:
-        raise HTTPException(status_code=404, detail="任务不存在")
+        raise HTTPException(status_code=404, detail="Task not found")
     
     return download_tasks[task_id]
 
@@ -270,14 +270,14 @@ async def process_download_task(task_id: str, request: BilibiliDownloadRequest, 
         download_tasks[task_id].progress = 10.0
         
         # 更新项目状态和进度
-        await update_project_download_progress(project_id, 10.0, "正在获取视频信息...")
+        await update_project_download_progress(project_id, 10.0, "Fetching video info...")
         
         # 获取视频信息
         video_info = await get_bilibili_video_info(request.url, request.browser)
         download_tasks[task_id].progress = 30.0
         
         # 更新项目进度
-        await update_project_download_progress(project_id, 30.0, "正在下载视频...")
+        await update_project_download_progress(project_id, 30.0, "Downloading video...")
         
         # 下载视频
         data_dir = get_data_directory()
@@ -296,13 +296,13 @@ async def process_download_task(task_id: str, request: BilibiliDownloadRequest, 
         subtitle_error = None
         
         # 更新项目进度
-        await update_project_download_progress(project_id, 60.0, "视频下载完成，正在处理字幕...")
+        await update_project_download_progress(project_id, 60.0, "Video downloaded, processing subtitles...")
         
         # 如果没有字幕文件，优先使用Whisper生成字幕
         if not subtitle_path and video_path:
             logger.info("优先使用Whisper生成高质量字幕")
             # 更新项目进度
-            await update_project_download_progress(project_id, 70.0, "正在使用Whisper生成字幕...")
+            await update_project_download_progress(project_id, 70.0, "Generating subtitles with Whisper...")
             
             try:
                 from ...utils.speech_recognizer import generate_subtitle_for_video, SpeechRecognitionError
@@ -332,7 +332,7 @@ async def process_download_task(task_id: str, request: BilibiliDownloadRequest, 
                 logger.info(f"Whisper字幕生成成功: {subtitle_path}")
                 
                 # 更新项目进度
-                await update_project_download_progress(project_id, 90.0, "字幕生成完成，正在准备处理...")
+                await update_project_download_progress(project_id, 90.0, "Subtitles generated, preparing to process...")
                 
             except SpeechRecognitionError as e:
                 logger.warning("Whisper字幕生成失败: %s", e)
@@ -341,7 +341,7 @@ async def process_download_task(task_id: str, request: BilibiliDownloadRequest, 
             except Exception as e:
                 logger.warning("生成字幕过程中发生未知错误: %s", type(e).__name__)
                 subtitle_path = None
-                subtitle_error = "本地 Whisper 生成字幕失败。请到「设置 → 默认模型 → 语音转字幕」确认模型已下载，并检查视频有可播放的音轨。"
+                subtitle_error = "Local Whisper failed to generate subtitles. Go to \"Settings → Default Model → Speech to Subtitles\" to confirm the model is downloaded, and check that the video has a playable audio track."
         
         download_tasks[task_id].progress = 80.0
         
@@ -423,25 +423,25 @@ async def process_download_task(task_id: str, request: BilibiliDownloadRequest, 
                 from ...services.download_progress import save_processing_config
                 save_processing_config(
                     project,
-                    {"error_message": subtitle_error or "字幕文件不存在且Whisper生成失败"},
+                    {"error_message": subtitle_error or "Subtitle file does not exist and Whisper generation failed"},
                 )
                 db.commit()
                 
                 # 更新任务状态为失败
                 download_tasks[task_id].status = "failed"
-                download_tasks[task_id].error_message = subtitle_error or "字幕文件不存在且Whisper生成失败"
+                download_tasks[task_id].error_message = subtitle_error or "Subtitle file does not exist and Whisper generation failed"
                 download_tasks[task_id].progress = 0.0
                 download_tasks[task_id].project_id = str(project.id)
                 download_tasks[task_id].updated_at = datetime.now().isoformat()
                 
                 # 更新项目下载进度为失败
-                await update_project_download_progress(project_id, 0.0, "下载失败：字幕文件不存在")
+                await update_project_download_progress(project_id, 0.0, "Download failed: subtitle file does not exist")
                 
                 logger.info(f"B站下载任务失败: {task_id}, 项目ID: {project.id}, 原因: 字幕文件不存在")
                 return
             
             # 更新项目下载进度为完成
-            await update_project_download_progress(project_id, 100.0, "下载完成，准备开始处理")
+            await update_project_download_progress(project_id, 100.0, "Download complete, ready to start processing")
             
             # 更新任务状态
             download_tasks[task_id].status = "completed"
@@ -494,7 +494,7 @@ async def process_download_task(task_id: str, request: BilibiliDownloadRequest, 
                 if project and project.status == ProjectStatus.PENDING:
                     project.status = ProjectStatus.FAILED
                     from ...services.download_progress import save_processing_config
-                    save_processing_config(project, {"error_message": f"下载失败: {e}"})
+                    save_processing_config(project, {"error_message": f"Download failed: {e}"})
                     db.commit()
                     logger.info(f"项目 {project_id} 已标记为失败")
             finally:

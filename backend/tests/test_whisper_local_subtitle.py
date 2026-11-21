@@ -107,18 +107,18 @@ def test_failure_text_has_no_local_path():
     message = describe_whisper_failure(RuntimeError(r"failed to open C:\Users\secret\clip.mp4"))
     assert "secret" not in message
     assert "clip.mp4" not in message
-    assert "设置 → 默认模型 → 语音转字幕" in message
+    assert "Settings → Default models → Speech to subtitles" in message
 
 
 @pytest.mark.parametrize("error,expected", [
-    (ImportError(r"DLL load failed C:\Users\secret\runtime.pyd"), "依赖加载失败"),
-    (MemoryError("allocation failed"), "内存不足"),
-    (RuntimeError("Unable to open model.bin"), "模型文件缺失或不完整"),
-    (ConnectionError("https://huggingface.co/model.bin?token=secret"), "下载连接失败"),
-    (PermissionError(r"C:\Users\secret\model.bin"), "访问权限"),
-    (ValueError("File does not have any audio stream"), "音轨"),
-    (RuntimeError("unknown error secret"), "本地 Whisper 生成字幕失败。"),
-    (IndexError("tuple index out of range"), "本地 Whisper 生成字幕失败。"),
+    (ImportError(r"DLL load failed C:\Users\secret\runtime.pyd"), "dependencies failed to load"),
+    (MemoryError("allocation failed"), "ran out of memory"),
+    (RuntimeError("Unable to open model.bin"), "missing or incomplete"),
+    (ConnectionError("https://huggingface.co/model.bin?token=secret"), "download connection failed"),
+    (PermissionError(r"C:\Users\secret\model.bin"), "access permissions"),
+    (ValueError("File does not have any audio stream"), "audio track"),
+    (RuntimeError("unknown error secret"), "Local Whisper failed to generate subtitles."),
+    (IndexError("tuple index out of range"), "Local Whisper failed to generate subtitles."),
 ])
 def test_whisper_failure_has_actionable_category_without_raw_details(error, expected):
     message = describe_whisper_failure(error)
@@ -197,7 +197,7 @@ def test_failed_model_download_is_a_readable_settings_error(tmp_path, monkeypatc
     video.write_bytes(b"video")
     with pytest.raises(SpeechRecognitionError) as caught:
         _recognizer()._generate_subtitle_whisper_local(video, tmp_path / "clip.srt", SpeechRecognitionConfig())
-    assert "设置 → 默认模型 → 语音转字幕" in str(caught.value)
+    assert "Settings → Default models → Speech to subtitles" in str(caught.value)
     assert "未安装" not in str(caught.value)
 
 
@@ -251,7 +251,7 @@ def test_cpu_encode_error_becomes_readable_and_is_not_logged_with_traceback(tmp_
             _recognizer()._generate_subtitle_whisper_local(video, output, SpeechRecognitionConfig())
 
     assert calls == [("cpu", "int8")]
-    assert "显卡" in str(exc.value)
+    assert "GPU" in str(exc.value)
     assert not output.exists()
     assert all(record.exc_info in (None, (None, None, None)) for record in caplog.records)
 
@@ -289,7 +289,7 @@ def test_vad_fail_retries_without_filter_and_still_writes_srt(tmp_path, monkeypa
 def test_generate_subtitle_accepts_import_keyword_arguments(tmp_path):
     """导入任务会传入时间戳、超时和密钥。这些参数不能在进到 Whisper 之前变成 TypeError。"""
     missing = tmp_path / "missing.mp4"
-    with pytest.raises(SpeechRecognitionError, match="视频文件不存在"):
+    with pytest.raises(SpeechRecognitionError, match="Video file not found"):
         generate_subtitle_for_video(
             missing,
             language="auto",
@@ -300,7 +300,7 @@ def test_generate_subtitle_accepts_import_keyword_arguments(tmp_path):
             enable_speaker_diarization=False,
             timeout=1800,
         )
-    with pytest.raises(SpeechRecognitionError, match="视频文件不存在"):
+    with pytest.raises(SpeechRecognitionError, match="Video file not found"):
         generate_subtitle_for_video(
             missing,
             method="openai_api",

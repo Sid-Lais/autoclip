@@ -21,6 +21,34 @@ export function draftProperties(draft?: Partial<Draft>): Properties {
   })
 }
 type RetryReceipt = { attempt?: AttemptReceipt | null }
+/** The embeddable player the backend found for a link (long-video picker). */
+export type VideoEmbed = { site: 'youtube' | 'bilibili'; id: string; page?: number }
+/** Options shared by every range of one long-video import. */
+export type ImportRangesFields = {
+  language: Language
+  aspect?: string
+  duration?: number
+  instruction: string
+  platforms: string[]
+  portrait_style: string
+  html_template?: string
+  recommended_template?: string
+  brand_outro_enabled: boolean
+  features?: Record<string, unknown>
+}
+export type ImportRangesRequest = ImportRangesFields & {
+  url: string
+  browser?: string
+  title: string
+  ranges: { start: number; end: number; label: string }[]
+}
+export type ImportRangesResult = { projects: { project_id: string; analysis_run_id?: string; start: number; end: number }[]; skipped: number }
+export type SearchResult = { url: string; title: string; channel: string; duration: number; view_count: number | null; thumbnail: string | null; long_video: boolean; suggested: boolean }
+export type ClipMoment = { start: number; end: number; score: number | null; source: 'most_replayed' | 'chapter'; label?: string }
+/** `ranges`: cut these parts; `whole`: the pipeline picks from the whole (short) video; `manual`: too long and nothing to base a cut on. */
+export type SuggestedClips = { url: string; title: string; duration: number; view_count: number | null; mode: 'ranges' | 'whole' | 'manual'; moments: ClipMoment[]; signal: string | null }
+export type AutoClipRequest = ImportRangesFields & { browser?: string; items: { url: string; title: string; ranges: { start: number; end: number; label: string }[] }[] }
+export type AutoClipResult = { projects: { project_id: string; analysis_run_id?: string; url: string }[]; skipped: { url: string; reason: string }[] }
 /** One key per click: the same request re-sent returns the same receipt (backend idempotency). */
 const retryKey = () => `r-${telemetryId()}`
 
@@ -51,7 +79,33 @@ export const studioApi = {
     preview_route: 'platform_subtitle' | 'local_transcription' | 'visual'
     recommended_analysis?: 'subtitle' | 'visual'
     warn_visual_too_long?: boolean
+    long_video?: boolean
+    embed?: VideoEmbed | null
   }> => api.post('/studio/inspect-url', body, { timeout: 10000 }),
+  /** Long-video mode: one project per range; only those ranges are downloaded. */
+  importRanges: (body: ImportRangesRequest): Promise<ImportRangesResult> => {
+    const props = { source_type: /bilibili\.com|b23\.tv/.test(body.url) ? 'bilibili' : 'youtube', range_count: body.ranges.length }
+    return observeStudioOperation('studio_import', () => api.post<unknown, ImportRangesResult>('/studio/import-ranges', body), (result, observed) => {
+      for (const project of result.projects) {
+        workflow.rememberProject(project.project_id, props)
+        workflow.watch('studio-screen', project.project_id, undefined, undefined, observed, false, project.analysis_run_id)
+        workflow.watch('studio-generation', project.project_id, undefined, undefined, observed, false, project.analysis_run_id)
+      }
+    }, props)
+  },
+  searchVideos: (body: { query: string; limit?: number }): Promise<{ results: SearchResult[] }> => api.post('/studio/search', body, { timeout: 60000 }),
+  suggestClips: (body: { url: string; browser?: string }): Promise<SuggestedClips> => api.post('/studio/suggest-clips', body, { timeout: 60000 }),
+  /** Search flow: one project per approved range, or per approved short video. */
+  autoClip: (body: AutoClipRequest): Promise<AutoClipResult> => {
+    const props = { source_type: 'youtube', range_count: body.items.length }
+    return observeStudioOperation('studio_import', () => api.post<unknown, AutoClipResult>('/studio/auto-clip', body, { timeout: 120000 }), (result, observed) => {
+      for (const project of result.projects) {
+        workflow.rememberProject(project.project_id, props)
+        workflow.watch('studio-screen', project.project_id, undefined, undefined, observed, false, project.analysis_run_id)
+        workflow.watch('studio-generation', project.project_id, undefined, undefined, observed, false, project.analysis_run_id)
+      }
+    }, props)
+  },
   /* the install-recovery probe (probeConfig: one attempt, READINESS_TIMEOUT_MS, the round's
 signal); every HTTP answer (even a 500) is seen. */
   readinessProbe: (signal: AbortSignal): Promise<ImportReadiness> => api.get('/studio/readiness', probeConfig(signal)),

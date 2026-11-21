@@ -55,11 +55,11 @@ def status():
     if valid and value['status'] != 'installing':
         value = {'status': 'ready', 'message': ''}
     elif value.get('status') == 'ready':
-        value = {'status': 'not_installed', 'message': '模型文件缺失，请重新准备模型'}
+        value = {'status': 'not_installed', 'message': 'Model files are missing. Please prepare the model again'}
     if value.get('status') == 'installing':
         try:
             with operation():
-                value = {'status': 'error', 'message': '上次模型准备被中断，请重试'}
+                value = {'status': 'error', 'message': 'The last model preparation was interrupted. Please retry'}
         except RuntimeError:
             pass
     return {**value, 'model': MODEL}
@@ -118,7 +118,7 @@ def operation():
                 import fcntl
                 fcntl.flock(handle, fcntl.LOCK_EX | fcntl.LOCK_NB)
         except OSError:
-            raise RuntimeError('SenseVoice 正在准备或转写，请完成后重试') from None
+            raise RuntimeError('SenseVoice is preparing or transcribing. Please retry when it finishes') from None
         try:
             yield
         finally:
@@ -154,7 +154,7 @@ def worker(action, result, audio=None, language='auto', timeout=None, deny_netwo
             raise  # Preserve the transcription timeout classification.
         if completed.returncode:
             _log_subprocess_failure(f'worker (exit={completed.returncode})', log)
-            raise RuntimeError('SenseVoice 模型运行失败，请到「设置 → 默认模型 → 语音转字幕」重新准备模型；仍失败时附上脱敏日志')
+            raise RuntimeError('The SenseVoice model failed to run. Go to Settings → Default models → Speech to subtitles and prepare the model again; if it still fails, attach the redacted log')
 
 
 def _installation_command(runtime):
@@ -171,7 +171,7 @@ def _installation_command(runtime):
     binary = 'torch,torchaudio'
     if bundled:
         if not list(wheels.glob('editdistance-0.8.1-*.whl')):
-            raise RuntimeError('SenseVoice 本地组件缺失，请重新安装 AutoClip 后重试')
+            raise RuntimeError('SenseVoice local components are missing. Please reinstall AutoClip and retry')
         # CPython 3.13 has no upstream editdistance wheel. The release builder
         # supplies one for this portable interpreter; never compile on a user's machine.
         binary += ',editdistance'
@@ -183,7 +183,7 @@ def _installation_command(runtime):
 
 
 def _prepare():
-    _state('installing', '正在安装组件，首次下载可能需要几分钟')
+    _state('installing', 'Installing components; the first download may take a few minutes')
     try:
         runtime = root() / 'runtime'
         command = _installation_command(runtime)
@@ -196,11 +196,11 @@ def _prepare():
                                            env={**os.environ, 'PIP_PROGRESS_BAR': 'off', 'PYTHONIOENCODING': 'utf-8'})
             except subprocess.TimeoutExpired as exc:
                 _log_subprocess_failure('pip timeout', log)
-                raise RuntimeError('SenseVoice 组件安装失败，请检查网络和磁盘空间后重试') from exc
+                raise RuntimeError('SenseVoice component installation failed. Check your network and disk space, then retry') from exc
             if completed.returncode:
                 _log_subprocess_failure('pip', log)
-                raise RuntimeError('SenseVoice 组件安装失败，请检查网络和磁盘空间后重试')
-        _state('installing', '正在下载并检查 SenseVoiceSmall 模型')
+                raise RuntimeError('SenseVoice component installation failed. Check your network and disk space, then retry')
+        _state('installing', 'Downloading and checking the SenseVoiceSmall model')
         result = root() / 'prepare-result.json'
         worker('prepare', result, timeout=1800)
         value = json.loads(result.read_text(encoding='utf-8'))
@@ -209,7 +209,7 @@ def _prepare():
         result.unlink(missing_ok=True)
         _state('ready')
     except Exception as exc:
-        _state('error', str(exc) if isinstance(exc, RuntimeError) else 'SenseVoice 准备失败，请检查网络后重试')
+        _state('error', str(exc) if isinstance(exc, RuntimeError) else 'SenseVoice preparation failed. Check your network and retry')
         raise
 
 
@@ -249,18 +249,18 @@ def transcribe(video, output=None, language='auto', timeout=0, *, deny_network=F
     from backend.utils.word_timing import write_word_timing
     language = {'zh-TW': 'zh', 'en-US': 'en', 'en-GB': 'en'}.get(language, language)
     if language not in {'auto', 'zh', 'en', 'ja', 'ko', 'yue'}:
-        raise SpeechRecognitionError('SenseVoiceSmall 支持中文、粤语、英语、日语和韩语，请选择支持的语言或自动检测')
+        raise SpeechRecognitionError('SenseVoiceSmall supports Chinese, Cantonese, English, Japanese and Korean. Choose a supported language or auto-detect')
     output = Path(output) if output else Path(video).with_suffix('.srt')
     try:
         with operation(), tempfile.TemporaryDirectory(prefix='autoclip-sensevoice-') as temporary:
             if status()['status'] != 'ready':
-                raise RuntimeError('SenseVoice 尚未就绪，请到「设置 → 默认模型 → 语音转字幕」准备 SenseVoiceSmall 模型')
+                raise RuntimeError('SenseVoice is not ready yet. Go to Settings → Default models → Speech to subtitles and prepare the SenseVoiceSmall model')
             audio, result = Path(temporary) / 'audio.wav', Path(temporary) / 'result.json'
             extracted = subprocess.run([get_ffmpeg_path(), '-nostdin', '-v', 'error', '-y', '-i', str(video),
                                         '-vn', '-ac', '1', '-ar', '16000', '-c:a', 'pcm_s16le', str(audio)],
                                        capture_output=True, timeout=timeout or 300)
             if extracted.returncode:
-                raise RuntimeError('SenseVoice 无法读取视频音轨，请确认视频包含可播放的人声')
+                raise RuntimeError('SenseVoice cannot read the video audio track. Make sure the video contains audible speech')
             with wave.open(str(audio), 'rb') as source:
                 duration_ms = source.getnframes() * 1000 // source.getframerate()
             worker('transcribe', result, audio, language, timeout or None, deny_network)
@@ -276,6 +276,6 @@ def transcribe(video, output=None, language='auto', timeout=0, *, deny_network=F
                 pending.unlink(missing_ok=True)
             return output
     except subprocess.TimeoutExpired:
-        raise SpeechRecognitionError('SenseVoice 转写超时，请缩短视频或增加转写超时时间') from None
+        raise SpeechRecognitionError('SenseVoice transcription timed out. Shorten the video or increase the transcription timeout') from None
     except (RuntimeError, ValueError, OSError) as exc:
         raise SpeechRecognitionError(str(exc)) from exc

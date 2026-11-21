@@ -97,7 +97,7 @@ def process_video_pipeline(
                 "skipped": True,
                 "project_id": project_id,
                 "task_id": task_id,
-                "message": "已有流水线在运行，已跳过重复任务",
+                "message": "A pipeline is already running; duplicate task skipped",
             }
         _active_pipeline_projects.add(project_id)
 
@@ -105,14 +105,14 @@ def process_video_pipeline(
         # 先记下任务行再关掉会话。流水线可能跑很久，不能占着连接（#175）。
         with session_scope() as db:
             task = Task(
-                name=f"视频处理流水线",
-                description=f"处理项目 {project_id} 的完整视频流水线",
+                name=f"Video processing pipeline",
+                description=f"Full video processing pipeline for project {project_id}",
                 task_type=TaskType.VIDEO_PROCESSING,
                 project_id=project_id,
                 celery_task_id=task_id,
                 status=TaskStatus.RUNNING,
                 progress=0,
-                current_step="初始化",
+                current_step="Initializing",
                 total_steps=6
             )
             db.add(task)
@@ -168,7 +168,7 @@ def process_video_pipeline(
                     task.status = TaskStatus.FAILED
                     task.error_message = error_msg
                     if result.get("stage"):
-                        task.current_step = f"失败于 {result['stage']}"
+                        task.current_step = f"Failed at {result['stage']}"
                     task.result_data = result
 
                 if project and not clips_only:
@@ -224,7 +224,7 @@ def process_video_pipeline(
                     "project_id": project_id,
                     "task_id": task_id,
                     "result": result,
-                    "message": "视频处理流水线完成"
+                    "message": "Video processing pipeline complete"
                 }
         return outcome
 
@@ -232,7 +232,7 @@ def process_video_pipeline(
         logger.info("项目已删除，流水线已停止: %s", project_id)
         raise
     except Exception as e:
-        error_msg = f"视频流水线处理失败: {str(e)}"
+        error_msg = f"Video pipeline processing failed: {str(e)}"
         logger.error(error_msg)
 
         # 更新任务状态为失败
@@ -298,39 +298,39 @@ def process_single_step(self, project_id: str, step: str, config: Dict[str, Any]
             # 根据步骤类型执行不同的处理
             if step == "outline":
                 run_async_notification(
-                    notification_service.send_processing_progress(project_id, task_id, 50, "生成大纲")
+                    notification_service.send_processing_progress(project_id, task_id, 50, "Generating outline")
                 )
                 result = processing_service.generate_outline(project_id, config)
                 
             elif step == "timeline":
                 run_async_notification(
-                    notification_service.send_processing_progress(project_id, task_id, 50, "提取时间轴")
+                    notification_service.send_processing_progress(project_id, task_id, 50, "Extracting timeline")
                 )
                 result = processing_service.extract_timeline(project_id, config)
                 
             elif step == "titles":
                 run_async_notification(
-                    notification_service.send_processing_progress(project_id, task_id, 50, "生成标题")
+                    notification_service.send_processing_progress(project_id, task_id, 50, "Generating titles")
                 )
                 result = processing_service.generate_titles(project_id, config)
                 
             elif step == "clips":
                 run_async_notification(
-                    notification_service.send_processing_progress(project_id, task_id, 50, "视频切片")
+                    notification_service.send_processing_progress(project_id, task_id, 50, "Cutting video clips")
                 )
                 result = processing_service.extract_clips(project_id, config)
                 
             elif step == "collections":
                 run_async_notification(
-                    notification_service.send_processing_progress(project_id, task_id, 50, "生成合集")
+                    notification_service.send_processing_progress(project_id, task_id, 50, "Generating collections")
                 )
                 result = processing_service.generate_collections(project_id, config)
                 
             else:
-                raise Exception(f"未知的步骤类型: {step}")
+                raise Exception(f"Unknown step type: {step}")
             
             if not result.get("success"):
-                raise Exception(f"步骤 {step} 处理失败: {result.get('error')}")
+                raise Exception(f"Step {step} failed: {result.get('error')}")
             
             # 发送完成通知
             run_async_notification(
@@ -344,7 +344,7 @@ def process_single_step(self, project_id: str, step: str, config: Dict[str, Any]
             db.close()
             
     except Exception as e:
-        error_msg = f"单个步骤处理失败: {str(e)}"
+        error_msg = f"Single step processing failed: {str(e)}"
         logger.error(error_msg)
         
         # 发送错误通知
@@ -383,8 +383,8 @@ def retry_processing_step(self, project_id: str, step: str, config: Dict[str, An
         run_async_notification(
             notification_service.send_system_notification(
                 "retry_started",
-                "重试开始",
-                f"正在重试步骤: {step}",
+                "Retry started",
+                f"Retrying step: {step}",
                 "warning"
             )
         )
@@ -399,8 +399,8 @@ def retry_processing_step(self, project_id: str, step: str, config: Dict[str, An
         run_async_notification(
             notification_service.send_system_notification(
                 "retry_success",
-                "重试成功",
-                f"步骤 {step} 重试成功",
+                "Retry succeeded",
+                f"Step {step} retried successfully",
                 "success"
             )
         )
@@ -408,14 +408,14 @@ def retry_processing_step(self, project_id: str, step: str, config: Dict[str, An
         return result
         
     except Exception as e:
-        error_msg = f"重试处理步骤失败: {str(e)}"
+        error_msg = f"Failed to retry processing step: {str(e)}"
         logger.error(error_msg)
         
         # 发送重试失败通知
         run_async_notification(
             notification_service.send_error_notification(
                 "retry_failed",
-                f"步骤 {step} 重试失败",
+                f"Step {step} retry failed",
                 {"project_id": project_id, "step": step, "error": str(e)}
             )
         )

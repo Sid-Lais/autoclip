@@ -42,13 +42,13 @@ class APIConfig(BaseModel):
     @validator('max_tokens')
     def validate_max_tokens(cls, v):
         if v <= 0:
-            raise ValueError('max_tokens必须大于0')
+            raise ValueError('max_tokens must be greater than 0')
         return v
     
     @validator('timeout')
     def validate_timeout(cls, v):
         if v <= 0:
-            raise ValueError('timeout必须大于0')
+            raise ValueError('timeout must be greater than 0')
         return v
 
 
@@ -70,13 +70,13 @@ class ProcessingConfig(BaseModel):
     @validator('min_score_threshold')
     def validate_score_threshold(cls, v):
         if not 0 <= v <= 1:
-            raise ValueError('评分阈值必须在0-1之间')
+            raise ValueError('Score threshold must be between 0 and 1')
         return v
     
     @validator('chunk_size')
     def validate_chunk_size(cls, v):
         if v <= 0:
-            raise ValueError('分块大小必须大于0')
+            raise ValueError('Chunk size must be greater than 0')
         return v
 
 
@@ -333,20 +333,20 @@ class UnifiedConfig(BaseSettings):
         
         # 验证API配置
         if not self.api.dashscope_api_key:
-            issues.append("DashScope API密钥未配置")
+            issues.append("DashScope API key is not configured")
         
         # 验证路径
         for path_name, path_value in self.paths.__dict__.items():
             if isinstance(path_value, Path) and not path_value.exists():
-                issues.append(f"路径不存在: {path_name} = {path_value}")
+                issues.append(f"Path does not exist: {path_name} = {path_value}")
         
         # 验证数据库连接
         if not self.database.url:
-            issues.append("数据库URL未配置")
+            issues.append("Database URL is not configured")
         
         # 验证Redis连接
         if not self.redis.url:
-            issues.append("Redis URL未配置")
+            issues.append("Redis URL is not configured")
         
         return {
             "valid": len(issues) == 0,

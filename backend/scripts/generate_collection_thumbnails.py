@@ -136,9 +136,9 @@ def main():
     """主函数"""
     import argparse
     
-    parser = argparse.ArgumentParser(description='为合集生成封面缩略图')
-    parser.add_argument('--collection-id', help='为指定合集生成封面')
-    parser.add_argument('--all', action='store_true', help='为所有没有封面的合集生成封面')
+    parser = argparse.ArgumentParser(description='Generate cover thumbnails for collections')
+    parser.add_argument('--collection-id', help='Generate a cover for the specified collection')
+    parser.add_argument('--all', action='store_true', help='Generate covers for all collections without a cover')
     
     args = parser.parse_args()
     
@@ -147,13 +147,13 @@ def main():
     elif args.all:
         success = generate_collection_thumbnails()
     else:
-        print("请指定 --collection-id 或 --all 参数")
+        print("Please specify --collection-id or --all")
         return
     
     if success:
-        print("操作完成")
+        print("Operation completed")
     else:
-        print("操作失败")
+        print("Operation failed")
         sys.exit(1)
 
 if __name__ == "__main__":

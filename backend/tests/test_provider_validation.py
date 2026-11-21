@@ -136,7 +136,7 @@ def test_missing_v1_is_normalized_and_models_404_still_probes_chat(monkeypatch):
 def test_console_host_is_rejected_without_a_network_call(monkeypatch):
     from pydantic import ValidationError
     monkeypatch.setattr('httpx.Client', lambda *args, **kwargs: (_ for _ in ()).throw(AssertionError('network')))
-    with pytest.raises(ValidationError, match='控制台或官网'):
+    with pytest.raises(ValidationError, match='console or website'):
         _connection(base_url='https://platform.openai.com')
     # A stored row that skipped the constructor still must not hit the network.
     result = validate_connection(
@@ -310,7 +310,7 @@ def test_failed_validation_saves_but_blocks_readiness_and_generation(monkeypatch
     assert report['checks']['analysis']['code'] == 'validation_failed'
     assert report['checks']['analysis']['repair'] == 'settings_ai'
     assert report['checks']['analysis'].get('label') == 'gpt-4o-mini'
-    with pytest.raises(ValueError, match='未通过校验'):
+    with pytest.raises(ValueError, match='did not pass validation'):
         readiness.ensure_analysis_usable()
 
 

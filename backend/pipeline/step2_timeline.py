@@ -259,8 +259,8 @@ class TimelineExtractor:
                 logger.error("时间线校正失败: %s", sanitize_exception_text(e))
                 self.extraction_report["refinement_failed"] = True
                 save_report({"step2_extraction": self.extraction_report}, self.metadata_dir)
-                raise PipelineFailure("ANALYZE", "时间线字幕边界校正失败，本次未导出未经校验的片段。",
-                                      "原素材已保留，请提交失败阶段反馈以便排查。", code="unexpected") from e
+                raise PipelineFailure("ANALYZE", "Timeline subtitle boundary correction failed, so no unverified clips were exported.",
+                                      "The source was kept. Please submit feedback for the failed stage so it can be investigated.", code="unexpected") from e
 
         self.extraction_report["output"] = len(all_timeline_data)
         save_report({"step2_extraction": self.extraction_report}, self.metadata_dir)

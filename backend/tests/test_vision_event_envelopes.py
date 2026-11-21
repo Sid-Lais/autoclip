@@ -50,7 +50,7 @@ def test_other_phases_do_not_guess_the_meaning_of_arrays(monkeypatch, phase):
 @pytest.mark.parametrize('value', [[1], ['text'], [event(), None], 'text'])
 def test_event_array_compatibility_rejects_non_object_entries(monkeypatch, value):
     respond(monkeypatch, [value])
-    with pytest.raises(vision.VisionRequestError, match='结构化'):
+    with pytest.raises(vision.VisionRequestError, match='structured result'):
         vision.vision_call_at('scan', [])
 
 
@@ -62,5 +62,5 @@ def test_array_scan_and_refinement_still_validate_source_boundaries(monkeypatch)
     assert [(s.start, s.end) for s in scenes] == [(11, 15)]
     assert coverage['refined_event_id'] == 'event-1'
     respond(monkeypatch, [[event()], [event(0, 44)]])
-    with pytest.raises(ValueError, match='超出采样区间'):
+    with pytest.raises(ValueError, match='exceeds the sampled range'):
         vision.analyze(Path('fixture.mp4'), Preferences(goal='highlight', duration=45))

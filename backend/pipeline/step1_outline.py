@@ -65,10 +65,10 @@ class OutlineExtractor:
             srt_data = self.text_processor.parse_srt(srt_path)
         except Exception as e:
             logger.error(f"解析SRT文件失败: {sanitize_exception_text(e)}")
-            raise PipelineFailure("SUBTITLE", f"字幕文件无法解析：{sanitize_exception_text(e)}", HINT_SUBTITLE) from e
+            raise PipelineFailure("SUBTITLE", f"The subtitle file could not be parsed: {sanitize_exception_text(e)}", HINT_SUBTITLE) from e
         if not srt_data:
             logger.warning("SRT文件为空或解析失败")
-            raise PipelineFailure("SUBTITLE", "字幕文件为空，没有可分析的文本。", HINT_SUBTITLE)
+            raise PipelineFailure("SUBTITLE", "The subtitle file is empty; there is no text to analyze.", HINT_SUBTITLE)
             
         # 1.5 时长画像：短视频不能套播客参数（#59）。写盘给 step2 / step3 复用
         from .quality import profile_from_srt, save_profile
@@ -153,7 +153,7 @@ class OutlineExtractor:
             # Logs and user messages must both exclude the provider's raw text.
             logger.warning("大纲提取失败：%s/%s 个文本块调用模型都失败了。最后一次错误：%s: %s",
                            failed_chunks, total_chunks, type(last_error).__name__, sanitize_exception_text(last_error))
-            detail = f"大纲提取失败：{failed_chunks}/{total_chunks} 个文本块调用模型都失败了。"
+            detail = f"Outline extraction failed: the model call failed for {failed_chunks}/{total_chunks} text chunks."
             from backend.core.llm_retry import studio_code_for
             from backend.core.upstream_errors import (
                 UpstreamErrorType,
@@ -194,8 +194,8 @@ class OutlineExtractor:
         if not final_outlines:
             raise PipelineFailure(
                 "ANALYZE",
-                f"模型返回的内容无法解析为大纲（{total_chunks} 个文本块均未得到有效话题）。",
-                "换一个更强或更稳定的模型（如 qwen-plus / gpt-4o-mini）后重试；若用本地模型，确认它支持中文长文本。",
+                f"The model output could not be parsed into an outline (none of the {total_chunks} text chunks produced a valid topic).",
+                "Switch to a stronger or more stable model (e.g. qwen-plus / gpt-4o-mini) and retry; if you use a local model, make sure it supports long Chinese text.",
                 code="invalid_response",
             )
         

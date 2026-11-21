@@ -90,7 +90,7 @@ def test_1080p60_actual_file_and_cache_keep_spec(data_dir, tmp_path, monkeypatch
     assert int(next(s for s in streams if s['codec_type']=='video')['nb_frames']) == 60
     again = export.export_clip(req)
     assert again['cached'] and again['fps'] == 60 and again['width'] == 1920
-    with pytest.raises(ValueError, match='固定横屏'):
+    with pytest.raises(ValueError, match='fixed landscape'):
         export.export_clip(export.ExportRequest('spec','1','1080p60',layout='none'))
 
 
@@ -107,4 +107,4 @@ def test_studio_1080p60_reencodes_final_file_without_double_text(data_dir, tmp_p
     monkeypatch.setattr(export,'_load_srt_entries',forbidden)
     output=export.export_clip(export.ExportRequest('spec','studio-1','1080p60'))
     assert (output['width'],output['height'],output['fps']) == (1920,1080,60)
-    assert '不重复烧录' in output['warnings'][0]
+    assert 're-burning' in output['warnings'][0]

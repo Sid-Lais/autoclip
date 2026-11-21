@@ -32,13 +32,13 @@ class FitSpec(BaseModel):
     @classmethod
     def weights(cls, value: dict[str, float]) -> dict[str, float]:
         if not value:
-            raise UserFacingError('fit.formats 不能为空')
+            raise UserFacingError('fit.formats cannot be empty')
         cleaned: dict[str, float] = {}
         for key, weight in value.items():
             if not isinstance(key, str) or not key.strip():
-                raise UserFacingError('fit.formats 的名称无效')
+                raise UserFacingError('fit.formats has an invalid name')
             if isinstance(weight, bool) or not isinstance(weight, (int, float)) or not 0 <= float(weight) <= 1:
-                raise UserFacingError('fit.formats 的权重必须在 0 到 1 之间')
+                raise UserFacingError('fit.formats weights must be between 0 and 1')
             cleaned[key] = float(weight)
         return cleaned
 
@@ -54,9 +54,9 @@ class CanvasSpec(BaseModel):
     def even_pixels(cls, value: tuple[int, int]) -> tuple[int, int]:
         width, height = (int(value[0]), int(value[1]))
         if width < 2 or height < 2 or width % 2 or height % 2:
-            raise UserFacingError('overlay_px 必须是偶数像素')
+            raise UserFacingError('overlay_px must be an even number of pixels')
         if (width, height) != (1080, 1920):
-            raise UserFacingError('HTML 叠加层是 1080×1920')
+            raise UserFacingError('The HTML overlay is 1080×1920')
         return width, height
 
 
@@ -78,12 +78,12 @@ class ZoomSpec(BaseModel):
     @model_validator(mode='after')
     def mode_fields(self):
         if self.mode == 'creep' and self.creep is None:
-            raise UserFacingError('creep 模式需要 creep 比例')
+            raise UserFacingError('creep mode requires a creep ratio')
         if self.mode == 'step':
             if not self.step or len(self.step) < 2:
-                raise UserFacingError('step 模式至少需要两个缩放档')
+                raise UserFacingError('step mode requires at least two zoom levels')
             if any(not 1 <= float(item) <= 1.4 for item in self.step):
-                raise UserFacingError('step 缩放必须在 1 到 1.4 之间')
+                raise UserFacingError('step zoom must be between 1 and 1.4')
         return self
 
 
@@ -106,7 +106,7 @@ class BaseSpec(BaseModel):
     def head_band(self):
         top, bottom = self.head_zone
         if top < 0 or bottom <= top:
-            raise UserFacingError('head_zone 必须是自上而下的区间')
+            raise UserFacingError('head_zone must be a top-to-bottom range')
         return self
 
 
@@ -129,13 +129,13 @@ class OverlaySpec(BaseModel):
     @model_validator(mode='after')
     def named_slots(self):
         if 'subtitle' not in self.slots or 'hook' not in self.slots:
-            raise UserFacingError('overlay.slots 必须包含 hook 和 subtitle')
+            raise UserFacingError('overlay.slots must include hook and subtitle')
         subtitle = self.slots['subtitle']
         if isinstance(subtitle, list) or subtitle.max_rows != 2:
-            raise UserFacingError('字幕槽最多 2 行')
+            raise UserFacingError('The subtitle slot allows at most 2 rows')
         for key, value in self.limits.items():
             if not key.isidentifier() or isinstance(value, bool) or not isinstance(value, (int, float)):
-                raise UserFacingError('overlay.limits 只接受数字')
+                raise UserFacingError('overlay.limits only accepts numbers')
         return self
 
 
@@ -148,11 +148,11 @@ class FieldSpec(BaseModel):
     def known_fields(self):
         names = [*self.required, *self.optional]
         if any(name not in PACKAGING_FIELDS for name in names):
-            raise UserFacingError('未知包装字段')
+            raise UserFacingError('Unknown packaging field')
         if len(names) != len(set(names)):
-            raise UserFacingError('包装字段不能重复')
+            raise UserFacingError('Packaging fields cannot repeat')
         if 'title_lines' not in self.required or 'cues' not in self.required:
-            raise UserFacingError('title_lines 和 cues 是必填字段')
+            raise UserFacingError('title_lines and cues are required fields')
         return self
 
 
@@ -185,5 +185,5 @@ class TemplateSpec(BaseModel):
     @model_validator(mode='after')
     def empty_qa(self):
         if self.qa:
-            raise UserFacingError('v1 不覆盖质检阈值')
+            raise UserFacingError('v1 does not override QA thresholds')
         return self

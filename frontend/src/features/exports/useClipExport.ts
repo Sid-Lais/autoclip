@@ -31,7 +31,7 @@ export function useClipExport(projectId: string, clipId: string) {
     try {
       const started = await projectApi.startClipExport(projectId, clipId, options)
       run.signal.throwIfAborted()
-      if (!started.ok || !started.job_id) throw new Error('未能创建导出任务')
+      if (!started.ok || !started.job_id) throw new Error('Could not create the export task')
       const job = await pollExportJob(
         () => projectApi.getExportJob(projectId, started.job_id, run.signal),
         { signal: run.signal, onProgress: setPercent },

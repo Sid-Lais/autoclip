@@ -18,7 +18,7 @@ _slots = threading.BoundedSemaphore(2)
 def _frame(path: str, modified_ns: int, size: int, timestamp: float) -> bytes:
     # Stat fields invalidate cached frames if a source is replaced in place.
     if not _slots.acquire(timeout=10):
-        raise UserFacingError('缩略图生成繁忙，请稍后重试')
+        raise UserFacingError('Thumbnail generation is busy. Please try again later')
     try:
         result = subprocess.run([
             get_ffmpeg_path(), '-v', 'error', '-nostdin', '-ss', str(timestamp),
@@ -27,10 +27,10 @@ def _frame(path: str, modified_ns: int, size: int, timestamp: float) -> bytes:
             '-threads', '1', '-f', 'image2pipe', '-vcodec', 'mjpeg', 'pipe:1',
         ], capture_output=True, check=True, timeout=15)
         if not result.stdout.startswith(b'\xff\xd8'):
-            raise UserFacingError('无法生成缩略图，请打开编辑器查看原片')
+            raise UserFacingError('Unable to generate thumbnail. Open the editor to view the original video')
         return result.stdout
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired):
-        raise UserFacingError('无法生成缩略图，请打开编辑器查看原片') from None
+        raise UserFacingError('Unable to generate thumbnail. Open the editor to view the original video') from None
     finally:
         _slots.release()
 
@@ -38,7 +38,7 @@ def _frame(path: str, modified_ns: int, size: int, timestamp: float) -> bytes:
 @lru_cache(maxsize=128)
 def _duration(path: str, modified_ns: int, size: int) -> float:
     if not _slots.acquire(timeout=10):
-        raise UserFacingError('缩略图生成繁忙，请稍后重试')
+        raise UserFacingError('Thumbnail generation is busy. Please try again later')
     try:
         result = subprocess.run([get_ffprobe_path(), '-v', 'error', '-show_entries',
                                  'format=duration', '-of', 'json', path],
@@ -48,7 +48,7 @@ def _duration(path: str, modified_ns: int, size: int) -> float:
             raise ValueError
         return duration
     except (subprocess.CalledProcessError, subprocess.TimeoutExpired, ValueError, KeyError, TypeError):
-        raise UserFacingError('无法读取视频画面') from None
+        raise UserFacingError('Unable to read the video frame') from None
     finally:
         _slots.release()
 
@@ -60,16 +60,16 @@ def draft_frame(project_id: str, draft_id: str, revision: int, job_id: str | Non
         raise FileNotFoundError('草稿不存在')
     draft = Draft.model_validate(raw)
     if draft.revision != revision:
-        raise store.ConflictError('草稿版本已更新，请刷新缩略图')
+        raise store.ConflictError('The draft version has been updated. Please refresh the thumbnail')
     if job_id:
         job = next((j for j in state['jobs'] if j['job_id'] == job_id and j['draft_id'] == draft_id
                     and j['revision'] == revision and j['status'] == 'completed'), None)
         if job is None:
-            raise FileNotFoundError('当前版本没有此导出成片')
+            raise FileNotFoundError('This version has no such exported video')
         # Resolve the expected project-owned output, never a saved result.path.
         import re
         if not re.fullmatch(r'[a-f0-9]{32}', job_id):
-            raise UserFacingError('无效导出 ID')
+            raise UserFacingError('Invalid export ID')
         video = store.directory(project_id) / 'output' / 'studio' / f'{job_id}.mp4'
 
     else:
@@ -78,7 +78,7 @@ def draft_frame(project_id: str, draft_id: str, revision: int, job_id: str | Non
     video = Path(video)
     stat = video.stat()
     if not stat.st_size:
-        raise UserFacingError('无法读取视频画面')
+        raise UserFacingError('Unable to read the video frame')
     duration = _duration(str(video.resolve()), stat.st_mtime_ns, stat.st_size)
     if job_id:
         timestamp = min(.6, duration / 2)

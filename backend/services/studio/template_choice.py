@@ -43,7 +43,7 @@ def selected_template(generation: dict | None) -> str | None:
 def style_for_request(template: str | None, features: dict | None = None) -> dict[str, str]:
     """The style a request will actually use. Unsupported names raise ValueError."""
     if template not in (None, *STYLE_IDS):
-        raise UserFacingError('不支持的剪辑风格')
+        raise UserFacingError('Unsupported editing style')
     requested = template or 'classic'
     applied = requested if requested in HTML_TEMPLATES and flag_enabled(_resolved(features), 'pkg_templates_v1') else 'classic'
     return {'template': applied, 'requested_template': requested}

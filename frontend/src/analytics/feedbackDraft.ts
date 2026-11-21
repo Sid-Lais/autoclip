@@ -66,9 +66,9 @@ export function scrubText(value: string | undefined, max = 2000): string {
 export function buildFeedbackDraft(input: FeedbackDraftInput): FeedbackDraft {
   const text = scrubText(input.text, 2000)
   const category = input.category
-  const prefix = category === 'idea' ? '[想法] ' : '[反馈] '
+  const prefix = category === 'idea' ? '[Idea] ' : '[Feedback] '
   const line = text.split('\n')[0].replace(/\s+/g, ' ').trim()
-  const title = (prefix + (line || '应用内反馈')).slice(0, 120)
+  const title = (prefix + (line || 'In-app feedback')).slice(0, 120)
   const contact = scrubText(input.contact, 200)
   return {
     feedbackId: input.feedbackId,
@@ -119,29 +119,29 @@ export function captureProperties(draft: FeedbackDraft): Record<string, string |
 }
 
 function platformLabel(os: string): string {
-  if (os === 'macos') return 'macOS 桌面版 (Apple Silicon)'
-  if (os === 'windows') return 'Windows 桌面版 (x64)'
+  if (os === 'macos') return 'macOS desktop (Apple Silicon)'
+  if (os === 'windows') return 'Windows desktop (x64)'
   if (os === 'linux') return 'Docker'
-  return '源码运行 / From source'
+  return 'Run from source'
 }
 
 function publicLines(draft: FeedbackDraft): string {
   const lines = [
     draft.text,
     '',
-    `反馈编号：${draft.feedbackId}`,
+    `Feedback ID: ${draft.feedbackId}`,
     `<!-- feedback-id:${draft.feedbackId} -->`,
     '',
-    `版本：${draft.version || '未知'}`,
-    `系统：${draft.os || '未知'} / ${draft.arch || '未知'}`,
-    `来源：${draft.source || '未知'}`,
+    `Version: ${draft.version || 'unknown'}`,
+    `System: ${draft.os || 'unknown'} / ${draft.arch || 'unknown'}`,
+    `Source: ${draft.source || 'unknown'}`,
   ]
-  if (draft.stage) lines.push(`阶段：${draft.stage}`)
-  if (draft.errorCode) lines.push(`错误码：${draft.errorCode}`)
-  if (draft.unexpectedType) lines.push(`异常类型：${draft.unexpectedType}`)
-  if (draft.transcriptionProvider) lines.push(`转写模型：${draft.transcriptionProvider}${draft.transcriptionModel ? ` / ${draft.transcriptionModel}` : ''}`)
-  if (draft.llmProvider) lines.push(`模型：${draft.llmProvider}${draft.llmModel ? ` / ${draft.llmModel}` : ''}`)
-  if (draft.errorMessage) lines.push('', '错误', draft.errorMessage)
+  if (draft.stage) lines.push(`Stage: ${draft.stage}`)
+  if (draft.errorCode) lines.push(`Error code: ${draft.errorCode}`)
+  if (draft.unexpectedType) lines.push(`Exception type: ${draft.unexpectedType}`)
+  if (draft.transcriptionProvider) lines.push(`Transcription model: ${draft.transcriptionProvider}${draft.transcriptionModel ? ` / ${draft.transcriptionModel}` : ''}`)
+  if (draft.llmProvider) lines.push(`Model: ${draft.llmProvider}${draft.llmModel ? ` / ${draft.llmModel}` : ''}`)
+  if (draft.errorMessage) lines.push('', 'Error', draft.errorMessage)
   return lines.join('\n').slice(0, 1500)
 }
 
@@ -152,9 +152,9 @@ export function githubFallbackUrl(draft: FeedbackDraft): string {
       template: 'bug_report.yml',
       title: draft.title,
       version: draft.version || 'unknown',
-      model: draft.llmProvider ? `${draft.llmProvider}${draft.llmModel ? ` / ${draft.llmModel}` : ''}` : '未知',
+      model: draft.llmProvider ? `${draft.llmProvider}${draft.llmModel ? ` / ${draft.llmModel}` : ''}` : 'unknown',
       platform: platformLabel(draft.os),
-      source: '不相关 / N/A',
+      source: 'N/A',
       what: publicLines(draft),
     })
     return `https://github.com/zhouxiaoka/autoclip/issues/new?${params}`

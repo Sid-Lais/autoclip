@@ -105,7 +105,7 @@ class ProjectManager:
             项目元数据
         """
         if not self.validate_project_exists(project_id):
-            raise FileIOError(f"项目不存在: {project_id}")
+            raise FileIOError(f"Project does not exist: {project_id}")
         
         metadata_file = self.get_project_paths(project_id)["metadata_dir"] / "project_metadata.json"
         
@@ -132,7 +132,7 @@ class ProjectManager:
             with open(metadata_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            raise FileIOError(f"读取项目元数据失败: {e}")
+            raise FileIOError(f"Failed to read project metadata: {e}")
     
     def update_project_metadata(self, project_id: str, updates: Dict[str, Any]):
         """
@@ -161,7 +161,7 @@ class ProjectManager:
             with open(metadata_file, 'w', encoding='utf-8') as f:
                 json.dump(metadata, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            raise FileIOError(f"保存项目元数据失败: {e}")
+            raise FileIOError(f"Failed to save project metadata: {e}")
     
     def save_input_file(self, project_id: str, file_path: Path, file_type: str) -> str:
         """
@@ -176,10 +176,10 @@ class ProjectManager:
             保存后的文件路径
         """
         if not self.validate_project_exists(project_id):
-            raise FileIOError(f"项目不存在: {project_id}")
+            raise FileIOError(f"Project does not exist: {project_id}")
         
         if not file_path.exists():
-            raise FileIOError(f"源文件不存在: {file_path}")
+            raise FileIOError(f"Source file does not exist: {file_path}")
         
         paths = self.get_project_paths(project_id)
         input_dir = paths["input_dir"]
@@ -192,7 +192,7 @@ class ProjectManager:
         elif file_type == "txt":
             target_name = "input.txt"
         else:
-            raise ValidationError(f"不支持的文件类型: {file_type}")
+            raise ValidationError(f"Unsupported file type: {file_type}")
         
         target_path = input_dir / target_name
         
@@ -209,7 +209,7 @@ class ProjectManager:
             return str(target_path)
             
         except Exception as e:
-            raise FileIOError(f"保存文件失败: {e}")
+            raise FileIOError(f"Failed to save file: {e}")
     
     def get_input_files(self, project_id: str) -> Dict[str, Optional[Path]]:
         """
@@ -222,7 +222,7 @@ class ProjectManager:
             输入文件路径字典
         """
         if not self.validate_project_exists(project_id):
-            raise FileIOError(f"项目不存在: {project_id}")
+            raise FileIOError(f"Project does not exist: {project_id}")
         
         paths = self.get_project_paths(project_id)
         project_base = paths["project_base"]
@@ -279,7 +279,7 @@ class ProjectManager:
             result: 处理结果
         """
         if not self.validate_project_exists(project_id):
-            raise FileIOError(f"项目不存在: {project_id}")
+            raise FileIOError(f"Project does not exist: {project_id}")
         
         paths = self.get_project_paths(project_id)
         metadata_dir = paths["metadata_dir"]
@@ -303,7 +303,7 @@ class ProjectManager:
             logger.info(f"步骤 {step} 结果已保存到项目 {project_id}")
             
         except Exception as e:
-            raise FileIOError(f"保存处理结果失败: {e}")
+            raise FileIOError(f"Failed to save processing result: {e}")
     
     def get_processing_result(self, project_id: str, step: int) -> Optional[Dict[str, Any]]:
         """
@@ -317,7 +317,7 @@ class ProjectManager:
             处理结果，如果不存在则返回None
         """
         if not self.validate_project_exists(project_id):
-            raise FileIOError(f"项目不存在: {project_id}")
+            raise FileIOError(f"Project does not exist: {project_id}")
         
         paths = self.get_project_paths(project_id)
         metadata_dir = paths["metadata_dir"]
@@ -330,7 +330,7 @@ class ProjectManager:
             with open(step_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            raise FileIOError(f"读取处理结果失败: {e}")
+            raise FileIOError(f"Failed to read processing result: {e}")
     
     def save_clip(self, project_id: str, clip_data: Dict[str, Any], clip_index: int):
         """
@@ -342,7 +342,7 @@ class ProjectManager:
             clip_index: 切片索引
         """
         if not self.validate_project_exists(project_id):
-            raise FileIOError(f"项目不存在: {project_id}")
+            raise FileIOError(f"Project does not exist: {project_id}")
         
         paths = self.get_project_paths(project_id)
         metadata_dir = paths["metadata_dir"]
@@ -385,7 +385,7 @@ class ProjectManager:
             logger.info(f"切片 {clip_index} 已保存到项目 {project_id}")
             
         except Exception as e:
-            raise FileIOError(f"保存切片数据失败: {e}")
+            raise FileIOError(f"Failed to save clip data: {e}")
     
     def get_clips(self, project_id: str) -> List[Dict[str, Any]]:
         """
@@ -398,7 +398,7 @@ class ProjectManager:
             切片列表
         """
         if not self.validate_project_exists(project_id):
-            raise FileIOError(f"项目不存在: {project_id}")
+            raise FileIOError(f"Project does not exist: {project_id}")
         
         paths = self.get_project_paths(project_id)
         metadata_dir = paths["metadata_dir"]
@@ -411,7 +411,7 @@ class ProjectManager:
             with open(clips_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            raise FileIOError(f"读取切片数据失败: {e}")
+            raise FileIOError(f"Failed to read clip data: {e}")
     
     def save_collection(self, project_id: str, collection_data: Dict[str, Any]):
         """
@@ -422,7 +422,7 @@ class ProjectManager:
             collection_data: 合集数据
         """
         if not self.validate_project_exists(project_id):
-            raise FileIOError(f"项目不存在: {project_id}")
+            raise FileIOError(f"Project does not exist: {project_id}")
         
         paths = self.get_project_paths(project_id)
         metadata_dir = paths["metadata_dir"]
@@ -453,7 +453,7 @@ class ProjectManager:
             logger.info(f"合集已保存到项目 {project_id}")
             
         except Exception as e:
-            raise FileIOError(f"保存合集数据失败: {e}")
+            raise FileIOError(f"Failed to save collection data: {e}")
     
     def get_collections(self, project_id: str) -> List[Dict[str, Any]]:
         """
@@ -466,7 +466,7 @@ class ProjectManager:
             合集列表
         """
         if not self.validate_project_exists(project_id):
-            raise FileIOError(f"项目不存在: {project_id}")
+            raise FileIOError(f"Project does not exist: {project_id}")
         
         paths = self.get_project_paths(project_id)
         metadata_dir = paths["metadata_dir"]
@@ -479,7 +479,7 @@ class ProjectManager:
             with open(collections_file, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            raise FileIOError(f"读取合集数据失败: {e}")
+            raise FileIOError(f"Failed to read collection data: {e}")
     
     def list_projects(self) -> List[Dict[str, Any]]:
         """
@@ -542,7 +542,7 @@ class ProjectManager:
             项目摘要
         """
         if not self.validate_project_exists(project_id):
-            raise FileIOError(f"项目不存在: {project_id}")
+            raise FileIOError(f"Project does not exist: {project_id}")
         
         metadata = self.get_project_metadata(project_id)
         validation = self.validate_input_files(project_id)

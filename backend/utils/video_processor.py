@@ -29,9 +29,9 @@ class VideoProcessor:
     def __init__(self, clips_dir: Optional[str] = None, collections_dir: Optional[str] = None):
         # 强制使用传入的项目特定路径，不使用全局路径作为后备
         if not clips_dir:
-            raise ValueError("clips_dir 参数是必需的，不能使用全局路径")
+            raise ValueError("clips_dir is required; a global path cannot be used")
         if not collections_dir:
-            raise ValueError("collections_dir 参数是必需的，不能使用全局路径")
+            raise ValueError("collections_dir is required; a global path cannot be used")
         
         self.clips_dir = Path(clips_dir)
         self.collections_dir = Path(collections_dir)
@@ -390,7 +390,7 @@ class VideoProcessor:
         
         for clip_data in clips_data:
             clip_id = clip_data['id']
-            title = clip_data.get('title', f"片段_{clip_id}")
+            title = clip_data.get('title', f"Clip_{clip_id}")
             start_time = clip_data['start_time']
             end_time = clip_data['end_time']
             
@@ -429,7 +429,7 @@ class VideoProcessor:
         
         for collection_data in collections_data:
             collection_id = collection_data['id']
-            collection_title = collection_data.get('collection_title', f'合集_{collection_id}')
+            collection_title = collection_data.get('collection_title', f'Collection_{collection_id}')
             clip_ids = collection_data['clip_ids']
             
             # 构建片段路径列表

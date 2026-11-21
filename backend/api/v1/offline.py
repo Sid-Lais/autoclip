@@ -18,7 +18,7 @@ router = APIRouter()
 # 检查桌面模式
 def check_desktop_mode():
     if not is_desktop_mode():
-        raise HTTPException(status_code=400, detail="此端点仅在桌面模式下可用")
+        raise HTTPException(status_code=400, detail="This endpoint is only available in desktop mode")
 
 class NetworkStatus(BaseModel):
     """网络状态模型"""
@@ -144,7 +144,7 @@ async def toggle_offline_mode():
     
     return {
         "is_offline_mode": _offline_mode_status.is_offline_mode,
-        "message": "离线模式已开启" if _offline_mode_status.is_offline_mode else "离线模式已关闭"
+        "message": "Offline mode enabled" if _offline_mode_status.is_offline_mode else "Offline mode disabled"
     }
 
 @router.post("/offline/auto-threshold")
@@ -153,13 +153,13 @@ async def set_auto_offline_threshold(threshold: int):
     check_desktop_mode()
     
     if threshold < 1 or threshold > 10:
-        raise HTTPException(status_code=400, detail="阈值必须在1-10之间")
+        raise HTTPException(status_code=400, detail="Threshold must be between 1 and 10")
     
     _offline_mode_status.auto_offline_threshold = threshold
     
     return {
         "auto_offline_threshold": threshold,
-        "message": f"自动离线阈值已设置为 {threshold}"
+        "message": f"Auto-offline threshold set to {threshold}"
     }
 
 @router.get("/cache", response_model=List[CacheItem])
@@ -206,7 +206,7 @@ async def add_cache_item(key: str, data: Any, expires_in_seconds: Optional[int] 
     
     return {
         "key": key,
-        "message": "缓存项已添加",
+        "message": "Cache item added",
         "expires_at": expires_at
     }
 
@@ -217,9 +217,9 @@ async def remove_cache_item(key: str):
     
     if key in _cache:
         del _cache[key]
-        return {"message": f"缓存项 {key} 已删除"}
+        return {"message": f"Cache item {key} deleted"}
     else:
-        raise HTTPException(status_code=404, detail="缓存项不存在")
+        raise HTTPException(status_code=404, detail="Cache item not found")
 
 @router.get("/sync-queue", response_model=List[SyncQueueItem])
 async def get_sync_queue():
@@ -238,10 +238,10 @@ async def add_sync_queue_item(
     check_desktop_mode()
     
     if action not in ["create", "update", "delete"]:
-        raise HTTPException(status_code=400, detail="无效的操作类型")
+        raise HTTPException(status_code=400, detail="Invalid action type")
     
     if resource_type not in ["project", "clip", "collection"]:
-        raise HTTPException(status_code=400, detail="无效的资源类型")
+        raise HTTPException(status_code=400, detail="Invalid resource type")
     
     item = SyncQueueItem(
         id=f"{resource_type}_{resource_id}_{int(time.time())}",
@@ -256,7 +256,7 @@ async def add_sync_queue_item(
     
     return {
         "id": item.id,
-        "message": "同步队列项已添加"
+        "message": "Sync queue item added"
     }
 
 @router.post("/sync-queue/process")
@@ -266,7 +266,7 @@ async def process_sync_queue():
     
     if _offline_mode_status.is_offline_mode:
         return {
-            "message": "当前处于离线模式，无法处理同步队列",
+            "message": "Currently in offline mode; the sync queue cannot be processed",
             "queue_size": len(_sync_queue)
         }
     
@@ -295,7 +295,7 @@ async def process_sync_queue():
         "processed": processed,
         "failed": failed,
         "remaining": len(_sync_queue),
-        "message": f"处理完成：成功 {processed} 个，失败 {failed} 个"
+        "message": f"Done: {processed} succeeded, {failed} failed"
     }
 
 async def simulate_sync_operation(item: SyncQueueItem):
@@ -307,7 +307,7 @@ async def simulate_sync_operation(item: SyncQueueItem):
     # 模拟偶尔的失败
     import random
     if random.random() < 0.1:  # 10% 的失败率
-        raise Exception("模拟网络错误")
+        raise Exception("Simulated network error")
 
 @router.delete("/sync-queue/clear")
 async def clear_sync_queue():
@@ -318,7 +318,7 @@ async def clear_sync_queue():
     _sync_queue.clear()
     
     return {
-        "message": f"同步队列已清空，删除了 {count} 个项目"
+        "message": f"Sync queue cleared; {count} items removed"
     }
 
 @router.get("/offline/summary")

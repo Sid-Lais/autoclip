@@ -7,6 +7,7 @@ import {
 } from './importReadiness'
 import { VISUAL_SOURCE_TOO_LONG_MESSAGE } from './planningCopy'
 import { FIRST_WINDOW_END_SEC } from './types'
+import type { VideoEmbed } from './api'
 
 export type UrlInspectPreview = {
   title?: string | null
@@ -19,6 +20,10 @@ export type UrlInspectPreview = {
   warn_visual_too_long?: boolean
   language?: string | null
   max_height?: number | null
+  long_video?: boolean
+  /** Set by the import card when the user downloads a long video whole instead of picking ranges. */
+  whole?: boolean
+  embed?: VideoEmbed | null
 }
 
 function fmtDuration(sec: number | null | undefined): string {
@@ -85,6 +90,7 @@ export default function UrlPreview({
   onDismiss,
   confirmLabel,
   suggestFirstWindow,
+  hideRoute,
 }: {
   preview: UrlInspectPreview | null
   loading?: boolean
@@ -97,6 +103,7 @@ export default function UrlPreview({
   onDismiss?: () => void
   confirmLabel?: string
   suggestFirstWindow?: boolean
+  hideRoute?: boolean
 }) {
   if (loading) {
     return <div className="studio-url-preview" data-testid="url-preview-loading" role="status">
@@ -117,9 +124,9 @@ export default function UrlPreview({
         <div className="studio-url-preview-meta">
           <b className="studio-url-preview-title">{preview.title || t('未命名视频')}</b>
           <p className="studio-muted">{t('时长')} {fmtDuration(preview.duration ?? null)}</p>
-          <p className="studio-url-preview-route">{routeCopy(preview)}</p>
-          {eta && <p className="studio-muted">{eta}</p>}
-          {preview.warn_visual_too_long && (
+          {!hideRoute && <p className="studio-url-preview-route">{routeCopy(preview)}</p>}
+          {!hideRoute && eta && <p className="studio-muted">{eta}</p>}
+          {!hideRoute && preview.warn_visual_too_long && (
             <p className="studio-url-preview-warn" role="note">{t(VISUAL_SOURCE_TOO_LONG_MESSAGE)}</p>
           )}
         </div>

@@ -33,13 +33,13 @@ def test_sse_errors_name_the_cause_and_long_audio_stays_under_three_minutes(tmp_
 
     busy = asr._sse_failure({'code': 'Throttling.RateQuota', 'message': 'raw-secret'})
     assert busy.upstream_error_type == 'rate_limited' and asr._retryable(busy)
-    assert '繁忙' in str(busy) and 'raw-secret' not in str(busy)
+    assert 'busy' in str(busy) and 'raw-secret' not in str(busy)
     down = asr._sse_failure({'code': 'InternalError', 'message': 'stack trace secret'})
     assert down.upstream_error_type == 'upstream_unavailable' and asr._retryable(down)
-    assert '暂时不可用' in str(down) and 'secret' not in str(down)
+    assert 'temporarily unavailable' in str(down) and 'secret' not in str(down)
     rejected = asr._sse_failure({'code': 'InvalidParameter', 'message': 'audio duration 362s exceeds'})
     assert rejected.http_status == 400 and not asr._retryable(rejected)
-    assert '过长' in str(rejected) and '362' not in str(rejected)
+    assert 'too long' in str(rejected) and '362' not in str(rejected)
     assert asr.CHUNK_SAMPLES == 16000 * 150 and asr.CHUNK_SAMPLES < 16000 * 180
 
     audio = tmp_path / 'source.wav'

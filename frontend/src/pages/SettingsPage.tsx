@@ -10,6 +10,7 @@ import OutputBrandingSetting from '../features/settings/OutputBrandingSetting'
 import OutputCaptionsSetting from '../features/settings/OutputCaptionsSetting'
 import FeedbackDialog from '../components/FeedbackDialog'
 import PublishSettings from '../components/PublishSettings'
+import YouTubeSettings from '../components/YouTubeSettings'
 import { isDesktopMode } from '../utils/desktopMode'
 import { openExternalLink } from '../utils/externalLinks'
 import { isAnalyticsEnabled, setAnalyticsEnabled } from '../analytics/posthog'
@@ -91,7 +92,7 @@ const SettingsPage: React.FC = () => {
             <AppSection analyticsOn={analyticsOn} onAnalyticsChange={(on) => { setAnalyticsEnabled(on); setAnalyticsOn(on) }} />
           )}
 
-          {active === 'publish' && <PublishSettings />}
+          {active === 'publish' && <><YouTubeSettings /><PublishSettings /></>}
 
           {/* ---------------- 反馈 ---------------- */}
           {active === 'feedback' && (

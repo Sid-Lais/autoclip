@@ -414,7 +414,7 @@ test('download, transcription and export progress omit the 20-minute model cap',
 
 test('a bare 错误 names the step, and a billable call adds the billing sentence', () => {
   const sentence = '模型响应超时，请检查服务和网络后重试；本地模型请确认服务仍在运行。'
-  const guidance = '本次已消耗 2 次请求'
+  const guidance = '2 requests used this time'
   generationOverride.value = { auto_start: true, status: 'failed', billable_calls_before_failure: 2 }
   try {
     const html = render(true, 'production', 'failed', [], [], 'timeout', 'analyze', '错误')
@@ -426,7 +426,7 @@ test('a bare 错误 names the step, and a billable call adds the billing sentenc
   }
   const quiet = render(true, 'production', 'failed', [], [], 'timeout', 'analyze', '错误')
   assert.match(quiet, new RegExp('分析：' + sentence))
-  assert.doesNotMatch(quiet, /本次已消耗/)
+  assert.doesNotMatch(quiet, /requests? used this time/)
 })
 
 test('1.5.7 results page has no control that appends platforms', () => {

@@ -149,6 +149,6 @@ def test_manual_vision_selection_still_blocks_failed_connection(client, monkeypa
         'plan_id': 'plan', 'goals': ['highlight'], 'analysis_mode': 'visual',
     })
     assert response.status_code == 422
-    assert '未通过校验' in response.json()['detail']
+    assert 'did not pass validation' in response.json()['detail']
     assert store.read('p1') == before
     assert ai.path().read_bytes() == original

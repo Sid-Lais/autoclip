@@ -2,7 +2,7 @@ import { trackExperience } from '../../analytics/experience'
 import { useTranslation } from 'react-i18next'
 import { getLocale, t } from '../../i18n'
 import { useEffect, useRef, useState, type DragEvent, type Ref } from 'react'
-import { Select } from 'antd'
+import { Select, message } from 'antd'
 import { useNavigate } from 'react-router-dom'
 import { Btn, Segmented, Dialog, StatusDot } from '../../ui'
 import PlatformPicker from './PlatformPicker'
@@ -30,6 +30,8 @@ import { browserCookieRecovery, cookieAssistFromLocation, stageBrowserCookieReco
 import { SETTINGS_SAVED_EVENT } from './settingsReturn'
 import { useTranscriptionRecovery } from './useTranscriptionRecovery'
 import UrlPreview, { shouldSuggestFirstWindow, type UrlInspectPreview } from './UrlPreview'
+import LongVideoPicker from './LongVideoPicker'
+import SearchPanel from './SearchPanel'
 import './studio.css'
 import './quick-output.css'
 
@@ -123,7 +125,7 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
       ? { platforms: reuse.current.platforms, source: 'user' as PlatformSource }
       : resolvePlatforms(remembered, uiLocale(), readRememberedPlatforms()),
   )
-  const [source, setSource] = useState<'link' | 'file'>('link')
+  const [source, setSource] = useState<'link' | 'file' | 'search'>('link')
   const [url, setUrl] = useState(() => {
     const incoming = reuse.current?.sourceUrl || reuse.current?.sourceMeta?.source_url
     return typeof incoming === 'string' ? incoming : ''
@@ -157,6 +159,8 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
   const [platformOpen, setPlatformOpen] = useState(!!reuse.current?.platforms?.length)
   const [pending, setPending] = useState<{ trigger: 'paste' | 'drop' } | null>(null)
   const [urlPreview, setUrlPreview] = useState<UrlInspectPreview | null>(null)
+  /** A long video is picked by range unless the user chose "download the whole video instead" (`whole`). */
+  const longMode = !!urlPreview?.long_video && !urlPreview.whole
   const [previewLoading, setPreviewLoading] = useState(false)
   const previewTicket = useRef(0)
   const previewUrlRef = useRef('')
@@ -195,7 +199,7 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
   const dropZone = flagEnabled('import_drop_zone')
   const hidePreferences = flagEnabled('hide_legacy_entrypoints')
   const pasteFlag = String(flagValue('one_click_paste_start'))
-  const blockOptions = { source, allowLinkWithoutWhisper: allowLink }
+  const blockOptions = { source: source === 'file' ? ('file' as const) : ('link' as const), allowLinkWithoutWhisper: allowLink }
   useEffect(() => {
     // The first-run dialog and the settings page save through the same notification.
     // This page stays mounted across that save, so the mount probe would stay stale until reload.
@@ -300,7 +304,7 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
     if (blocked) { trackExperience('import_blocked', { reason: 'setup_required', placement: 'home_setup' }); setError(t("请先连接 AI 服务，再导入视频。")); onBlocked?.(); return false }
     const nextFile = next && 'file' in next ? next.file : file
     const nextUrl = next?.url ?? url
-    const nextSource = next?.file ? 'file' : next?.url ? 'link' : source
+    const nextSource = next?.file ? 'file' : next?.url ? 'link' : source === 'file' ? 'file' : 'link'
     if (nextSource === 'file' ? !nextFile : !nextUrl.trim()) { setError(t("请先添加视频文件或链接")); return false }
     const reason = submissionBlock(readiness, !!subtitle, settled, { source: nextSource, allowLinkWithoutWhisper: allowLink })
     if (reason === 'pending') { setError(blockMessage(reason, readiness)); return false }
@@ -383,6 +387,7 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
     void (async () => {
       const preview = await runInspect(next.url || '', trigger)
       if (!preview) return
+      if (preview.long_video) return // long videos are picked by range, never auto-started
       if (!shouldArmAutostart(pasteFlag, trigger, true)) return
       const needsInstall = preview.preview_route === 'local_transcription'
         && readiness?.checks?.transcription?.ok === false
@@ -399,12 +404,38 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
     setPending(null)
     if (trigger) trackOneClickUndone({ trigger }, flagAssigned('one_click_paste_start'))
   }
+  /** What every clip of a range or search import is made like: the same choices as a normal import. */
+  const clipFields = () => ({
+    language: options.language,
+    ...(options.aspect ? { aspect: options.aspect } : {}),
+    ...(options.duration ? { duration: options.duration } : {}),
+    instruction: options.instruction,
+    platforms,
+    portrait_style: options.portrait_style || 'auto',
+    ...templateImportFields(templatesOn, options.html_template, undefined),
+    brand_outro_enabled: true,
+    features: featureSnapshot(),
+  })
+  /** Range and search imports are queued: leave a clean form (not a picker that could submit them again), then show the work. */
+  const queued = (ids: string[], skipped: number) => {
+    if (remembered) writeRememberedPlatforms(platforms)
+    void onImported().catch(() => undefined)
+    clearPreview(); setUrl('')
+    if (skipped > 0) void message.warning(t('{{count}} range(s) could not be started. Add them again from the same link.', { count: skipped }))
+    if (ids.length === 1) { navigate(`/project/${ids[0]}`); return }
+    void message.success(t('{{count}} clips are being prepared. They appear in your projects.', { count: ids.length }))
+    navigate('/')
+  }
+  /** A search result that needs hand-picked parts opens in the link flow. */
+  const pickParts = (picked: string) => { setSource('link'); setUrl(picked); clearPreview(); void runInspect(picked, 'paste') }
   const submit = async (trigger: 'paste' | 'drop' | 'button' = 'button', fresh?: ImportReadiness | null, confirmed = false) => {
     if (starting.current) return
+    if (source === 'search') return
     if (trigger === 'button') setPending(null)
     if (source === 'link' && url.trim() && !urlPreview && !previewLoading) {
       const preview = await runInspect(url.trim(), 'blur')
       if (!preview) return
+      if (preview.long_video) { setError(t('This video is longer than 1.5 hours. Pick the parts to clip below.')); return }
       if (preview.preview_route === 'local_transcription'
         && readiness?.checks?.transcription?.ok === false
         && !subtitle
@@ -416,6 +447,7 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
         return
       }
     }
+    if (source === 'link' && longMode) { setError(t('This video is longer than 1.5 hours. Pick the parts to clip below.')); return }
     if (platforms.includes('youtube_long') && !confirmed) {
       if (!readyToStart(trigger, undefined, fresh ?? readiness)) return
       setLongGate(prev => ({ ...prev, open: true, trigger }))
@@ -525,8 +557,8 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
         {file && <p className="ac-dropzone-file"><span>{file.name}</span><button type="button" className="studio-link" disabled={busy} onClick={() => setFile(null)}>{t('移除')}</button></p>}
         <label className="studio-link ac-dropzone-file-label">{t('选择一个视频文件')}<input type="file" aria-label={t("视频文件")} accept="video/mp4,video/webm,video/quicktime,.mkv,.avi" disabled={busy} onChange={event => { const picked = event.target.files?.[0] || null; if (picked) arm('drop', { file: picked }) }}/></label>
       </div> : <>
-        <div className="studio-row"><Segmented ariaLabel={t("导入来源")} value={source} onChange={v=>!busy&&setSource(v)} options={[{value:'link',label:t("链接导入")},{value:'file',label:t("文件导入")}]}/></div>
-        {source==='link'?<label className="studio-field"><span className="studio-sr">{t("视频链接")}</span><textarea placeholder={t("粘贴 B 站或 YouTube 视频链接")} value={url} onChange={e=>{ setPending(null); clearPreview(); setUrl(e.target.value) }} onBlur={e => { const value = e.target.value.trim(); if (importUrlKind(value)) void runInspect(value, 'blur') }} onPaste={event => { const text = event.clipboardData.getData('text'); if (importUrlKind(text) && shouldAutoStart(pasteFlag, 'paste')) { event.preventDefault(); arm('paste', { url: text.trim() }) } }} disabled={busy}/></label>:<label className="studio-file"><span>{file?.name || t("选择一段视频")}</span><input type="file" aria-label={t("视频文件")} accept="video/mp4,video/webm,video/quicktime,.mkv,.avi" disabled={busy} onChange={e=>{ const picked = e.target.files?.[0] || null; setFile(picked); if (picked) arm('drop', { file: picked }) }}/><small>MP4 / MOV / MKV / WEBM / AVI</small></label>}
+        <div className="studio-row"><Segmented ariaLabel={t("导入来源")} value={source} onChange={v=>!busy&&setSource(v)} options={[{value:'link',label:t("链接导入")},{value:'file',label:t("文件导入")},{value:'search',label:t('Search')}]}/></div>
+        {source==='search'?<SearchPanel browser={browser} busy={busy} fields={clipFields()} onCreated={queued} onPickParts={pickParts}/>:source==='link'?<label className="studio-field"><span className="studio-sr">{t("视频链接")}</span><textarea placeholder={t("粘贴 B 站或 YouTube 视频链接")} value={url} onChange={e=>{ setPending(null); clearPreview(); setUrl(e.target.value) }} onBlur={e => { const value = e.target.value.trim(); if (importUrlKind(value)) void runInspect(value, 'blur') }} onPaste={event => { const text = event.clipboardData.getData('text'); if (importUrlKind(text) && shouldAutoStart(pasteFlag, 'paste')) { event.preventDefault(); arm('paste', { url: text.trim() }) } }} disabled={busy}/></label>:<label className="studio-file"><span>{file?.name || t("选择一段视频")}</span><input type="file" aria-label={t("视频文件")} accept="video/mp4,video/webm,video/quicktime,.mkv,.avi" disabled={busy} onChange={e=>{ const picked = e.target.files?.[0] || null; setFile(picked); if (picked) arm('drop', { file: picked }) }}/><small>MP4 / MOV / MKV / WEBM / AVI</small></label>}
       </>}
       {templatesOn && visualOn && platforms.some(platform => !['bilibili', 'youtube_long', 'original'].includes(platform)) && <StyleProbeLine sourceKey={source === 'file' ? (file ? `file:${file.name}:${file.size}:${file.lastModified}` : null) : (url.trim() ? `url:${url.trim()}` : null)} />}
       {remembered ? <div className="ac-platform-line"><p>{t('为 {{names}} 制作', { names })}</p><button type="button" className="studio-link" disabled={busy} onClick={() => setPlatformOpen(open => !open)}>{t('改')}</button></div> : null}
@@ -548,7 +580,8 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
         loading={previewLoading}
         needsTranscriptionInstall={needsPreviewTranscriptionInstall}
         installing={repairing}
-        suggestFirstWindow={shouldSuggestFirstWindow(hasSuccessHistory(), urlPreview?.duration ?? null)}
+        suggestFirstWindow={!longMode && shouldSuggestFirstWindow(hasSuccessHistory(), urlPreview?.duration ?? null)}
+        hideRoute={longMode}
         onInstallTranscription={() => {
           const check = readiness?.checks?.transcription
           resumeSubmit.current = false
@@ -556,7 +589,7 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
           recover.open(check?.code || 'whisper_not_installed', check?.model)
           void recover.install()
         }}
-        onConfirm={() => { setPending(null); void submit('button') }}
+        onConfirm={longMode ? undefined : () => { setPending(null); void submit('button') }}
         onConfirmFirstWindow={() => {
           firstWindowDecided.current = true
           sourceWindowOverride.current = { start: 0, end: FIRST_WINDOW_END_SEC }
@@ -573,10 +606,21 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
         }}
         onDismiss={() => { clearPreview(); setUrl(''); setPending(null); firstWindowDecided.current = false }}
       />}
+      {source === 'link' && longMode && !previewLoading && urlPreview && <LongVideoPicker
+        url={url.trim()}
+        browser={browser}
+        title={urlPreview.title || ''}
+        duration={urlPreview.duration ?? null}
+        embed={urlPreview.embed}
+        busy={busy}
+        fields={clipFields()}
+        onWholeVideo={() => setUrlPreview(prev => prev ? { ...prev, whole: true } : prev)}
+        onCreated={queued}
+      />}
       {platforms.includes('youtube_long') && <p className="studio-muted" role="note">{longFormNotice(longGate.durationSec, platforms)}</p>}
       {assist && <details className="studio-details" open><summary>{t("下载遇到登录限制时")}</summary><BrowserCookieControl assist browser={browser} busy={busy} onChange={setBrowser} selectRef={browserRef} /></details>}
       {pending && <div className="ac-undo" role="status"><span>{t('即将开始制作。')}</span><button type="button" className="ac-undo-action" onClick={undo}>{t('撤销')}</button></div>}
-      <div className="studio-row studio-import-bottom"><div><span className="studio-muted">{t('会按所选平台自动制作，数量由素材内容决定。')}</span>{!hidePreferences && <button className="studio-link studio-preferences-link" disabled={busy} onClick={()=>setPreferences(true)}>{t("高级偏好")}</button>}</div><Btn variant="cta" loading={busy} onClick={() => submit('button')}>{busy?t("正在生成"):t("生成成片")}</Btn></div>
+      <div className="studio-row studio-import-bottom"><div><span className="studio-muted">{t('会按所选平台自动制作，数量由素材内容决定。')}</span>{!hidePreferences && <button className="studio-link studio-preferences-link" disabled={busy} onClick={()=>setPreferences(true)}>{t("高级偏好")}</button>}</div>{source !== 'search' && <Btn variant="cta" loading={busy} onClick={() => submit('button')}>{busy?t("正在生成"):t("生成成片")}</Btn>}</div>
       <TranscriptionGatePrompt state={recovery} busy={busy} onInstall={() => recover.install()} onRetry={() => recover.retry()} onContinue={() => continueAfterRecovery(null)} navigate={navigate}/>
       {error&&<p className="studio-error" role="alert">{error}</p>}
     </div>

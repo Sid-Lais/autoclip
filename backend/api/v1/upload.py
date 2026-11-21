@@ -33,7 +33,7 @@ from ...services.bilibili_service import BilibiliAccountService, BilibiliUploadS
 from ...tasks.upload import upload_clip_task
 
 logger = logging.getLogger(__name__)
-router = APIRouter(prefix="/upload", tags=["投稿管理"])
+router = APIRouter(prefix="/upload", tags=["Upload Management"])
 
 # 存储二维码登录会话的字典
 qr_sessions = {}
@@ -54,40 +54,40 @@ async def get_login_methods():
         "methods": [
             {
                 "id": "cookie",
-                "name": "Cookie导入",
-                "description": "最安全的方式，不会触发风控",
+                "name": "Cookie Import",
+                "description": "The safest method; does not trigger risk controls",
                 "icon": "🔐",
                 "recommended": True,
                 "risk_level": "low"
             },
             {
                 "id": "password",
-                "name": "账号密码登录",
-                "description": "传统登录方式，可能需要验证码",
+                "name": "Username & Password Login",
+                "description": "Traditional login; may require a captcha",
                 "icon": "👤",
                 "recommended": True,
                 "risk_level": "medium"
             },
             {
                 "id": "qr",
-                "name": "扫码登录",
-                "description": "使用B站APP扫码登录",
+                "name": "QR Code Login",
+                "description": "Scan the QR code with the Bilibili app to log in",
                 "icon": "📱",
                 "recommended": False,
                 "risk_level": "high"
             },
             {
                 "id": "wechat",
-                "name": "微信登录",
-                "description": "使用微信账号登录",
+                "name": "WeChat Login",
+                "description": "Log in with your WeChat account",
                 "icon": "💬",
                 "recommended": False,
                 "risk_level": "medium"
             },
             {
                 "id": "qq",
-                "name": "QQ登录",
-                "description": "使用QQ账号登录",
+                "name": "QQ Login",
+                "description": "Log in with your QQ account",
                 "icon": "🐧",
                 "recommended": False,
                 "risk_level": "medium"
@@ -107,7 +107,7 @@ async def cookie_login(
         nickname = request.get("nickname")
         
         if not cookies:
-            raise HTTPException(status_code=400, detail="Cookie不能为空")
+            raise HTTPException(status_code=400, detail="Cookie cannot be empty")
         
         # 验证Cookie有效性
         cookie_validation = await validate_bilibili_cookies(cookies)
@@ -119,20 +119,20 @@ async def cookie_login(
             account_data = BilibiliAccountCreate(
                 username=cookie_validation.get("username", "cookie_user"),
                 password="",
-                nickname=nickname or cookie_validation.get("nickname", "B站用户"),
+                nickname=nickname or cookie_validation.get("nickname", "Bilibili User"),
                 cookie_content=cookie_str
             )
             
             account = await account_service.create_account(account_data)
             return BilibiliAccountResponse.from_orm(account)
         else:
-            raise HTTPException(status_code=400, detail="Cookie无效或已过期")
+            raise HTTPException(status_code=400, detail="Cookie is invalid or expired")
             
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"Cookie登录失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="登录失败")
+        raise HTTPException(status_code=500, detail="Login failed")
 
 
 @router.post("/password-login", response_model=BilibiliAccountResponse)
@@ -147,13 +147,13 @@ async def password_login(
         nickname = request.get("nickname")
         
         if not username or not password:
-            raise HTTPException(status_code=400, detail="用户名和密码不能为空")
+            raise HTTPException(status_code=400, detail="Username and password cannot be empty")
         
         # 这里应该实现真正的密码登录逻辑
         # 目前返回模拟数据
         mock_cookie_data = {
             "code": 0,
-            "message": "登录成功",
+            "message": "Login successful",
             "data": {
                 "user_info": {
                     "username": username,
@@ -180,7 +180,7 @@ async def password_login(
         raise
     except Exception as e:
         logger.error(f"密码登录失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="登录失败")
+        raise HTTPException(status_code=500, detail="Login failed")
 
 
 @router.post("/qr-login")
@@ -211,12 +211,12 @@ async def start_qr_login(
         return {
             "session_id": session_id,
             "status": "pending",
-            "message": "正在生成二维码..."
+            "message": "Generating QR code..."
         }
         
     except Exception as e:
         logger.error(f"开始二维码登录失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="开始登录失败")
+        raise HTTPException(status_code=500, detail="Failed to start login")
 
 
 @router.get("/qr-login/{session_id}")
@@ -224,14 +224,14 @@ async def check_qr_login_status(session_id: str):
     """检查二维码登录状态"""
     try:
         if session_id not in qr_sessions:
-            raise HTTPException(status_code=404, detail="会话不存在")
+            raise HTTPException(status_code=404, detail="Session not found")
         
         session = qr_sessions[session_id]
         
         return {
             "session_id": session_id,
             "status": session["status"],
-            "message": session.get("error_message", "等待扫码中..."),
+            "message": session.get("error_message", "Waiting for QR code scan..."),
             "qr_code": session.get("qr_code")
         }
         
@@ -239,7 +239,7 @@ async def check_qr_login_status(session_id: str):
         raise
     except Exception as e:
         logger.error(f"检查二维码登录状态失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="检查登录状态失败")
+        raise HTTPException(status_code=500, detail="Failed to check login status")
 
 
 @router.post("/qr-login/{session_id}/complete", response_model=BilibiliAccountResponse)
@@ -251,23 +251,23 @@ async def complete_qr_login(
     """完成二维码登录"""
     try:
         if session_id not in qr_sessions:
-            raise HTTPException(status_code=404, detail="会话不存在")
+            raise HTTPException(status_code=404, detail="Session not found")
         
         session = qr_sessions[session_id]
         
         if session["status"] != "success":
-            raise HTTPException(status_code=400, detail="登录未成功")
+            raise HTTPException(status_code=400, detail="Login was not successful")
         
         nickname = request.get("nickname") or session.get("nickname")
         
         # 创建模拟的Cookie数据
         mock_cookie_data = {
             "code": 0,
-            "message": "登录成功",
+            "message": "Login successful",
             "data": {
                 "user_info": {
                     "username": f"qr_user_{session_id[:8]}",
-                    "nickname": nickname or "B站用户",
+                    "nickname": nickname or "Bilibili User",
                     "mid": "87654321"
                 },
                 "cookie_info": {
@@ -279,7 +279,7 @@ async def complete_qr_login(
         account_data = BilibiliAccountCreate(
             username=f"qr_user_{session_id[:8]}",
             password="",
-            nickname=nickname or "B站用户",
+            nickname=nickname or "Bilibili User",
             cookie_content=json.dumps(mock_cookie_data)
         )
         
@@ -294,7 +294,7 @@ async def complete_qr_login(
         raise
     except Exception as e:
         logger.error(f"完成二维码登录失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="完成登录失败")
+        raise HTTPException(status_code=500, detail="Failed to complete login")
 
 
 @router.get("/accounts")
@@ -305,7 +305,7 @@ async def get_accounts(account_service: BilibiliAccountService = Depends(get_acc
         return [BilibiliAccountResponse.from_orm(account) for account in accounts]
     except Exception as e:
         logger.error(f"获取账号列表失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="获取账号列表失败")
+        raise HTTPException(status_code=500, detail="Failed to get account list")
 
 
 @router.delete("/accounts/{account_id}")
@@ -319,12 +319,12 @@ async def delete_account(
         if success:
             return {"message": "账号删除成功"}
         else:
-            raise HTTPException(status_code=404, detail="账号不存在")
+            raise HTTPException(status_code=404, detail="Account not found")
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"删除账号失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="删除账号失败")
+        raise HTTPException(status_code=500, detail="Failed to delete account")
 
 
 @router.post("/accounts/{account_id}/check")
@@ -337,11 +337,11 @@ async def check_account_status(
         is_valid = account_service.check_account_status(account_id)
         return {
             "is_valid": is_valid,
-            "message": "账号状态正常" if is_valid else "账号状态异常"
+            "message": "Account status is normal" if is_valid else "Account status is abnormal"
         }
     except Exception as e:
         logger.error(f"检查账号状态失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="检查账号状态失败")
+        raise HTTPException(status_code=500, detail="Failed to check account status")
 
 
 # 投稿管理API
@@ -364,7 +364,7 @@ async def create_upload_task(
             upload_clip_task.delay(str(record.id), clip_id)
         
         return {
-            "message": "投稿任务创建成功",
+            "message": "Upload task created successfully",
             "record_id": str(record.id),
             "clip_count": len(upload_data.clip_ids)
         }
@@ -372,7 +372,7 @@ async def create_upload_task(
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"创建投稿任务失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="创建投稿任务失败")
+        raise HTTPException(status_code=500, detail="Failed to create upload task")
 
 
 @router.post("/records/{record_id}/retry")
@@ -384,14 +384,14 @@ async def retry_upload_task(
     try:
         success = upload_service.retry_upload_task(record_id)
         if success:
-            return {"message": "投稿任务重试已启动"}
+            return {"message": "Upload task retry started"}
         else:
-            raise HTTPException(status_code=400, detail="重试失败")
+            raise HTTPException(status_code=400, detail="Retry failed")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"重试投稿任务失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="重试失败")
+        raise HTTPException(status_code=500, detail="Retry failed")
 
 
 @router.post("/records/{record_id}/cancel")
@@ -405,12 +405,12 @@ async def cancel_upload_task(
         if success:
             return {"message": "投稿任务已取消"}
         else:
-            raise HTTPException(status_code=400, detail="取消失败")
+            raise HTTPException(status_code=400, detail="Cancel failed")
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
     except Exception as e:
         logger.error(f"取消投稿任务失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="取消失败")
+        raise HTTPException(status_code=500, detail="Cancel failed")
 
 
 @router.delete("/records/{record_id}")
@@ -422,7 +422,7 @@ async def delete_upload_task(
     try:
         success = upload_service.delete_upload_task(record_id)
         if success:
-            return {"message": "投稿任务已删除"}
+            return {"message": "Upload task deleted"}
         else:
             raise HTTPException(status_code=400, detail="删除失败")
     except ValueError as e:
@@ -443,7 +443,7 @@ async def get_upload_records(
         return [UploadRecordResponse(**record) for record in records]
     except Exception as e:
         logger.error(f"获取投稿记录失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="获取投稿记录失败")
+        raise HTTPException(status_code=500, detail="Failed to get upload records")
 
 
 @router.get("/records/{record_id}")
@@ -455,13 +455,13 @@ async def get_upload_record(
     try:
         record = upload_service.get_upload_record(record_id)
         if not record:
-            raise HTTPException(status_code=404, detail="投稿记录不存在")
+            raise HTTPException(status_code=404, detail="Upload record not found")
         return UploadRecordResponse.from_orm(record)
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"获取投稿记录失败: {str(e)}")
-        raise HTTPException(status_code=500, detail="获取投稿记录失败")
+        raise HTTPException(status_code=500, detail="Failed to get upload records")
 
 
 # 辅助函数
@@ -498,7 +498,7 @@ async def validate_bilibili_cookies(cookies: dict) -> dict:
                     if missing_fields:
                         return {
                             "valid": False, 
-                            "message": f"Cookie缺少必要字段: {', '.join(missing_fields)}"
+                            "message": f"Cookie is missing required fields: {', '.join(missing_fields)}"
                         }
                     
                     return {
@@ -510,11 +510,11 @@ async def validate_bilibili_cookies(cookies: dict) -> dict:
                         "can_upload": True  # 暂时设为True，后续可以添加更详细的检查
                     }
                 else:
-                    return {"valid": False, "message": "Cookie无效或已过期"}
+                    return {"valid": False, "message": "Cookie is invalid or expired"}
                     
     except Exception as e:
         logger.error(f"验证Cookie失败: {e}")
-        return {"valid": False, "message": f"验证失败: {str(e)}"}
+        return {"valid": False, "message": f"Validation failed: {str(e)}"}
 
 
 async def generate_qr_code_async(session_id: str):

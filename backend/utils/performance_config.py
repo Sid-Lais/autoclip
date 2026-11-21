@@ -19,102 +19,102 @@ class PerformanceLevel(Enum):
 class FileUploadConfig(BaseModel):
     """文件上传配置"""
     # 分片上传配置
-    chunk_size: int = Field(default=2 * 1024 * 1024, description="分片大小(字节)")  # 2MB
-    max_file_size: int = Field(default=2 * 1024 * 1024 * 1024, description="最大文件大小(字节)")  # 2GB
-    max_concurrent_uploads: int = Field(default=3, description="最大并发上传数")
-    upload_timeout: int = Field(default=1800, description="上传超时时间(秒)")  # 30分钟
+    chunk_size: int = Field(default=2 * 1024 * 1024, description="Chunk size (bytes)")  # 2MB
+    max_file_size: int = Field(default=2 * 1024 * 1024 * 1024, description="Maximum file size (bytes)")  # 2GB
+    max_concurrent_uploads: int = Field(default=3, description="Maximum concurrent uploads")
+    upload_timeout: int = Field(default=1800, description="Upload timeout (seconds)")  # 30分钟
     
     # 重试配置
-    max_retries: int = Field(default=3, description="最大重试次数")
-    retry_delay: int = Field(default=5, description="重试延迟(秒)")
+    max_retries: int = Field(default=3, description="Maximum retries")
+    retry_delay: int = Field(default=5, description="Retry delay (seconds)")
     
     # 支持的格式
     supported_video_formats: list = Field(
         default=['.mp4', '.avi', '.mov', '.mkv', '.webm', '.flv', '.wmv'],
-        description="支持的视频格式"
+        description="Supported video formats"
     )
     supported_subtitle_formats: list = Field(
         default=['.srt', '.vtt', '.ass', '.ssa'],
-        description="支持的字幕格式"
+        description="Supported subtitle formats"
     )
     
     @validator('chunk_size')
     def validate_chunk_size(cls, v):
         if v <= 0 or v > 10 * 1024 * 1024:  # 最大10MB
-            raise ValueError('分片大小必须在1字节到10MB之间')
+            raise ValueError('Chunk size must be between 1 byte and 10MB')
         return v
     
     @validator('max_file_size')
     def validate_max_file_size(cls, v):
         if v <= 0 or v > 10 * 1024 * 1024 * 1024:  # 最大10GB
-            raise ValueError('最大文件大小必须在1字节到10GB之间')
+            raise ValueError('Maximum file size must be between 1 byte and 10GB')
         return v
 
 
 class ProcessingConfig(BaseModel):
     """处理配置"""
     # 并发控制
-    max_concurrent_tasks: int = Field(default=2, description="最大并发处理任务数")
-    max_concurrent_workers: int = Field(default=4, description="最大并发工作进程数")
+    max_concurrent_tasks: int = Field(default=2, description="Maximum concurrent processing tasks")
+    max_concurrent_workers: int = Field(default=4, description="Maximum concurrent worker processes")
     
     # 内存控制
-    max_memory_usage: int = Field(default=4 * 1024 * 1024 * 1024, description="最大内存使用(字节)")  # 4GB
-    memory_check_interval: int = Field(default=30, description="内存检查间隔(秒)")
+    max_memory_usage: int = Field(default=4 * 1024 * 1024 * 1024, description="Maximum memory usage (bytes)")  # 4GB
+    memory_check_interval: int = Field(default=30, description="Memory check interval (seconds)")
     
     # 处理超时
-    video_processing_timeout: int = Field(default=3600, description="视频处理超时(秒)")  # 1小时
-    audio_processing_timeout: int = Field(default=1800, description="音频处理超时(秒)")  # 30分钟
-    ai_processing_timeout: int = Field(default=300, description="AI处理超时(秒)")  # 5分钟
+    video_processing_timeout: int = Field(default=3600, description="Video processing timeout (seconds)")  # 1小时
+    audio_processing_timeout: int = Field(default=1800, description="Audio processing timeout (seconds)")  # 30分钟
+    ai_processing_timeout: int = Field(default=300, description="AI processing timeout (seconds)")  # 5分钟
     
     # 批处理配置
-    batch_size: int = Field(default=10, description="批处理大小")
-    batch_timeout: int = Field(default=600, description="批处理超时(秒)")  # 10分钟
+    batch_size: int = Field(default=10, description="Batch size")
+    batch_timeout: int = Field(default=600, description="Batch timeout (seconds)")  # 10分钟
     
     @validator('max_concurrent_tasks')
     def validate_max_concurrent_tasks(cls, v):
         if v <= 0 or v > 10:
-            raise ValueError('最大并发任务数必须在1到10之间')
+            raise ValueError('Maximum concurrent tasks must be between 1 and 10')
         return v
 
 
 class CacheConfig(BaseModel):
     """缓存配置"""
     # 缓存大小
-    max_cache_size: int = Field(default=1024 * 1024 * 1024, description="最大缓存大小(字节)")  # 1GB
-    cache_ttl: int = Field(default=3600, description="缓存生存时间(秒)")  # 1小时
+    max_cache_size: int = Field(default=1024 * 1024 * 1024, description="Maximum cache size (bytes)")  # 1GB
+    cache_ttl: int = Field(default=3600, description="Cache time to live (seconds)")  # 1小时
     
     # 缓存策略
-    enable_file_cache: bool = Field(default=True, description="启用文件缓存")
-    enable_result_cache: bool = Field(default=True, description="启用结果缓存")
-    enable_metadata_cache: bool = Field(default=True, description="启用元数据缓存")
+    enable_file_cache: bool = Field(default=True, description="Enable file cache")
+    enable_result_cache: bool = Field(default=True, description="Enable result cache")
+    enable_metadata_cache: bool = Field(default=True, description="Enable metadata cache")
     
     # 清理策略
-    cache_cleanup_interval: int = Field(default=1800, description="缓存清理间隔(秒)")  # 30分钟
-    cache_cleanup_threshold: float = Field(default=0.8, description="缓存清理阈值")  # 80%
+    cache_cleanup_interval: int = Field(default=1800, description="Cache cleanup interval (seconds)")  # 30分钟
+    cache_cleanup_threshold: float = Field(default=0.8, description="Cache cleanup threshold")  # 80%
 
 
 class DatabaseConfig(BaseModel):
     """数据库配置"""
     # 连接池配置
-    pool_size: int = Field(default=10, description="连接池大小")
-    max_overflow: int = Field(default=20, description="最大溢出连接数")
-    pool_timeout: int = Field(default=30, description="连接池超时(秒)")
-    pool_recycle: int = Field(default=3600, description="连接回收时间(秒)")
+    pool_size: int = Field(default=10, description="Connection pool size")
+    max_overflow: int = Field(default=20, description="Maximum overflow connections")
+    pool_timeout: int = Field(default=30, description="Connection pool timeout (seconds)")
+    pool_recycle: int = Field(default=3600, description="Connection recycle time (seconds)")
     
     # 查询优化
-    query_timeout: int = Field(default=30, description="查询超时(秒)")
-    enable_query_cache: bool = Field(default=True, description="启用查询缓存")
+    query_timeout: int = Field(default=30, description="Query timeout (seconds)")
+    enable_query_cache: bool = Field(default=True, description="Enable query cache")
     
     @validator('pool_size')
     def validate_pool_size(cls, v):
         if v <= 0 or v > 100:
-            raise ValueError('连接池大小必须在1到100之间')
+            raise ValueError('Connection pool size must be between 1 and 100')
         return v
 
 
 class PerformanceConfig(BaseModel):
     """性能配置主类"""
-    level: PerformanceLevel = Field(default=PerformanceLevel.MEDIUM, description="性能级别")
+    level: PerformanceLevel = Field(default=PerformanceLevel.MEDIUM, description="Performance level")
     
     # 子配置
     file_upload: FileUploadConfig = Field(default_factory=FileUploadConfig)
@@ -123,9 +123,9 @@ class PerformanceConfig(BaseModel):
     database: DatabaseConfig = Field(default_factory=DatabaseConfig)
     
     # 全局设置
-    enable_monitoring: bool = Field(default=True, description="启用性能监控")
-    monitoring_interval: int = Field(default=60, description="监控间隔(秒)")
-    log_performance_metrics: bool = Field(default=True, description="记录性能指标")
+    enable_monitoring: bool = Field(default=True, description="Enable performance monitoring")
+    monitoring_interval: int = Field(default=60, description="Monitoring interval (seconds)")
+    log_performance_metrics: bool = Field(default=True, description="Log performance metrics")
     
     def get_config_for_level(self, level: PerformanceLevel) -> 'PerformanceConfig':
         """根据性能级别获取配置"""

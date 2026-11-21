@@ -235,7 +235,7 @@ test('X2 home card: switchable upstream + 1 connection offers 去设置 (add pro
   assert.deepEqual(visited, ['/settings?section=analysis'])
 })
 
-test('X2/X3 home card: insufficient_quota + sponsor offers 去 88API 充值', () => {
+test('X2/X3 home card: insufficient_quota + sponsor offers Top up at 88API', () => {
   const visited = []
   const buttons = {}
   const extra = {
@@ -243,8 +243,8 @@ test('X2/X3 home card: insufficient_quota + sponsor offers 去 88API 充值', ()
     onButton: (label, onClick, variant) => { buttons[label] = { onClick, variant } },
   }
   renderCard('failed', '余额不足', null, extra, to => visited.push(to), { analysisProvider: 'api88' })
-  assert.equal(buttons['去 88API 充值'].variant, 'cta')
-  buttons['去 88API 充值'].onClick()
+  assert.equal(buttons['Top up at 88API'].variant, 'cta')
+  buttons['Top up at 88API'].onClick()
   assert.deepEqual(visited, [])
   assert.ok(extra.opened.some(url => url.includes('88api.ai')))
 })
@@ -271,7 +271,7 @@ test('failed card with catalog message keeps step prefix without rewriting the r
 })
 
 
-test('failed card with billable_calls_before_failure shows 本次已消耗 (#491 tip soft)', () => {
+test('failed card with billable_calls_before_failure shows the request count (#491 tip soft)', () => {
   const html = renderCard('failed', '错误', null, {
     project: {
       error_code: 'provider_error',
@@ -280,13 +280,13 @@ test('failed card with billable_calls_before_failure shows 本次已消耗 (#491
   })
   assert.match(html, /分析：/)
   assert.match(html, /ac-project-billing/)
-  assert.match(html, /本次已消耗 3 次请求/)
+  assert.match(html, /3 requests used this time/)
   const quiet = renderCard('failed', '错误', null, {
     project: { error_code: 'provider_error', processing_config: { billable_calls_before_failure: 0 } },
   })
-  assert.doesNotMatch(quiet, /本次已消耗/)
+  assert.doesNotMatch(quiet, /requests? used this time/)
   const viaSettings = renderCard('failed', '错误', null, {
     project: { error_code: 'provider_error', settings: { billable_calls_before_failure: 2 } },
   })
-  assert.match(viaSettings, /本次已消耗 2 次请求/)
+  assert.match(viaSettings, /2 requests used this time/)
 })

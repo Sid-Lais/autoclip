@@ -252,7 +252,7 @@ class ProcessingService:
         }
         
         if start_step not in step_mapping:
-            raise ValueError(f"无效的步骤名称: {start_step}")
+            raise ValueError(f"Invalid step name: {start_step}")
         
         processing_step = step_mapping[start_step]
         
@@ -337,7 +337,7 @@ class ProcessingService:
         
         return {
             "success": True,
-            "message": "配置更新成功"
+            "message": "Config updated successfully"
         }
     
     @handle_service_error
@@ -363,14 +363,14 @@ class ProcessingService:
         
         return {
             "valid": True,
-            "message": "项目设置验证通过（临时跳过PipelineAdapter验证）"
+            "message": "Project settings validated (PipelineAdapter validation temporarily skipped)"
         }
     
     def _create_processing_task(self, project_id: str, task_type: TaskType = TaskType.VIDEO_PROCESSING) -> Task:
         """创建处理任务"""
         task_data = {
-            "name": f"视频处理任务 - {project_id}",
-            "description": f"处理项目 {project_id} 的视频内容",
+            "name": f"Video processing task - {project_id}",
+            "description": f"Process video content for project {project_id}",
             "project_id": project_id,
             "task_type": task_type,
             "status": TaskStatus.PENDING,

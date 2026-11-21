@@ -245,115 +245,115 @@ def test_connection_assignment(body: ConnectionTestRequest):
 
 class BasicSettings(BaseModel):
     """基础设置"""
-    app_name: str = Field(default="AutoClip Desktop", description="应用名称")
-    app_version: str = Field(default=__version__, description="应用版本")
-    debug_mode: bool = Field(default=False, description="调试模式")
-    auto_start: bool = Field(default=True, description="自动启动")
+    app_name: str = Field(default="AutoClip Desktop", description="App name")
+    app_version: str = Field(default=__version__, description="App version")
+    debug_mode: bool = Field(default=False, description="Debug mode")
+    auto_start: bool = Field(default=True, description="Auto start")
 
 
 class ServiceSettings(BaseModel):
     """服务设置"""
-    host: str = Field(default="127.0.0.1", description="服务主机")
-    port: int = Field(default=8000, description="服务端口")
-    max_memory_usage: int = Field(default=2048, description="最大内存使用(MB)")
+    host: str = Field(default="127.0.0.1", description="Service host")
+    port: int = Field(default=8000, description="Service port")
+    max_memory_usage: int = Field(default=2048, description="Max memory usage (MB)")
     
     @validator('port')
     def validate_port(cls, v):
         if not 1024 <= v <= 65535:
-            raise ValueError('端口号必须在1024-65535之间')
+            raise ValueError('Port must be between 1024 and 65535')
         return v
     
     @validator('max_memory_usage')
     def validate_memory(cls, v):
         if not 512 <= v <= 8192:
-            raise ValueError('内存使用限制必须在512-8192MB之间')
+            raise ValueError('Memory limit must be between 512 and 8192 MB')
         return v
 
 
 class ApiKeys(BaseModel):
     """API密钥设置"""
     model_config = ConfigDict(hide_input_in_errors=True)
-    dashscope: str = Field(default="", description="通义千问API密钥")
-    openai: str = Field(default="", description="OpenAI API密钥")
-    gemini: str = Field(default="", description="Gemini API密钥")
-    siliconflow: str = Field(default="", description="SiliconFlow API密钥（已不再作为独立提供商，仅兼容旧配置）")
-    deepseek: str = Field(default="", description="DeepSeek 官方 API密钥")
-    kimi: str = Field(default="", description="Kimi / 月之暗面 API密钥")
-    glm: str = Field(default="", description="智谱 GLM API密钥")
-    grok: str = Field(default="", description="xAI Grok API密钥")
-    infistar: str = Field(default="", description="Infistar 无限星河 API密钥")
-    api88: str = Field(default="", description="88API API密钥")
-    apimart: str = Field(default="", description="APIMart API密钥")
-    seed: str = Field(default="", description="火山方舟 Seed / 豆包 API密钥")
-    jimeng_access: str = Field(default="", description="即梦AI访问密钥")
-    jimeng_secret: str = Field(default="", description="即梦AI秘密密钥")
+    dashscope: str = Field(default="", description="Tongyi Qianwen API key")
+    openai: str = Field(default="", description="OpenAI API key")
+    gemini: str = Field(default="", description="Gemini API key")
+    siliconflow: str = Field(default="", description="SiliconFlow API key (no longer a standalone provider; kept only for legacy config compatibility)")
+    deepseek: str = Field(default="", description="DeepSeek official API key")
+    kimi: str = Field(default="", description="Kimi / Moonshot AI API key")
+    glm: str = Field(default="", description="Zhipu GLM API key")
+    grok: str = Field(default="", description="xAI Grok API key")
+    infistar: str = Field(default="", description="Infistar API key")
+    api88: str = Field(default="", description="88API API key")
+    apimart: str = Field(default="", description="APIMart API key")
+    seed: str = Field(default="", description="Volcengine Ark Seed / Doubao API key")
+    jimeng_access: str = Field(default="", description="Jimeng AI access key")
+    jimeng_secret: str = Field(default="", description="Jimeng AI secret key")
 
 
 class ApiSettings(BaseModel):
     """API设置"""
-    api_keys: ApiKeys = Field(default_factory=ApiKeys, description="API密钥")
-    api_provider: str = Field(default="dashscope", description="当前 LLM 提供商（dashscope / openai / gemini / deepseek / seed / kimi / glm / grok / infistar / api88 / apimart，或本地预设 ollama / lmstudio）")
-    api_base_url: str = Field(default="", description="OpenAI 兼容接口地址；provider=openai 时空为官方地址，本地预设为空时用预设默认地址")
+    api_keys: ApiKeys = Field(default_factory=ApiKeys, description="API keys")
+    api_provider: str = Field(default="dashscope", description="Current LLM provider (dashscope / openai / gemini / deepseek / seed / kimi / glm / grok / infistar / api88 / apimart, or local presets ollama / lmstudio)")
+    api_base_url: str = Field(default="", description="OpenAI-compatible endpoint URL; with provider=openai an empty value means the official endpoint, and for local presets an empty value uses the preset default")
     api_model: str = Field(default="qwen-plus", description="默认模型")
-    api_max_tokens: int = Field(default=4096, description="最大Token数")
-    api_timeout: int = Field(default=30, description="API超时时间(秒)")
+    api_max_tokens: int = Field(default=4096, description="Max tokens")
+    api_timeout: int = Field(default=30, description="API timeout (seconds)")
     
     @validator('api_timeout')
     def validate_timeout(cls, v):
         if not 5 <= v <= 300:
-            raise ValueError('API超时时间必须在5-300秒之间')
+            raise ValueError('API timeout must be between 5 and 300 seconds')
         return v
 
 
 class ProcessingSettings(BaseModel):
     """处理设置"""
-    processing_chunk_size: int = Field(default=5000, description="处理块大小")
-    processing_min_score: float = Field(default=0.7, description="最小评分阈值")
-    processing_max_clips: int = Field(default=5, description="合集最大切片数")
-    processing_max_retries: int = Field(default=3, description="最大重试次数")
+    processing_chunk_size: int = Field(default=5000, description="Processing chunk size")
+    processing_min_score: float = Field(default=0.7, description="Minimum score threshold")
+    processing_max_clips: int = Field(default=5, description="Max clips per collection")
+    processing_max_retries: int = Field(default=3, description="Max retries")
     
     @validator('processing_chunk_size')
     def validate_chunk_size(cls, v):
         if not 1000 <= v <= 10000:
-            raise ValueError('处理块大小必须在1000-10000之间')
+            raise ValueError('Processing chunk size must be between 1000 and 10000')
         return v
     
     @validator('processing_min_score')
     def validate_min_score(cls, v):
         if not 0.1 <= v <= 1.0:
-            raise ValueError('最小评分阈值必须在0.1-1.0之间')
+            raise ValueError('Minimum score threshold must be between 0.1 and 1.0')
         return v
 
 
 class LogSettings(BaseModel):
     """日志设置"""
-    log_level: str = Field(default="INFO", description="日志级别")
-    log_retention_days: int = Field(default=7, description="日志保留天数")
+    log_level: str = Field(default="INFO", description="Log level")
+    log_retention_days: int = Field(default=7, description="Log retention days")
     
     @validator('log_level')
     def validate_log_level(cls, v):
         if v not in ['DEBUG', 'INFO', 'WARNING', 'ERROR']:
-            raise ValueError('日志级别必须是DEBUG、INFO、WARNING或ERROR')
+            raise ValueError('Log level must be DEBUG, INFO, WARNING or ERROR')
         return v
     
     @validator('log_retention_days')
     def validate_retention_days(cls, v):
         if not 1 <= v <= 30:
-            raise ValueError('日志保留天数必须在1-30天之间')
+            raise ValueError('Log retention must be between 1 and 30 days')
         return v
 
 
 class PathSettings(BaseModel):
     """路径设置"""
-    data_directory: str = Field(description="数据目录")
-    cache_directory: str = Field(description="缓存目录")
-    temp_directory: str = Field(description="临时目录")
+    data_directory: str = Field(description="Data directory")
+    cache_directory: str = Field(description="Cache directory")
+    temp_directory: str = Field(description="Temp directory")
 
 
 class UpdateDataDirRequest(BaseModel):
     """更新数据目录请求"""
-    new_data_directory: str = Field(description="新的数据目录路径")
-    migrate: bool = Field(default=True, description="是否迁移旧目录数据")
+    new_data_directory: str = Field(description="New data directory path")
+    migrate: bool = Field(default=True, description="Whether to migrate data from the old directory")
 
 
 class DesktopSettings(BaseModel):
@@ -363,7 +363,7 @@ class DesktopSettings(BaseModel):
     api: ApiSettings = Field(default_factory=ApiSettings)
     processing: ProcessingSettings = Field(default_factory=ProcessingSettings)
     logs: LogSettings = Field(default_factory=LogSettings)
-    paths: Optional[PathSettings] = Field(default=None, description="路径设置")
+    paths: Optional[PathSettings] = Field(default=None, description="Path settings")
 
 
 def check_desktop_mode(relaxed: bool = False):
@@ -378,7 +378,7 @@ def check_desktop_mode(relaxed: bool = False):
     if not is_desktop_mode():
         if relaxed:
             return False
-        raise HTTPException(status_code=400, detail="此端点仅在Desktop模式下可用")
+        raise HTTPException(status_code=400, detail="This endpoint is only available in Desktop mode")
 
 
 class PrivacySettings(BaseModel):
@@ -438,7 +438,7 @@ async def put_analytics_consent(body: AnalyticsConsent):
         write_privacy(analytics=body.enabled)
     except (RuntimeError, OSError) as exc:
         raise HTTPException(status_code=500 if isinstance(exc, OSError) else 400,
-                            detail="隐私设置保存失败" if isinstance(exc, OSError) else str(exc)) from exc
+                            detail="Failed to save privacy settings" if isinstance(exc, OSError) else str(exc)) from exc
     if body.enabled:
         set_runtime_analytics_off(False)
     sync_anonymous_user()
@@ -566,7 +566,7 @@ async def get_settings():
         return settings
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取设置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get settings: {str(e)}")
 
 
 @router.post("/paths/data-directory")
@@ -593,7 +593,7 @@ async def update_data_directory(
             raise HTTPException(status_code=400, detail=result["error"])
             
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"更新数据目录失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update data directory: {str(e)}")
 
 @router.get("/paths/data-directory")
 async def get_data_directory_info():
@@ -606,7 +606,7 @@ async def get_data_directory_info():
         return get_data_dir_info()
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取数据目录信息失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get data directory info: {str(e)}")
 
 @router.delete("/")
 async def clear_settings(
@@ -625,10 +625,10 @@ async def clear_settings(
         # 保存配置
         save_desktop_config(config)
         
-        return {"message": "设置已清除", "success": True}
+        return {"message": "Settings cleared", "success": True}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"清除设置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to clear settings: {str(e)}")
 
 class TestApiRequest(BaseModel):
     provider: str
@@ -660,13 +660,13 @@ async def test_api_connection(request: TestApiRequest):
             if not request.api_key or len(request.api_key.strip()) < 10:
                 return {
                     "success": False,
-                    "error": "API Key为空或过短，请检查输入",
+                    "error": "API key is empty or too short; please check your input",
                     "provider": request.provider
                 }
             if request.provider in ["dashscope", "openai"] and not request.api_key.startswith("sk-"):
                 return {
                     "success": False,
-                    "error": f"{request.provider} API Key格式可能不正确，通常以'sk-'开头",
+                    "error": f"{request.provider} API key format may be incorrect; it usually starts with 'sk-'",
                     "provider": request.provider
                 }
 
@@ -688,7 +688,7 @@ async def test_api_connection(request: TestApiRequest):
             from backend.core.llm_providers import SiliconFlowProvider
             provider_instance = SiliconFlowProvider(api_key=request.api_key, **model_kwargs)
         else:
-            raise HTTPException(status_code=400, detail="不支持的API提供商")
+            raise HTTPException(status_code=400, detail="Unsupported API provider")
         
         # 测试连接
         test_result = provider_instance.test_connection()
@@ -696,22 +696,22 @@ async def test_api_connection(request: TestApiRequest):
         if test_result:
             return {
                 "success": True,
-                "message": "API连接测试成功",
+                "message": "API connection test succeeded",
                 "provider": requested_provider
             }
         else:
             # 提供更详细的错误信息
-            error_msg = f"API连接测试失败"
+            error_msg = f"API connection test failed"
             if request.provider == "dashscope":
-                error_msg += "。请检查API Key是否正确，DashScope API Key通常以'sk-'开头"
+                error_msg += ". Check that the API key is correct; DashScope API keys usually start with 'sk-'"
             elif request.provider == "openai" and custom_base_url:
-                error_msg += f"。请检查接口地址 {custom_base_url} 是否可达、模型名是否存在，以及该服务是否需要 API Key"
+                error_msg += f". Check that the endpoint {custom_base_url} is reachable, that the model name exists, and whether the service requires an API key"
             elif request.provider == "openai":
-                error_msg += "。请检查API Key是否正确，OpenAI API Key通常以'sk-'开头"
+                error_msg += ". Check that the API key is correct; OpenAI API keys usually start with 'sk-'"
             elif request.provider == "gemini":
-                error_msg += "。请检查API Key是否正确"
+                error_msg += ". Check that the API key is correct"
             elif request.provider == "siliconflow":
-                error_msg += "。请检查API Key是否正确"
+                error_msg += ". Check that the API key is correct"
             
             return {
                 "success": False,
@@ -723,7 +723,7 @@ async def test_api_connection(request: TestApiRequest):
         logger.error("API连接测试异常: %s", sanitize_exception_text(type(e).__name__))
         return {
             "success": False,
-            "error": f"API连接测试失败: {str(e)}",
+            "error": f"API connection test failed: {str(e)}",
             "provider": request.provider
         }
 
@@ -772,12 +772,12 @@ async def update_settings(settings: DesktopSettings):
         # 重要：保存主配置文件，确保API key等关键配置被持久化
         from backend.core.desktop_config import save_desktop_config
         if not save_desktop_config(config):
-            raise HTTPException(status_code=500, detail="保存主配置文件失败")
+            raise HTTPException(status_code=500, detail="Failed to save main config file")
         
-        return {"message": "设置更新成功", "settings_file": str(settings_file)}
+        return {"message": "Settings updated", "settings_file": str(settings_file)}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"更新设置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to update settings: {str(e)}")
 
 
 @router.post("/reset")
@@ -795,10 +795,10 @@ async def reset_settings():
         config._settings = None
         config._paths = None
         
-        return {"message": "设置已重置为默认值"}
+        return {"message": "Settings reset to defaults"}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"重置设置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to reset settings: {str(e)}")
 
 
 @router.post("/paths/data-directory", response_model=Dict[str, Any])
@@ -817,16 +817,16 @@ async def update_data_directory(payload: UpdateDataDirRequest):
             "database_url": config.paths.database_url,
         }
 
-        resp = {"message": "数据目录更新成功", "result": result, "paths": paths}
+        resp = {"message": "Data directory updated", "result": result, "paths": paths}
         if not is_desktop:
-            resp["warning"] = "当前非Desktop模式，但已更新路径配置"
+            resp["warning"] = "Not in Desktop mode, but the path configuration was updated"
         return resp
     except Exception as e:
         # 返回更详细的错误，帮助定位权限/路径/占用等问题
         return {
-            "message": "更新数据目录失败，但已跳过（内测模式）",
+            "message": "Failed to update data directory, skipped (beta mode)",
             "error": str(e),
-            "hint": "请确认目标目录可写且未被系统限制，必要时选择用户主目录下的路径",
+            "hint": "Make sure the target directory is writable and not restricted by the system; if needed, choose a path under your user home directory",
         }
 
 
@@ -845,13 +845,13 @@ async def export_settings():
             json.dump(settings.dict(), f, indent=2, ensure_ascii=False)
         
         return {
-            "message": "设置导出成功",
+            "message": "Settings exported",
             "export_file": str(export_file),
             "download_url": f"/api/v1/settings/download/{export_file.name}"
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"导出设置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to export settings: {str(e)}")
 
 
 @router.post("/import")
@@ -871,14 +871,14 @@ async def import_settings(file: UploadFile = File(...)):
         result = await update_settings(settings)
         
         return {
-            "message": "设置导入成功",
+            "message": "Settings imported",
             "imported_settings": settings.dict()
         }
         
     except json.JSONDecodeError:
-        raise HTTPException(status_code=400, detail="设置文件格式错误")
+        raise HTTPException(status_code=400, detail="Invalid settings file format")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"导入设置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to import settings: {str(e)}")
 
 
 # 删除重复的test_api_connection函数
@@ -899,7 +899,7 @@ async def validate_settings():
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"设置验证失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Settings validation failed: {str(e)}")
 
 
 @router.get("/backup")
@@ -922,13 +922,13 @@ async def backup_settings():
             json.dump(settings.dict(), f, indent=2, ensure_ascii=False)
         
         return {
-            "message": "设置备份成功",
+            "message": "Settings backed up",
             "backup_file": str(backup_file),
             "backup_time": timestamp
         }
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"备份设置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to back up settings: {str(e)}")
 
 
 @router.get("/backups")
@@ -960,7 +960,7 @@ async def list_backups():
         return {"backups": backups}
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取备份列表失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get backup list: {str(e)}")
 
 
 def _saved_provider_api_key(settings: DesktopSettings, provider: str) -> str:
@@ -1019,7 +1019,7 @@ async def get_available_models(
         payload["models_by_provider"] = legacy
         return payload
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取模型列表失败: {sanitize_exception_text(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get model list: {sanitize_exception_text(e)}")
 
 
 @router.get("/local-presets")
@@ -1047,7 +1047,7 @@ async def list_compatible_models(base_url: str = "", provider: str = "openai", a
     _provider, resolved_base_url, _preset = resolve_provider(provider, base_url)
     url = normalize_base_url(resolved_base_url)
     if not url:
-        raise HTTPException(status_code=400, detail="缺少 base_url")
+        raise HTTPException(status_code=400, detail="Missing base_url")
     try:
         from starlette.concurrency import run_in_threadpool
         from backend.core.provider_model_fetch import list_account_models
@@ -1094,7 +1094,7 @@ async def get_current_provider():
             "model": info.get("model") or "qwen-plus",
             "available": bool(info.get("available")),
             "display_name": display_name,
-            "description": f"{display_name} 模型服务",
+            "description": f"{display_name} model service",
         }
         if info.get("base_url"):
             provider_info["base_url"] = info["base_url"]
@@ -1102,7 +1102,7 @@ async def get_current_provider():
         return provider_info
         
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"获取当前提供商信息失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get current provider info: {str(e)}")
 
 
 @router.post("/restore/{backup_filename}")
@@ -1115,7 +1115,7 @@ async def restore_backup(backup_filename: str):
         backup_file = config.paths.data_dir / "backups" / backup_filename
         
         if not backup_file.exists():
-            raise HTTPException(status_code=404, detail="备份文件不存在")
+            raise HTTPException(status_code=404, detail="Backup file not found")
         
         # 读取备份文件
         with open(backup_file, 'r', encoding='utf-8') as f:
@@ -1126,7 +1126,7 @@ async def restore_backup(backup_filename: str):
         result = await update_settings(settings)
         
         return {
-            "message": "设置恢复成功",
+            "message": "Settings restored",
             "restored_from": backup_filename,
             "restored_settings": settings.dict()
         }
@@ -1134,7 +1134,7 @@ async def restore_backup(backup_filename: str):
     except HTTPException:
         raise
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"恢复设置失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to restore settings: {str(e)}")
 
 
 @router.post("/sync-config")
@@ -1146,17 +1146,17 @@ async def sync_config():
         if config_sync_service.sync_from_client():
             return {
                 "status": "success",
-                "message": "配置同步成功"
+                "message": "Configuration synced"
             }
         else:
             return {
                 "status": "error",
-                "message": "配置同步失败"
+                "message": "Configuration sync failed"
             }
     except Exception as e:
         return {
             "status": "error",
-            "message": f"配置同步失败: {str(e)}"
+            "message": f"Configuration sync failed: {str(e)}"
         }
 
 
@@ -1182,5 +1182,5 @@ async def get_config_status():
     except Exception as e:
         return {
             "status": "error",
-            "message": f"获取配置状态失败: {str(e)}"
+            "message": f"Failed to get configuration status: {str(e)}"
         }

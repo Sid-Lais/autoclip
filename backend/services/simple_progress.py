@@ -174,7 +174,7 @@ try:
         logger.info(f"桌面模式使用SQLite进度存储: {db_file}")
     else:
         if redis is None:
-            raise RuntimeError("redis 未安装")
+            raise RuntimeError("redis is not installed")
         # 从环境变量获取Redis URL，默认为本地地址
         redis_url = os.getenv("REDIS_URL", "redis://127.0.0.1:6379/0")
         r_client = redis.Redis.from_url(redis_url, decode_responses=True)

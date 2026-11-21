@@ -77,7 +77,7 @@ def test_failed_atomic_replace_preserves_previous_settings(tmp_path, monkeypatch
 @pytest.mark.parametrize('raw', ['{broken', '{"analysis_mode":"unknown"}', 'null'])
 def test_corrupt_settings_do_not_silently_enable_a_model(raw):
     prefs.settings_path().write_text(raw)
-    with pytest.raises(ValueError, match='尚未授权视觉调用'): prefs.load()
+    with pytest.raises(ValueError, match='not yet authorized'): prefs.load()
     assert prefs.settings_path().read_text() == raw
 
 
@@ -145,7 +145,7 @@ def test_text_model_mode_without_endpoint_is_unconfigured(monkeypatch):
     monkeypatch.setattr(vision_settings, '_environment', lambda: None)
     _use_text_model(monkeypatch, None)
     assert vision_settings.public()['configured'] is False
-    with pytest.raises(ValueError, match='另选视觉模型'):
+    with pytest.raises(ValueError, match='choose another vision model'):
         vision_settings.test(vision_settings.VisionSettingsInput(mode='text_model'))
 
 

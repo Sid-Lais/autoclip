@@ -72,10 +72,10 @@ def bundled_candidates(base: str, executable: str | None = None, platform_name: 
 def missing_ffmpeg_message(name: str = "ffmpeg") -> str:
     env = f"AUTOCLIP_{name.upper()}_PATH / {name.upper()}_PATH"
     return (
-        f"找不到 {name}。查找顺序是：环境变量 {env}，"
-        "安装目录或仓库里的 resources/ffmpeg，然后是系统 PATH。"
-        f"这些位置都没有可用的 {name}。"
-        "请安装 ffmpeg（含 ffprobe），或设置 AUTOCLIP_FFMPEG_PATH 和 AUTOCLIP_FFPROBE_PATH。"
+        f"Could not find {name}. Search order: environment variable {env}, "
+        "resources/ffmpeg in the install directory or repo, then the system PATH. "
+        f"No usable {name} was found in any of these locations. "
+        "Install ffmpeg (including ffprobe), or set AUTOCLIP_FFMPEG_PATH and AUTOCLIP_FFPROBE_PATH."
     )
 
 

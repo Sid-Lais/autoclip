@@ -87,11 +87,11 @@ async def retry_download_only(
             url = description.replace("从YouTube下载:", "").strip()
             return await retry_youtube_download(project_id, url, browser, db)
         else:
-            raise HTTPException(status_code=400, detail="无法确定下载源")
+            raise HTTPException(status_code=400, detail="Unable to determine the download source")
     
     except Exception as e:
         logger.error(f"重试下载失败: {e}")
-        raise HTTPException(status_code=500, detail=f"重试下载失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retry download: {str(e)}")
 
 async def retry_bilibili_download(
     project_id: str, 
@@ -127,13 +127,13 @@ async def retry_bilibili_download(
         
         return {
             "success": True,
-            "message": "B站下载重试已启动",
+            "message": "Bilibili download retry started",
             "task_id": task_id
         }
     
     except Exception as e:
         logger.error(f"重试B站下载失败: {e}")
-        raise HTTPException(status_code=500, detail=f"重试B站下载失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retry Bilibili download: {str(e)}")
 
 async def retry_youtube_download(
     project_id: str, 
@@ -169,13 +169,13 @@ async def retry_youtube_download(
         
         return {
             "success": True,
-            "message": "YouTube下载重试已启动",
+            "message": "YouTube download retry started",
             "task_id": task_id
         }
     
     except Exception as e:
         logger.error(f"重试YouTube下载失败: {e}")
-        raise HTTPException(status_code=500, detail=f"重试YouTube下载失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retry YouTube download: {str(e)}")
 
 async def retry_processing_only(
     project_id: str,
@@ -193,7 +193,7 @@ async def retry_processing_only(
         
         # 检查视频文件
         if not project.video_path or not Path(project.video_path).exists():
-            raise HTTPException(status_code=400, detail="视频文件不存在，请先重试下载")
+            raise HTTPException(status_code=400, detail="Video file does not exist. Please retry the download first")
         
         # 重置项目状态
         project.status = ProjectStatus.PENDING
@@ -207,13 +207,13 @@ async def retry_processing_only(
         
         return {
             "success": True,
-            "message": "处理重试已启动",
+            "message": "Processing retry started",
             "task_id": result.get("task_id")
         }
     
     except Exception as e:
         logger.error(f"重试处理失败: {e}")
-        raise HTTPException(status_code=500, detail=f"重试处理失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to retry processing: {str(e)}")
 
 @router.post("/projects/{project_id}/smart-retry", response_model=RetryResponse)
 async def smart_retry_project(
@@ -242,7 +242,7 @@ async def smart_retry_project(
             download_result = await retry_download_only(project_id, request.browser, db)
             return RetryResponse(
                 success=True,
-                message="完整重试已启动（下载+处理）",
+                message="Full retry started (download + processing)",
                 strategy_used=strategy,
                 project_id=project_id,
                 download_task_id=download_result.get("task_id")
@@ -253,7 +253,7 @@ async def smart_retry_project(
             download_result = await retry_download_only(project_id, request.browser, db)
             return RetryResponse(
                 success=True,
-                message="下载重试已启动",
+                message="Download retry started",
                 strategy_used=strategy,
                 project_id=project_id,
                 download_task_id=download_result.get("task_id")
@@ -266,20 +266,20 @@ async def smart_retry_project(
             processing_result = await retry_processing_only(project_id, db)
             return RetryResponse(
                 success=True,
-                message="处理重试已启动",
+                message="Processing retry started",
                 strategy_used=strategy,
                 project_id=project_id,
                 task_id=processing_result.get("task_id")
             )
         
         else:
-            raise HTTPException(status_code=400, detail=f"不支持的重试策略: {strategy}")
+            raise HTTPException(status_code=400, detail=f"Unsupported retry strategy: {strategy}")
     
     except HTTPException:
         raise
     except Exception as e:
         logger.error(f"智能重试失败: {e}")
-        raise HTTPException(status_code=500, detail=f"智能重试失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Smart retry failed: {str(e)}")
 
 @router.get("/projects/{project_id}/retry-strategy")
 async def get_retry_strategy(
@@ -305,15 +305,15 @@ async def get_retry_strategy(
     
     except Exception as e:
         logger.error(f"获取重试策略失败: {e}")
-        raise HTTPException(status_code=500, detail=f"获取重试策略失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to get retry strategy: {str(e)}")
 
 def _get_strategy_reason(project: Project, strategy: RetryStrategy) -> str:
     """获取策略选择原因"""
     if strategy == RetryStrategy.FULL_RETRY:
-        return "没有视频文件或强制重新下载"
+        return "No video file, or re-download forced"
     elif strategy == RetryStrategy.PROCESSING_ONLY:
-        return "视频文件存在但处理失败或未开始"
+        return "Video file exists but processing failed or has not started"
     elif strategy == RetryStrategy.DOWNLOAD_ONLY:
-        return "仅重试下载阶段"
+        return "Retry the download stage only"
     else:
-        return "智能判断"
+        return "Smart detection"

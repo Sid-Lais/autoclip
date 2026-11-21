@@ -84,11 +84,11 @@ def _image_transport_errors(function):
             invalid = (isinstance(error, _LOCAL_REQUEST_ERRORS)
                        and not isinstance(error, requests.exceptions.JSONDecodeError))
             if invalid:
-                message = '封面服务接口地址无效，请检查模型设置中的 HTTP(S) 地址'
+                message = 'The cover service endpoint URL is invalid. Check the HTTP(S) address in the model settings'
             elif isinstance(error, requests.exceptions.Timeout):
-                message = '封面服务请求超时，请检查服务和网络后重试'
+                message = 'The cover service request timed out. Check the service and your network, then try again'
             else:
-                message = '封面服务连接失败，请检查接口地址与网络后重试'
+                message = 'Could not connect to the cover service. Check the endpoint URL and your network, then try again'
             # Request exceptions can include credentials, URLs and response bodies: the one snapshot is
             # built here, inside the boundary (a malformed address never left this machine = local; anything
             # else was sent toward the provider: a content-free ProviderTransportError that THE classifier
@@ -101,7 +101,7 @@ def _image_transport_errors(function):
                                          failure_stage='cover')
                 raise attributed(ImageError(message), snap) from None
             if isinstance(error, requests.exceptions.JSONDecodeError):
-                raise _cover_failure('封面服务返回格式无效，请检查模型设置后重试',
+                raise _cover_failure('The cover service returned an invalid response. Check the model settings and try again',
                                      ModelResponseInvalid(type(error).__name__)) from None
             status = getattr(getattr(error, 'response', None), 'status_code', None)
             transport = ProviderTransportError(type(error).__name__, http_status=status,
@@ -237,9 +237,9 @@ def _raise_for_status(resp: Any, *, edit: bool = False) -> dict[str, Any]:
             or any(word in lowered for word in ("not support", "unsupported", "unknown url", "not found", "invalid endpoint"))
         )
         if status >= 400:
-            raise _cover_failure(f'封面服务请求失败（HTTP {status}），请检查密钥、额度和模型权限',
+            raise _cover_failure(f'Cover service request failed (HTTP {status}). Check your API key, quota and model permissions',
                                  ProviderTransportError('HTTPStatus', http_status=status), unsupported_edit=unsupported)
-        raise _cover_failure('封面服务返回格式无效，请检查模型设置后重试', ModelResponseInvalid('NotAnObject'),
+        raise _cover_failure('The cover service returned an invalid response. Check the model settings and try again', ModelResponseInvalid('NotAnObject'),
                              unsupported_edit=unsupported)
     return data
 
@@ -252,18 +252,18 @@ def _check_image_url(url: str, allow_local: bool) -> None:
     or its network (the app's own API listens on 127.0.0.1), unless the provider itself is local."""
     parsed = urlparse(url)
     if parsed.scheme not in ("http", "https") or not parsed.hostname:
-        raise ImageError("生图返回的图片地址无效")
+        raise ImageError("The image URL returned by the image generator is invalid")
     if allow_local:
         return
     host = parsed.hostname.lower()
     if host == "localhost" or host.endswith(".localhost"):
-        raise ImageError("生图返回的图片地址无效")
+        raise ImageError("The image URL returned by the image generator is invalid")
     try:
         ip = ipaddress.ip_address(host)
     except ValueError:
         return
     if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_reserved or ip.is_unspecified or ip.is_multicast:
-        raise ImageError("生图返回的图片地址无效")
+        raise ImageError("The image URL returned by the image generator is invalid")
 
 
 def _download(session: requests.Session, url: str) -> bytes:
@@ -278,20 +278,20 @@ def _download(session: requests.Session, url: str) -> bytes:
             continue
         break
     else:
-        raise ImageError("下载生成图失败")
+        raise ImageError("Could not download the generated image")
     if status >= 400:
-        raise ImageError("下载生成图失败")
+        raise ImageError("Could not download the generated image")
     if hasattr(resp, "iter_content"):
         content = bytearray()
         for chunk in resp.iter_content(1 << 16):
             content += chunk
             if len(content) > MAX_IMAGE_BYTES:
-                raise ImageError("生成图过大")
+                raise ImageError("The generated image is too large")
         content = bytes(content)
     else:
         content = getattr(resp, "content", b"") or b""
     if not content or len(content) > MAX_IMAGE_BYTES:
-        raise ImageError("下载生成图失败")
+        raise ImageError("Could not download the generated image")
     return content
 
 
@@ -299,20 +299,20 @@ def _decode_b64(value: str) -> bytes:
     try:
         return base64.b64decode(value)
     except Exception as exc:  # noqa: BLE001
-        raise ImageError("生图返回的图片无法解析") from exc
+        raise ImageError("The image returned by the image generator could not be parsed") from exc
 
 
 def _openai_image(data: dict[str, Any], session: requests.Session) -> bytes:
     items = data.get("data")
     if not isinstance(items, list) or not items or not isinstance(items[0], dict):
-        raise ImageError("生图没有返回图片")
+        raise ImageError("The image generator returned no image")
     item = items[0]
     if item.get("b64_json"):
         return _decode_b64(str(item["b64_json"]))
     url = str(item.get("url") or "")
     if url.startswith(("http://", "https://")):
         return _download(session, url)
-    raise ImageError("生图没有返回图片")
+    raise ImageError("The image generator returned no image")
 
 
 def _bearer(api_key: str, base_url: str) -> dict[str, str]:
@@ -320,7 +320,7 @@ def _bearer(api_key: str, base_url: str) -> dict[str, str]:
     if not key and base_url:
         key = OPENAI_PLACEHOLDER_KEY
     if not key:
-        raise ImageError("还没有配置生图密钥")
+        raise ImageError("Image generation API key is not configured")
     return {"Authorization": f"Bearer {key}"}
 
 
@@ -450,7 +450,7 @@ def _dashscope_bytes(data: dict[str, Any], session: requests.Session) -> bytes |
             logger.warning("DashScope image task %s omitted from UI: %s", status, message[:300])
             from backend.core.failure_codes import sentence
             raise ImageError(sentence("unexpected"), unsupported_edit=unsupported)
-        raise ImageError("生图失败", unsupported_edit=unsupported)
+        raise ImageError("The image was not generated", unsupported_edit=unsupported)
     results = output.get("results") if isinstance(output.get("results"), list) else []
     if results and isinstance(results[0], dict):
         item = results[0]
@@ -464,7 +464,7 @@ def _dashscope_bytes(data: dict[str, Any], session: requests.Session) -> bytes |
             if isinstance(part, dict) and str(part.get('image', '')).startswith(('https://', 'http://')):
                 return _download(session, part['image'])
     if status == "SUCCEEDED":
-        raise ImageError("生图没有返回图片")
+        raise ImageError("The image generator returned no image")
     return None
 
 
@@ -487,7 +487,7 @@ def generate_dashscope(
         content = [{'text': request.prompt}]
         if request.reference:
             if model in {'qwen-image', 'z-image-turbo'} or model.startswith(('qwen-image-plus', 'qwen-image-max')):
-                raise ImageError('该模型不支持参考帧', unsupported_edit=True)
+                raise ImageError('This model does not support reference frames', unsupported_edit=True)
             content.insert(0, {'image': _reference_data_uri(request.reference)})
         if modern_qwen:
             headers.pop('X-DashScope-Async', None)
@@ -536,7 +536,7 @@ def _wait_dashscope(data, http, root, api_key, *, cancel, poll_interval):
     output = data.get("output") if isinstance(data.get("output"), dict) else {}
     task_id = str(output.get("task_id") or "")
     if not task_id:
-        raise ImageError("生图没有返回任务")
+        raise ImageError("The image generator returned no task")
     for _ in range(40):
         if cancel is not None and cancel.is_set():
             raise ImageError("已取消")
@@ -548,7 +548,7 @@ def _wait_dashscope(data, http, root, api_key, *, cancel, poll_interval):
         ready = _dashscope_bytes(_raise_for_status(polled), http)
         if ready is not None:
             return ready
-    raise ImageError("生图超时")
+    raise ImageError("Image generation timed out")
 
 
 def generate_gemini(*, api_key, base_url, request, session=None):
@@ -567,7 +567,7 @@ def generate_gemini(*, api_key, base_url, request, session=None):
             inline = part.get('inlineData') or part.get('inline_data') or {}
             if inline.get('data') and str(inline.get('mimeType') or inline.get('mime_type') or '').startswith('image/'):
                 return _decode_b64(inline['data'])
-    raise ImageError('生图没有返回图片')
+    raise ImageError('The image generator returned no image')
 
 
 def generate_vendor_image(*, provider, api_key, base_url, request, session=None):
@@ -582,7 +582,7 @@ def generate_vendor_image(*, provider, api_key, base_url, request, session=None)
             body['image'] = {'url': _reference_data_uri(request.reference)}
     else:
         if request.reference:
-            raise ImageError('该模型不支持参考帧', unsupported_edit=True)
+            raise ImageError('This model does not support reference frames', unsupported_edit=True)
         body['size'] = '960x1728' if request.height > request.width else '1728x960'
     response = http.post(f'{root}/images/{route}', headers={**_bearer(api_key, root), 'Content-Type': 'application/json'}, json=body, timeout=120)
     return _openai_image(_raise_for_status(response, edit=bool(request.reference)), http)
@@ -653,7 +653,7 @@ def generate_image(
     )
 
 
-_OCR_SKIP = "未选择可用于封面校对的多模态模型，跳过校对"
+_OCR_SKIP = "No multimodal model selected for cover proofreading; skipping proofreading"
 
 
 def _ocr_catalog_endpoint(provider: str, base_url: str) -> tuple[str, str]:
@@ -786,7 +786,7 @@ def _text_from_dashscope_ocr(data: dict[str, Any]) -> str:
 def _text_from_chat_ocr(data: dict[str, Any]) -> str:
     choices = data.get("choices") if isinstance(data.get("choices"), list) else []
     if not choices or not isinstance(choices[0], dict):
-        raise ImageError("没有读出画面上的字")
+        raise ImageError("Could not read any text from the image")
     message = choices[0].get("message") if isinstance(choices[0].get("message"), dict) else {}
     return str(message.get("content") or "").strip()
 

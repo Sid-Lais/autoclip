@@ -11,9 +11,9 @@ from datetime import datetime
 class BilibiliAccountCreate(BaseModel):
     """创建B站账号"""
     username: str = Field(default="qr_login", description="用户名")
-    password: str = Field(default="", description="密码")
+    password: str = Field(default="", description="Password")
     nickname: Optional[str] = Field(None, description="昵称")
-    cookie_content: str = Field(..., description="cookie文件内容")
+    cookie_content: str = Field(..., description="Cookie file content")
 
 
 class BilibiliAccountResponse(BaseModel):
@@ -43,13 +43,13 @@ class QRLoginResponse(BaseModel):
 
 class UploadRequest(BaseModel):
     """投稿请求"""
-    clip_ids: List[str] = Field(..., description="要投稿的切片ID列表")
-    account_id: Union[int, str] = Field(..., description="使用的账号ID")
+    clip_ids: List[str] = Field(..., description="List of clip IDs to upload")
+    account_id: Union[int, str] = Field(..., description="Account ID to use")
     title: str = Field(..., description="标题")
     description: str = Field(..., description="描述")
-    tags: List[str] = Field(default=[], description="标签列表")
-    partition_id: int = Field(..., description="分区ID")
-    sub_partition_id: Optional[int] = Field(None, description="子分区ID（可选）")
+    tags: List[str] = Field(default=[], description="Tag list")
+    partition_id: int = Field(..., description="Partition ID")
+    sub_partition_id: Optional[int] = Field(None, description="Sub-partition ID (optional)")
 
 
 class UploadRecordResponse(BaseModel):

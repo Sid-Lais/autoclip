@@ -72,14 +72,14 @@ class PlatformStrategy:
 _STRATEGIES = (
     # Hard limits checked 2026-09: Douyin uploads up to ~15 min, TikTok up to 60 min, Reels up to
     # 20 min (only <=3 min is recommended to new viewers), YouTube Shorts is capped at 3 min.
-    PlatformStrategy("douyin", "抖音 9:16", "download_only", None, 1080, 1920, "blur", "short", 15, None, "accent", "comic", True, "portrait", ("douyin",), 90, "interview_zh", "zh"),
+    PlatformStrategy("douyin", "Douyin 9:16", "download_only", None, 1080, 1920, "blur", "short", 15, None, "accent", "comic", True, "portrait", ("douyin",), 90, "interview_zh", "zh"),
     PlatformStrategy("tiktok", "TikTok 9:16", "upload_post", "tiktok", 1080, 1920, "crop", "short", 15, None, "bold", "comic", True, "portrait", ("tiktok",), 90, "podcast_en", "en"),
     PlatformStrategy("instagram_reels", "Instagram Reels 9:16", "upload_post", "instagram", 1080, 1920, "crop", "short", 15, None, "bold", "card", True, "portrait", ("instagram", "reels"), 180, "podcast_en", "en"),
     PlatformStrategy("youtube_shorts", "YouTube Shorts 9:16", "upload_post", "youtube", 1080, 1920, "crop", "short", 15, 180, "bold", "card", True, "portrait", ("shorts", "youtube_shorts"), 60, "podcast_en", "en"),
     PlatformStrategy("youtube_long", "YouTube 横屏", "upload_post", "youtube", 1920, 1080, "fit", "long", 180, None, "clean", "editorial", False, "landscape", ("youtube_long",), None, "landscape", "en"),
-    PlatformStrategy("bilibili", "B站横屏", "bilibili_direct", "bilibili", 1920, 1080, "fit", "adaptive", 180, None, "clean", "editorial", False, "landscape", ("bilibili",), None, "landscape", "zh"),
-    PlatformStrategy("xiaohongshu", "小红书 9:16", "download_only", None, 1080, 1920, "blur", "short", 20, None, "box", "card", True, "portrait", ("xiaohongshu",), 90, "interview_zh", "zh"),
-    PlatformStrategy("original", "原画重编码", "download_only", None, None, None, "none", "adaptive", None, None, "clean", "plain", False, "original", ("original",)),
+    PlatformStrategy("bilibili", "Bilibili Landscape", "bilibili_direct", "bilibili", 1920, 1080, "fit", "adaptive", 180, None, "clean", "editorial", False, "landscape", ("bilibili",), None, "landscape", "zh"),
+    PlatformStrategy("xiaohongshu", "Xiaohongshu 9:16", "download_only", None, 1080, 1920, "blur", "short", 20, None, "box", "card", True, "portrait", ("xiaohongshu",), 90, "interview_zh", "zh"),
+    PlatformStrategy("original", "Original Re-encode", "download_only", None, None, None, "none", "adaptive", None, None, "clean", "plain", False, "original", ("original",)),
 )
 
 PLATFORM_STRATEGIES = {strategy.id: strategy for strategy in _STRATEGIES}
@@ -95,7 +95,7 @@ def platform_strategy(strategy_id: str) -> PlatformStrategy:
     try:
         return PLATFORM_STRATEGIES[key]
     except KeyError as error:
-        raise ValueError(f"未知平台策略: {strategy_id}") from error
+        raise ValueError(f"Unknown platform strategy: {strategy_id}") from error
 
 
 def normalize_platform_ids(strategy_ids: Iterable[str]) -> list[str]:
@@ -105,7 +105,7 @@ def normalize_platform_ids(strategy_ids: Iterable[str]) -> list[str]:
         if strategy_id not in normalized:
             normalized.append(strategy_id)
     if not normalized:
-        raise ValueError("至少要选择一个发布平台")
+        raise ValueError("Select at least one publishing platform")
     return normalized
 
 
@@ -113,7 +113,7 @@ def strategy_for_legacy_preset(preset: str) -> PlatformStrategy:
     try:
         return platform_strategy(LEGACY_PRESET_STRATEGIES[preset])
     except KeyError as error:
-        raise ValueError(f"未知预设: {preset}（可选 {', '.join(LEGACY_PRESET_STRATEGIES)}）") from error
+        raise ValueError(f"Unknown preset: {preset} (available: {', '.join(LEGACY_PRESET_STRATEGIES)})") from error
 
 
 def legacy_export_presets() -> dict[str, dict[str, object]]:

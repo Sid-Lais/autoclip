@@ -345,7 +345,7 @@ def test_missing_vision_is_explicit_fallback_not_fake_ai(source,monkeypatch):
     monkeypatch.setattr(intelligence,'ready',lambda:False)
     plan=planning.recommend(source,ImportOptions())
     assert plan['mode']=='fallback' and plan['confidence']==0
-    assert plan['preferences']['goal']=='content' and '未配置' in plan['reason']
+    assert plan['preferences']['goal']=='content' and 'not configured' in plan['reason']
     assert plan['suggested_goals']==[]
 
 def test_invalid_model_choice_does_not_silently_route(source,monkeypatch):
@@ -444,7 +444,7 @@ def test_content_adapter_uses_existing_pipeline_without_broker(source,monkeypatc
 def test_content_adapter_rejects_empty_success(source,monkeypatch):
     fake=SimpleNamespace(apply=lambda **kwargs:SimpleNamespace(get=lambda:{'success':True,'result':{'result':{'titled_clips':[]}}}))
     monkeypatch.setitem(sys.modules,'backend.tasks.processing',SimpleNamespace(process_video_pipeline=fake))
-    with pytest.raises(ValueError,match='可用'): jobs.run_content('p1',source)
+    with pytest.raises(ValueError,match='usable'): jobs.run_content('p1',source)
 
 
 def test_bad_subtitle_rejected_before_project_creation(client,source):

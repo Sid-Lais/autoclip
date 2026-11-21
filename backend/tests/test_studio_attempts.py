@@ -219,7 +219,7 @@ def test_editing_the_plan_settles_the_interrupted_attempt_before_refusing(monkey
 @pytest.mark.usefixtures('env')
 def test_a_live_run_is_still_refused_and_its_attempt_stays_open():
     pid = flow.new_project(); flow.auto_import(pid)
-    with pytest.raises(ValueError, match='当前任务正在运行'):
+    with pytest.raises(ValueError, match='The current task is running'):
         jobs.inspect_project(pid, flow.AUTO)
     [receipt] = flow.receipts(pid)
     assert receipt['state'] == 'open'
@@ -978,7 +978,7 @@ def test_i442_recorded_round_with_only_on_demand_outputs_is_validation():
                  records=[{'attempt_id': 't-1', 'kind': 'generation', 'state': 'open', 'sequence': 2}])
     store.settle_generation(data)
     assert (data['generation']['status'], data['generation']['error_code']) == ('failed', 'validation')
-    assert data['generation']['error'] == '没有自动生成的成片，可选择备选片段继续生成'
+    assert data['generation']['error'] == 'No videos were generated automatically. Pick an alternate segment to keep generating'
 
 
 # N counts only failed outputs outside the round; the error text comes from the round only

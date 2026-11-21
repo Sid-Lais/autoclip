@@ -94,7 +94,7 @@ async def parse_youtube_video(
         
         # 简单的URL验证
         if "youtube.com" not in url and "youtu.be" not in url:
-            raise HTTPException(status_code=400, detail="无效的YouTube视频链接")
+            raise HTTPException(status_code=400, detail="Invalid YouTube video link")
         
         # 记录版本信息，便于排查
         try:
@@ -189,7 +189,7 @@ async def parse_youtube_video(
         raise
     except Exception as e:
         logger.error(f"解析YouTube视频失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"解析失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Parsing failed: {str(e)}")
 
 @router.post("/download")
 async def create_youtube_download_task(request: YouTubeDownloadRequest):
@@ -262,7 +262,7 @@ async def create_youtube_download_task(request: YouTubeDownloadRequest):
             # 创建项目数据
             project_data = ProjectCreate(
                 name=request.project_name,
-                description=f"从YouTube下载: {video_info.get('title', 'Unknown')}",
+                description=f"Downloaded from YouTube: {video_info.get('title', 'Unknown')}",
                 project_type=ProjectType(request.video_category),
                 status=ProjectStatus.PENDING,  # 初始状态为等待中
                 source_url=request.url,
@@ -333,7 +333,7 @@ async def create_youtube_download_task(request: YouTubeDownloadRequest):
                 "project_id": project_id,
                 "task_id": task_id,
                 "status": "created",
-                "message": "项目已创建，正在下载中..."
+                "message": "Project created, downloading..."
             }
             
         finally:
@@ -341,13 +341,13 @@ async def create_youtube_download_task(request: YouTubeDownloadRequest):
         
     except Exception as e:
         logger.error(f"创建YouTube下载任务失败: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"创建任务失败: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Failed to create task: {str(e)}")
 
 @router.get("/tasks/{task_id}")
 async def get_youtube_task_status(task_id: str):
     """获取YouTube下载任务状态"""
     if task_id not in download_tasks:
-        raise HTTPException(status_code=404, detail="任务不存在")
+        raise HTTPException(status_code=404, detail="Task not found")
     
     return download_tasks[task_id]
 
@@ -425,7 +425,7 @@ def make_download_progress_hook(project_id: str, task_id: str, min_interval: flo
         task = download_tasks.get(task_id)
         if task is not None:
             task.progress = value
-        save_project_download_progress(project_id, value, f"正在下载视频... {int(fraction * 100)}%")
+        save_project_download_progress(project_id, value, f"Downloading video... {int(fraction * 100)}%")
 
     return hook
 
@@ -437,7 +437,7 @@ async def process_youtube_download_task(task_id: str, request: YouTubeDownloadRe
         download_tasks[task_id].progress = 10.0
         
         # 更新项目状态和进度
-        await update_project_download_progress(project_id, 10.0, "正在获取视频信息...")
+        await update_project_download_progress(project_id, 10.0, "Fetching video info...")
         
         # 使用yt-dlp下载视频
         import yt_dlp
@@ -453,7 +453,7 @@ async def process_youtube_download_task(task_id: str, request: YouTubeDownloadRe
         download_dir = Path(tempfile.mkdtemp(prefix="youtube-", dir=temp_root))
         
         # 更新项目进度
-        await update_project_download_progress(project_id, 30.0, "正在下载视频...")
+        await update_project_download_progress(project_id, 30.0, "Downloading video...")
         
         # 设置下载选项
         ydl_opts = {
@@ -495,7 +495,7 @@ async def process_youtube_download_task(task_id: str, request: YouTubeDownloadRe
         subtitle_files = list(download_dir.glob("*.srt"))
         
         if not video_files:
-            raise Exception("未找到下载的视频文件")
+            raise Exception("Downloaded video file not found")
         
         video_path = str(video_files[0])
         subtitle_path = str(subtitle_files[0]) if subtitle_files else ""
@@ -504,13 +504,13 @@ async def process_youtube_download_task(task_id: str, request: YouTubeDownloadRe
         download_tasks[task_id].progress = 80.0
         
         # 更新项目进度
-        await update_project_download_progress(project_id, 60.0, "视频下载完成，正在处理字幕...")
+        await update_project_download_progress(project_id, 60.0, "Video downloaded, processing subtitles...")
         
         # 如果没有字幕文件，优先使用Whisper生成字幕
         if not subtitle_path:
             logger.info("优先使用Whisper生成高质量字幕")
             # 更新项目进度
-            await update_project_download_progress(project_id, 70.0, "正在使用Whisper生成字幕...")
+            await update_project_download_progress(project_id, 70.0, "Generating subtitles with Whisper...")
             
             try:
                 from ...utils.speech_recognizer import generate_subtitle_for_video, SpeechRecognitionError
@@ -534,7 +534,7 @@ async def process_youtube_download_task(task_id: str, request: YouTubeDownloadRe
                 logger.info(f"Whisper字幕生成成功: {subtitle_path}")
                 
                 # 更新项目进度
-                await update_project_download_progress(project_id, 90.0, "字幕生成完成，正在准备处理...")
+                await update_project_download_progress(project_id, 90.0, "Subtitles generated, preparing to process...")
                 
             except SpeechRecognitionError as e:
                 logger.warning("Whisper字幕生成失败: %s", e)
@@ -556,7 +556,7 @@ async def process_youtube_download_task(task_id: str, request: YouTubeDownloadRe
             except Exception as e:
                 logger.warning("生成字幕过程中发生未知错误: %s", type(e).__name__)
                 subtitle_path = None
-                subtitle_error = "本地 Whisper 生成字幕失败。请到「设置 → 默认模型 → 语音转字幕」确认模型已下载，并检查视频有可播放的音轨。"
+                subtitle_error = 'Local Whisper failed to generate subtitles. Go to "Settings → Default models → Speech to subtitles" to make sure the model is downloaded, and check that the video has a playable audio track.'
         
         logger.info(f"下载完成 - 视频文件: {video_path}, 字幕文件: {subtitle_path}")
         
@@ -572,10 +572,10 @@ async def process_youtube_download_task(task_id: str, request: YouTubeDownloadRe
             # 获取已创建的项目
             project = project_service.get(project_id)
             if not project:
-                raise Exception(f"项目 {project_id} 不存在")
+                raise Exception(f"Project {project_id} does not exist")
             
             # 更新项目信息
-            project.description = f"从YouTube下载: {request.project_name}"
+            project.description = f"Downloaded from YouTube: {request.project_name}"
             # 注意：不要在这里设置video_path，等文件移动完成后再设置
             
             # 更新项目设置。赋新 dict，避免 JSON 原地修改在提交时丢失。
@@ -638,25 +638,25 @@ async def process_youtube_download_task(task_id: str, request: YouTubeDownloadRe
                 from ...services.download_progress import save_processing_config
                 save_processing_config(
                     project,
-                    {"error_message": subtitle_error or "字幕文件不存在且Whisper生成失败"},
+                    {"error_message": subtitle_error or "Subtitle file does not exist and Whisper generation failed"},
                 )
                 db.commit()
                 
                 # 更新任务状态为失败
                 download_tasks[task_id].status = "failed"
-                download_tasks[task_id].error_message = subtitle_error or "字幕文件不存在且Whisper生成失败"
+                download_tasks[task_id].error_message = subtitle_error or "Subtitle file does not exist and Whisper generation failed"
                 download_tasks[task_id].progress = 0.0
                 download_tasks[task_id].project_id = str(project.id)
                 download_tasks[task_id].updated_at = datetime.now().isoformat()
                 
                 # 更新项目下载进度为失败
-                await update_project_download_progress(project_id, 0.0, "下载失败：字幕文件不存在")
+                await update_project_download_progress(project_id, 0.0, "Download failed: subtitle file does not exist")
                 
                 logger.info(f"YouTube下载任务失败: {task_id}, 项目ID: {project.id}, 原因: 字幕文件不存在")
                 return
             
             # 更新项目下载进度为完成
-            await update_project_download_progress(project_id, 100.0, "下载完成，准备开始处理")
+            await update_project_download_progress(project_id, 100.0, "Download complete, ready to process")
             
             # 更新任务状态
             download_tasks[task_id].status = "completed"

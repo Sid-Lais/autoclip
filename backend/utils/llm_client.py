@@ -255,10 +255,10 @@ class LLMClient:
                     except json.JSONDecodeError as final_e:
                         logger.error("最终尝试解析失败: %s length=%s", sanitize_exception_text(final_e), len(response))
                         # the model answered (200) with content that is not JSON: a model failure.
-                        raise ModelResponseInvalid(f"无法从响应中解析出有效的JSON length={len(response)}") from None
+                        raise ModelResponseInvalid(f"Could not parse valid JSON from the response length={len(response)}") from None
             
             # 如果连通用正则都找不到，就彻底失败
-            raise ModelResponseInvalid(f"无法从响应中解析出有效的JSON length={len(response)}") from None
+            raise ModelResponseInvalid(f"Could not parse valid JSON from the response length={len(response)}") from None
     
     def get_current_provider_info(self) -> Dict[str, Any]:
         """获取当前提供商信息"""

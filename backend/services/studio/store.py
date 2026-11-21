@@ -307,8 +307,8 @@ def remember_submission_rejection(project_id, identity, *, error_code='unexpecte
         path = directory(project_id) / 'metadata' / 'studio.json'
         kind = identity[0]
         message = {'render': '导出任务未能启动，请重试；已有成片已保留',
-                   'preparation': '这条成片任务未能启动，请重试；已有成片已保留',
-                   'cover': 'AI 封面任务未能启动，请重试'}.get(kind, '分析或制作任务未能启动，请重试；原素材与已有成片已保留')
+                   'preparation': 'This video task could not start. Please retry; existing videos were kept',
+                   'cover': 'The AI cover task could not start. Please retry'}.get(kind, 'The analysis or production task could not start. Please retry; the original source and existing videos were kept')
         _append_receipt(path, {'identity': identity, 'pending': {}, 'rejected': True, 'message': message, 'error_code': error_code})
 
 
@@ -438,7 +438,7 @@ def now():
 
 def directory(project_id: str) -> Path:
     if not re.fullmatch(r'[a-zA-Z0-9_-]{1,100}', project_id):
-        raise UserFacingError('无效项目 ID')
+        raise UserFacingError('Invalid project ID')
     return get_projects_directory() / project_id
 
 @_serialized
@@ -917,7 +917,7 @@ def settle_generation(data):
             data['generation'].pop('error_code', None)
             data['generation'].pop('failure_stage', None)
         if not variants:
-            data['generation']['error'] = '没有自动生成的成片，可选择备选片段继续生成'
+            data['generation']['error'] = 'No videos were generated automatically. Pick an alternate segment to keep generating'
         elif code == RESTART_CODE:
             # Killed mid-render (RC156 #13 case 4b, #30): the project index needs a reason, also when some
             # videos were already saved (partial), otherwise the project fails with no reason and no code.
@@ -997,7 +997,7 @@ def write(project_id, data, *, restore=False):
     checkpoint(project_id)
     root = directory(project_id)
     if not root.is_dir():
-        raise FileNotFoundError('项目目录不存在')
+        raise FileNotFoundError('Project directory not found')
     path = root / 'metadata' / 'studio.json'
     path.parent.mkdir(parents=True, exist_ok=True)
     # Preserve content-free execution receipts in the same atomic write as business state.
@@ -1203,11 +1203,11 @@ def save_draft(project_id, draft, *, create=False):
     def mutate(data):
         existing = next((d for d in data['drafts'] if d['id'] == draft.id), None)
         if create and existing:
-            raise ConflictError('草稿已存在')
+            raise ConflictError('Draft already exists')
         if not create and not existing:
             raise FileNotFoundError('草稿不存在')
         if existing and existing['revision'] != draft.revision:
-            raise ConflictError('草稿已在另一窗口修改，请重新加载后再保存')
+            raise ConflictError('The draft was modified in another window. Reload it and save again')
         value = draft.model_dump()
         value.update(revision=existing['revision'] + 1 if existing else 1, updated_at=now())
         data['drafts'] = [d for d in data['drafts'] if d['id'] != draft.id] + [value]
@@ -1221,9 +1221,9 @@ def duplicate_draft(project_id, request):
     def mutate(data):
         parent = next((d for d in data['drafts'] if d['id'] == request.draft.id), None)
         if parent is None:
-            raise FileNotFoundError('来源草稿不存在')
+            raise FileNotFoundError('Source draft not found')
         if request.draft.revision > parent['revision']:
-            raise ConflictError('来源版本无效，请重新加载后再试')
+            raise ConflictError('The source version is invalid. Reload and try again')
         value = request.draft.model_dump()
         value.update(id=uuid.uuid4().hex, title=request.title, language=request.language,
                      revision=1, updated_at=now(), origin=parent.get('origin', 'manual'),

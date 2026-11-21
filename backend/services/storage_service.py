@@ -61,7 +61,7 @@ class StorageService:
         elif file_type == "collection":
             target_path = self.project_dir / "output" / "collections" / target_name
         else:
-            raise ValueError(f"不支持的文件类型: {file_type}")
+            raise ValueError(f"Unsupported file type: {file_type}")
         
         # 确保目标目录存在
         target_path.parent.mkdir(parents=True, exist_ok=True)

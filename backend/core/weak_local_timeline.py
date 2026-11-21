@@ -67,5 +67,5 @@ def empty_interval_hint(report: dict, chunks: list) -> str:
     and every other model keep their existing next step.
     """
     if any(isinstance(chunk, dict) and chunk.get("source") == "cache" for chunk in chunks):
-        return "本次回放了项目中的模型缓存，未重新请求模型；请重新导入素材创建新项目再试。"
-    return "请换用能稳定返回结构化时间线的模型后重试；本地模型需支持当前字幕长度。"
+        return "This run replayed the project's cached model output without calling the model again; re-import the footage to create a new project and try again."
+    return "Retry with a model that reliably returns a structured timeline; a local model must support the current subtitle length."

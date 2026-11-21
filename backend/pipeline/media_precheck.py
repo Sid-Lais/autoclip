@@ -112,7 +112,7 @@ def silent_visual_failure(video, srt_available: bool) -> Optional[PipelineFailur
 
 
 def is_no_audio_text(text: str) -> bool:
-    return (text or "").startswith("这个视频没有声音")
+    return (text or "").startswith(("This video has no sound", "这个视频没有声音"))
 
 
 # ---------------------------------------------------------------- duration (#345) ---

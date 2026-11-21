@@ -117,6 +117,8 @@ function render(options = {}) {
     '../../ui': { Btn: 'button', Segmented: 'segmented', Dialog: 'dialog', StatusDot: 'status' },
     './PlatformPicker': { default: 'platform-picker' },
     './UrlPreview': { default: 'url-preview', shouldSuggestFirstWindow: () => false },
+    './LongVideoPicker': { default: 'long-video-picker' },
+    './SearchPanel': { default: 'search-panel' },
     './api': {
       studioApi: {
         import: async body => { calls.push(body); if (options.importError) throw options.importError; return { project_id: 'project-1' } },

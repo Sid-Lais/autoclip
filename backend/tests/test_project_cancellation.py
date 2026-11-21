@@ -67,7 +67,7 @@ def test_cancel_raises_at_checkpoints_and_is_not_a_crash():
     cancel.cancel('gone')
     with pytest.raises(cancel.ProjectDeleted) as caught:
         cancel.checkpoint('gone')
-    assert caught.value.project_id == 'gone' and '删除' in str(caught.value)
+    assert caught.value.project_id == 'gone' and 'deleted' in str(caught.value)
     from backend.core import sentry_setup
     assert sentry_setup.capture_studio_exception(caught.value, 'render') is None
 

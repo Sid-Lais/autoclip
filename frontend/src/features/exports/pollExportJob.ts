@@ -42,5 +42,5 @@ export async function pollExportJob(
     if (job.status === 'completed') return job
     if (job.status === 'failed') throw new Error(job.error || '导出失败')
   }
-  throw new Error('等待导出结果超时，后台任务可能仍在运行，请稍后在输出目录查看')
+  throw new Error('Timed out waiting for the export result. The background task may still be running; check the output folder later.')
 }

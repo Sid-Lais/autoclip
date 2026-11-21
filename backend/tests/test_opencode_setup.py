@@ -74,7 +74,7 @@ def test_jsonc_config_not_touched_without_force(tmp_path):
     data = json.loads(target.read_text(encoding="utf-8"))
     assert data["mcp"]["autoclip"]["enabled"] is True
     assert (tmp_path / "opencode.json.bak").is_file()
-    assert any("注释" in w for w in report["warnings"])
+    assert any("Comments" in w for w in report["warnings"])
 
 
 def test_broken_config_never_overwritten(tmp_path):
@@ -100,7 +100,7 @@ def test_project_scope_and_module_fallback(tmp_path, monkeypatch):
     entry = json.loads(target.read_text(encoding="utf-8"))["mcp"]["autoclip"]
     assert entry["cwd"]
     assert entry["environment"]["PYTHONPATH"]
-    assert any("回退" in w for w in report["warnings"])
+    assert any("fell back" in w for w in report["warnings"])
 
 
 def test_reinstall_preserves_custom_entry_fields(tmp_path):

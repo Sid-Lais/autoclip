@@ -18,7 +18,7 @@ def test_runtime_with_broken_native_dependency_is_not_installed(monkeypatch):
     monkeypatch.setattr(importlib, 'import_module', broken)
     monkeypatch.setattr(whisper_runtime, '_runtime_import_error', '')
     assert not whisper_runtime.is_installed()
-    assert '依赖加载失败' in whisper_runtime.get_status()['message']
+    assert 'Failed to load the Whisper runtime dependencies' in whisper_runtime.get_status()['message']
     assert whisper_runtime.get_status()['status'] == 'error'
 
 

@@ -52,7 +52,7 @@ class VideoEditor:
                 logger.warning("没有保留的时间段，无法生成视频")
                 return {
                     'success': False,
-                    'error': '没有保留的时间段'
+                    'error': 'No time segments remain'
                 }
             
             # 计算删除的总时长
@@ -85,7 +85,7 @@ class VideoEditor:
             else:
                 return {
                     'success': False,
-                    'error': '视频剪辑失败'
+                    'error': 'Video editing failed'
                 }
                 
         except Exception as e:
@@ -357,7 +357,7 @@ class VideoEditor:
             if invalid_ids:
                 return {
                     'valid': False,
-                    'error': f'无效的字幕段ID: {list(invalid_ids)}'
+                    'error': f'Invalid subtitle segment IDs: {list(invalid_ids)}'
                 }
             
             # 检查删除后是否还有剩余内容
@@ -366,7 +366,7 @@ class VideoEditor:
             if not remaining_segments:
                 return {
                     'valid': False,
-                    'error': '删除所有字幕段后没有剩余内容'
+                    'error': 'No content remains after deleting all subtitle segments'
                 }
             
             # 计算删除的时长

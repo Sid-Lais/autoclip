@@ -56,7 +56,7 @@ def send_processing_notification(self, project_id: str, task_id: str, message: s
                 'project_id': project_id,
                 'task_id': task_id,
                 'notification': notification_data,
-                'message': '通知发送成功'
+                'message': 'Notification sent'
             }
             
         finally:
@@ -113,7 +113,7 @@ def send_error_notification(self, project_id: str, task_id: str, error_message: 
                 'project_id': project_id,
                 'task_id': task_id,
                 'notification': notification_data,
-                'message': '错误通知发送成功'
+                'message': 'Error notification sent'
             }
             
         finally:
@@ -169,7 +169,7 @@ def send_completion_notification(self, project_id: str, task_id: str, result: Di
                 'project_id': project_id,
                 'task_id': task_id,
                 'notification': notification_data,
-                'message': '完成通知发送成功'
+                'message': 'Completion notification sent'
             }
             
         finally:

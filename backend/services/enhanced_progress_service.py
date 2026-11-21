@@ -214,7 +214,7 @@ class EnhancedProgressService:
         except Exception as e:
             logger.error(f"开始进度跟踪失败: {e}")
             raise AutoClipsException(
-                message="开始进度跟踪失败",
+                message="Failed to start progress tracking",
                 category=ErrorCategory.SYSTEM,
                 original_exception=e
             )
@@ -268,7 +268,7 @@ class EnhancedProgressService:
         except Exception as e:
             logger.error(f"更新进度失败: {e}")
             raise AutoClipsException(
-                message="更新进度失败",
+                message="Failed to update progress",
                 category=ErrorCategory.SYSTEM,
                 original_exception=e
             )
@@ -315,7 +315,7 @@ class EnhancedProgressService:
         except Exception as e:
             logger.error(f"完成进度失败: {e}")
             raise AutoClipsException(
-                message="完成进度失败",
+                message="Failed to complete progress",
                 category=ErrorCategory.SYSTEM,
                 original_exception=e
             )
@@ -361,7 +361,7 @@ class EnhancedProgressService:
         except Exception as e:
             logger.error(f"标记进度失败失败: {e}")
             raise AutoClipsException(
-                message="标记进度失败失败",
+                message="Failed to mark progress as failed",
                 category=ErrorCategory.SYSTEM,
                 original_exception=e
             )
@@ -399,7 +399,7 @@ class EnhancedProgressService:
                         stage=stage,
                         status=status,
                         progress=self._calculate_progress(stage),
-                        message=f"项目状态: {project.status}",
+                        message=f"Project status: {project.status}",
                         start_time=project.created_at,
                         end_time=project.updated_at if status == ProgressStatus.COMPLETED else None
                     )

@@ -15,7 +15,7 @@ const CODES = new Set<SubtitleFailureKind>([
 ])
 
 function mentionsSubtitle(text: string): boolean {
-  return /字幕|转写|Whisper|whisper/.test(text)
+  return /字幕|转写|Whisper|whisper|subtitle|transcri/i.test(text)
 }
 
 /**
@@ -28,26 +28,22 @@ export function classifySubtitleFailure(error?: string | null, code?: string | n
   if (code === 'source_too_short' || code === 'source_no_audio' || code === 'source_unreadable') return null
   const text = error || ''
   // 时间线为空会提到字幕轴，但下一步不是去装 Whisper（#182）。
-  if (code === 'timeline_empty' || text.includes('时间线提取为空') || text.includes('时间线为空')) return null
+  if (code === 'timeline_empty' || /时间线提取为空|时间线为空|timeline extraction is empty/i.test(text)) return null
   if (!text || !mentionsSubtitle(text)) return null
-  if (text.includes('上次安装没有成功') || text.includes('安装没有成功')) return 'whisper_install_failed'
-  if (text.includes('还没安装') || text.includes('运行时未安装') || text.includes('没有可用的语音识别')) {
+  if (/上次安装没有成功|安装没有成功|installation did not succeed|install(ation)? (failed|did not succeed)/i.test(text)) return 'whisper_install_failed'
+  if (/还没安装|运行时未安装|没有可用的语音识别|not installed yet|runtime is not installed|no speech recognition service/i.test(text)) {
     return 'whisper_not_installed'
   }
-  if (
-    text.includes('没有生成可用字幕')
-    || text.includes('未识别出任何语音')
-    || text.includes('没有从这段视频')
-  ) {
+  if (/没有生成可用字幕|未识别出任何语音|没有从这段视频|did not produce usable subtitles|no speech (was )?recogni[sz]ed/i.test(text)) {
     return 'transcription_empty'
   }
   if (text.includes('本地转写没有生成结果')) return 'subtitle_unknown'
   // Cloud transcription uses the same settings path, but it is not a local Whisper install.
-  if (text.includes('云端转写')) return null
-  if (text.includes('没有字幕可分析') || text.includes('设置 → 语音识别') || text.includes('设置 → 转写') || text.includes('设置 → 默认模型 → 语音转字幕')) {
+  if (text.includes('云端转写') || /cloud transcription/i.test(text)) return null
+  if (/没有字幕可分析|设置 → 语音识别|设置 → 转写|设置 → 默认模型 → 语音转字幕|no subtitles to analy[sz]e|Settings → (Speech recognition|Transcription|Default models → Speech to subtitles)/i.test(text)) {
     return 'subtitle_setup'
   }
   // 导入关卡旧文案只有「字幕文件不存在」（#186）。没有 Whisper 状态，详情页再问一次当前安装情况。
-  if (text.includes('字幕文件不存在')) return 'subtitle_unknown'
+  if (text.includes('字幕文件不存在') || /subtitle file (does not exist|not found)/i.test(text)) return 'subtitle_unknown'
   return null
 }

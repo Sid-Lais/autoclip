@@ -214,12 +214,12 @@ class TestContextErrorScenarios:
     
     def test_invalid_project_id(self):
         """测试无效的项目ID"""
-        with pytest.raises(ValueError, match="project_id不能为空"):
+        with pytest.raises(ValueError, match="project_id cannot be empty"):
             ProcessingContext("", "test_task")
     
     def test_invalid_task_id(self):
         """测试无效的任务ID"""
-        with pytest.raises(ValueError, match="task_id不能为空"):
+        with pytest.raises(ValueError, match="task_id cannot be empty"):
             ProcessingContext("test_project", "")
     
     def test_context_validation_failure(self):
@@ -255,7 +255,7 @@ class TestIntegrationErrorScenarios:
         # 验证前置条件（应该失败，因为没有SRT文件）
         errors = adapter.validate_pipeline_prerequisites()
         assert len(errors) > 0
-        assert any("SRT文件" in error for error in errors)
+        assert any("SRT file" in error for error in errors)
     
     def test_partial_success_scenario(self, tmp_path):
         """测试部分成功场景"""

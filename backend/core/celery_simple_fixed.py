@@ -84,7 +84,7 @@ def process_single_step(self, project_id: str, step: str, config: dict, *args, *
         "success": True,
         "project_id": project_id,
         "step": step,
-        "message": f"步骤 {step} 处理完成"
+        "message": f"Step {step} completed"
     }
 
 # 兼容性任务名称
@@ -107,12 +107,12 @@ def backend_process_video_pipeline(self, project_id: str, input_video_path: str,
     # 模拟处理过程
     import time
     steps = [
-        "大纲提取",
-        "时间定位", 
-        "内容评分",
-        "标题生成",
-        "主题聚类",
-        "视频切割"
+        "Outline extraction",
+        "Timeline location",
+        "Content scoring",
+        "Title generation",
+        "Topic clustering",
+        "Video cutting"
     ]
     
     for i, step in enumerate(steps):
@@ -126,7 +126,7 @@ def backend_process_video_pipeline(self, project_id: str, input_video_path: str,
                 meta={
                     'current': i + 1,
                     'total': 6,
-                    'status': f'正在执行: {step}',
+                    'status': f'Running: {step}',
                     'progress': progress
                 }
             )
@@ -180,7 +180,7 @@ def backend_process_video_pipeline(self, project_id: str, input_video_path: str,
     return {
         "success": True,
         "project_id": project_id,
-        "message": "视频处理完成",
+        "message": "Video processing completed",
         "steps": steps
     }
 

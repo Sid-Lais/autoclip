@@ -19,9 +19,9 @@ class VideoGenerator:
     def __init__(self, clips_dir: Optional[str] = None, collections_dir: Optional[str] = None, metadata_dir: Optional[str] = None):
         # 强制使用项目内专属目录，不使用全局目录作为后备
         if not clips_dir:
-            raise ValueError("clips_dir 参数是必需的，不能使用全局路径")
+            raise ValueError("clips_dir parameter is required; global paths cannot be used")
         if not collections_dir:
-            raise ValueError("collections_dir 参数是必需的，不能使用全局路径")
+            raise ValueError("collections_dir parameter is required; global paths cannot be used")
         
         self.clips_dir = Path(clips_dir)
         self.collections_dir = Path(collections_dir)
@@ -52,7 +52,7 @@ class VideoGenerator:
         for clip in clips_with_titles:
             clips_data.append({
                 'id': clip['id'],
-                'title': clip.get('generated_title', f"片段_{clip['id']}"),
+                'title': clip.get('generated_title', f"Clip_{clip['id']}"),
                 'start_time': clip['start_time'],
                 'end_time': clip['end_time']
             })

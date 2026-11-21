@@ -43,7 +43,7 @@ export function localModelSizeLabel(
     const rounded = Number.isInteger(params) ? String(params) : String(params)
     parts.push(`${rounded}B`)
   } else if (provider === 'lmstudio') {
-    parts.push('未知')
+    parts.push('Unknown')
   }
   if (typeof model.context_tokens === 'number') {
     const k = model.context_tokens >= 1024
@@ -53,7 +53,7 @@ export function localModelSizeLabel(
   } else if (provider === 'lmstudio' && typeof model.params_b !== 'number') {
     // already 「未知」 for params; skip duplicate
   } else if (provider === 'lmstudio') {
-    parts.push('ctx 未知')
+    parts.push('ctx unknown')
   }
   return parts.join(' · ')
 }

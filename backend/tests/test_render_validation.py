@@ -66,7 +66,7 @@ def test_packet_boundary_truncation_decodes_clean_but_short_is_rejected(env, mon
     short = tmp / 'short.mp4'
     # Clean remux cut at a packet boundary: no decode errors, only 2 s of the claimed 4 s.
     subprocess.run(['ffmpeg', '-v', 'error', '-i', str(full), '-t', '2', '-c', 'copy', '-y', str(short)], check=True)
-    with pytest.raises(ValueError, match='渲染输出'):
+    with pytest.raises(ValueError, match='Render output is invalid'):
         _run(monkeypatch, short, claimed=4.0)
     assert output.read_bytes() == b'previous saved video'
     assert not list(folder.glob('*.part.mp4'))
@@ -83,7 +83,7 @@ def test_outro_full_length_is_published(env, monkeypatch):
 def test_outro_truncated_is_rejected(env, monkeypatch):
     tmp, folder, output = env
     clip = _clip(tmp / 'cut-outro.mp4', 1)
-    with pytest.raises(ValueError, match='渲染输出'):
+    with pytest.raises(ValueError, match='Render output is invalid'):
         _run(monkeypatch, clip, claimed=3.0, outro=True)
     assert output.read_bytes() == b'previous saved video'
 
@@ -166,7 +166,7 @@ def test_body_truncated_with_outro_is_rejected(env, monkeypatch):
     tmp, folder, output = env
     body = _clip__r13_render_validation(tmp / 'body.mp4', 1)          # drafted 3 s, body only 1 s
     outro = _clip__r13_render_validation(tmp / 'outro.mp4', 3)        # outro pads the total past 3 s
-    with pytest.raises(ValueError, match='渲染输出'):
+    with pytest.raises(ValueError, match='Render output is invalid'):
         _render(monkeypatch, body, seconds=3, outro_clip=outro)
     assert output.read_bytes() == b'previous saved video'
 
@@ -194,7 +194,7 @@ def test_corrupt_tail_audio_is_rejected(env, monkeypatch):
     muxed = tmp / 'bad-audio.mp4'
     subprocess.run(['ffmpeg', '-v', 'error', '-i', str(video), '-i', str(tmp / 'bad.aac'), '-map', '0:v', '-map', '1:a',
                     '-c', 'copy', '-movflags', '+faststart', '-y', str(muxed)], check=True)
-    with pytest.raises(ValueError, match='渲染输出'):
+    with pytest.raises(ValueError, match='Render output is invalid'):
         _render(monkeypatch, muxed, seconds=3)
     assert output.read_bytes() == b'previous saved video'
 
@@ -260,7 +260,7 @@ def test_r14_body_intact_outro_truncated_with_normal_container_is_rejected(env, 
     body = _clip__r13_render_validation(tmp / 'body.mp4', 3)
     outro = _clip__r13_render_validation(tmp / 'outro.mp4', 3)              # the outro actually used: 3 s
     truncated = _clip__r13_render_validation(tmp / 'outro-cut.mp4', 1)      # only 1 s of it lands in the output
-    with pytest.raises(ValueError, match='渲染输出'):
+    with pytest.raises(ValueError, match='Render output is invalid'):
         _render(monkeypatch, body, seconds=3, outro_clip=outro, appended=truncated)
     assert output.read_bytes() == b'previous saved video'
 

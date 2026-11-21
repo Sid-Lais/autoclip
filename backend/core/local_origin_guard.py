@@ -107,7 +107,7 @@ class LocalOriginGuard:
         await _drain_body(receive)
         response = JSONResponse(
             status_code=403,
-            content={"detail": "请求来源不被允许", "error_code": code},
+            content={"detail": "Request origin is not allowed", "error_code": code},
         )
         await response(scope, receive, send)
 

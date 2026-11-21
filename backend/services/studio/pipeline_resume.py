@@ -407,5 +407,5 @@ def resume_point_for_project(project_id: str) -> dict[str, Any] | None:
         return {'point': 'subtitle', 'label': '已有字幕，从分析开始'}
     if point.startswith('step') and point[-1:].isdigit():
         n = point[-1]
-        return {'point': point, 'label': f'从第 {n} 步继续'}
-    return {'point': point, 'label': '从断点继续'}
+        return {'point': point, 'label': f'Resume from step {n}'}
+    return {'point': point, 'label': 'Resume from checkpoint'}

@@ -15,7 +15,7 @@ def test_text_operations_never_fall_back_to_visual(monkeypatch,visual_configured
         assert intelligence.text_json('rewrite',{'title':'source'})=={'title':'text result'}
         assert len(calls)==1
     else:
-        with pytest.raises(ValueError,match='文字模型不可用'):
+        with pytest.raises(ValueError,match='Text model unavailable'):
             intelligence.text_json('translate',{'subtitles':['source']})
         assert not calls
 

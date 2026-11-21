@@ -96,8 +96,8 @@ class ProgressUpdateService:
                     # 添加到活动任务列表
                     self.active_tasks[task_id] = {
                         'progress': 0.0,
-                        'current_step': '初始化',
-                        'step_details': '开始处理任务',
+                        'current_step': 'Initializing',
+                        'step_details': 'Starting task processing',
                         'started_at': datetime.utcnow(),
                         'updated_at': datetime.utcnow()
                     }

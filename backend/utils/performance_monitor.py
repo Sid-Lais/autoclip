@@ -338,15 +338,15 @@ class PerformanceMonitor:
         
         if current_stats.cpu_percent > 80:
             health_status = "warning"
-            warnings.append(f"CPU使用率过高: {current_stats.cpu_percent:.1f}%")
+            warnings.append(f"CPU usage too high: {current_stats.cpu_percent:.1f}%")
         
         if current_stats.memory_percent > 85:
             health_status = "warning"
-            warnings.append(f"内存使用率过高: {current_stats.memory_percent:.1f}%")
+            warnings.append(f"Memory usage too high: {current_stats.memory_percent:.1f}%")
         
         if current_stats.disk_usage_percent > 90:
             health_status = "critical"
-            warnings.append(f"磁盘使用率过高: {current_stats.disk_usage_percent:.1f}%")
+            warnings.append(f"Disk usage too high: {current_stats.disk_usage_percent:.1f}%")
         
         return {
             "status": health_status,

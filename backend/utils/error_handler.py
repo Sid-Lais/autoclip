@@ -136,7 +136,7 @@ class CircuitBreaker:
                 self.state = "HALF_OPEN"
             else:
                 raise AutoClipsException(
-                    "熔断器处于开启状态，拒绝执行",
+                    "Circuit breaker is open; execution rejected",
                     ErrorCategory.SYSTEM,
                     ErrorLevel.WARNING
                 )

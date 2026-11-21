@@ -4,12 +4,13 @@ export const BROWSER_COOKIE_FOCUS = 'browser-cookies'
 export const BROWSER_COOKIE_IMPORT_PATH = `/?focus=${BROWSER_COOKIE_FOCUS}`
 /** Keep in sync with download_recovery.COOKIE_ACCESS_HINT and the eight locale catalogs. */
 export const COOKIE_ACCESS_HINT = '无法读取浏览器登录信息。请完全退出该浏览器后再重试，或换一个已登录的浏览器。公开视频也可以不选浏览器。原素材已保留。'
+const COOKIE_ACCESS_HINT_EN = 'Could not read browser login information. Fully quit that browser and try again, or choose another browser that is logged in. Public videos can also be imported without selecting a browser. The original media has been kept.'
 
 const RECOVERY_URL_KEY = 'autoclip.browserCookieRecoveryUrl'
 const HTTP_URL = /^https?:\/\/\S+$/i
 
 export function browserCookieRecovery(code?: string | null, error?: string | null): boolean {
-  return code === 'source_blocked' || (!!error && error === COOKIE_ACCESS_HINT)
+  return code === 'source_blocked' || (!!error && (error === COOKIE_ACCESS_HINT || error === COOKIE_ACCESS_HINT_EN))
 }
 
 function remember(url: string) {

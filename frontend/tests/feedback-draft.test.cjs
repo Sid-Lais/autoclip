@@ -63,8 +63,8 @@ test('stable failure code and transcription role survive capture and fallback se
   assert.equal(props.transcription_model, 'tiny')
   assert.equal(props.llm_model, 'qwen2.5')
   const body = new URL(githubFallbackUrl(draft)).searchParams.get('what')
-  assert.ok(body.includes('错误码：subtitle_setup'))
-  assert.ok(body.includes('转写模型：whisper_local / tiny'))
+  assert.ok(body.includes('Error code: subtitle_setup'))
+  assert.ok(body.includes('Transcription model: whisper_local / tiny'))
   assert.ok(!body.includes('person@example.com'))
 })
 

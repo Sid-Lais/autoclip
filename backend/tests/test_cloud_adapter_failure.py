@@ -88,7 +88,7 @@ def test_real_cloud_http_failure_keeps_provider_status(cloud_adapter, model, sta
     # 409 classifies as unknown, which is never stored; 401/500 keep their enum.
     assert result.get('upstream_error_type') == {401: 'invalid_key', 500: 'upstream_unavailable', 409: None}[status]
     assert f'HTTP {status}' in result['error']
-    assert '云端转写' in result['error']
+    assert 'Cloud transcription' in result['error']
     assert 'Whisper' not in result['error']
     assert 'raw-provider-secret-body' not in result['error']
     assert 'raw-provider-secret-body' not in caplog.text
@@ -117,7 +117,7 @@ def test_real_cloud_non_http_failure_has_no_local_install_advice(cloud_adapter, 
     # connection and invalid replies keep their own codes (were provider_error)
     assert result['error_code'] == {'connection': 'connection', 'invalid_response': 'invalid_response',
                                     'empty': 'provider_error'}[kind]
-    assert '云端转写' in result['error']
+    assert 'Cloud transcription' in result['error']
     assert 'Whisper' not in result['error']
     assert 'private-network-detail' not in result['error']
     assert len(case.requests) == (asr.CHUNK_ATTEMPTS if kind == 'connection' else 1)
@@ -139,7 +139,7 @@ def test_cloud_missing_output_does_not_probe_local_whisper(cloud_adapter, model,
     assert result['status'] == 'failed'
     assert result['stage'] == 'SUBTITLE'
     assert result['error_code'] == 'provider_error'
-    assert '云端转写' in result['error']
+    assert 'Cloud transcription' in result['error']
     assert 'Whisper' not in result['error']
     assert not case.requests
 
@@ -197,7 +197,7 @@ def test_cloud_failure_survives_auto_generation_terminal_store(cloud_adapter, mo
     for terminal in (state['generation'], state['analysis']):
         assert terminal['status'] == 'failed'
         assert terminal['error_code'] == 'provider_error'
-        assert '云端转写' in terminal['error'] and 'HTTP 409' in terminal['error']
+        assert 'Cloud transcription' in terminal['error'] and 'HTTP 409' in terminal['error']
         assert 'Whisper' not in terminal['error']
         assert 'raw-provider-secret-body' not in terminal['error']
     assert state['analysis']['phase'] == 'production'
@@ -228,7 +228,7 @@ def test_legacy_import_preserves_typed_cloud_failure(cloud_adapter, model, monke
     assert failure.stage == 'SUBTITLE'
     assert failure.code == 'provider_error'
     assert isinstance(error, asr.CloudTranscriptionError)
-    assert 'HTTP 409' in failure.user_message() and '云端转写' in failure.user_message()
+    assert 'HTTP 409' in failure.user_message() and 'Cloud transcription' in failure.user_message()
     assert 'Whisper' not in failure.user_message()
     assert 'raw-provider-secret-body' not in failure.user_message()
     assert len(case.requests) == 1

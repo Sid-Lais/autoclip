@@ -165,7 +165,7 @@ class TestPipelineAdapter:
         
         errors = adapter.validate_pipeline_prerequisites()
         assert len(errors) > 0
-        assert any("SRT文件" in error for error in errors)
+        assert any("SRT file" in error for error in errors)
     
     def test_validate_pipeline_prerequisites_invalid_srt(self, adapter, tmp_path):
         """测试流水线前置条件验证 - SRT文件存在但格式无效"""

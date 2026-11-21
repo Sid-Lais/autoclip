@@ -20,7 +20,7 @@ from backend.models.clip import Clip
 from backend.schemas.project import ProjectCreate, ProjectType
 from backend.services.project_service import ProjectService
 from backend.services.platform_strategy import list_platform_strategies
-from backend.services.studio import store, jobs, intelligence
+from backend.services.studio import store, jobs, intelligence, range_import
 from backend.services.studio.models import Draft, CreateDraft, DuplicateDraft, ExportDraftRequest, RewriteRequest, Preferences, Language, Scene, ImportOptions, ConfirmPlan, AppendPlatformsRequest, PostCopy
 
 router = APIRouter()
@@ -158,7 +158,7 @@ async def inspect_url(body: InspectUrlBody):
     if parsed.scheme != 'https' or parsed.username or parsed.password or not any(
         host == d or host.endswith('.' + d) for d in ('youtube.com', 'youtu.be', 'bilibili.com', 'b23.tv')
     ):
-        raise HTTPException(422, '仅支持 HTTPS 的 B 站或 YouTube 视频链接')
+        raise HTTPException(422, 'Only HTTPS Bilibili or YouTube video links are supported')
     from backend.services.studio import planning
     mode = body.analysis_mode
     if mode is None:
@@ -166,7 +166,7 @@ async def inspect_url(body: InspectUrlBody):
     try:
         meta = await await_inspect_url(body.url.strip(), body.browser)
     except asyncio.TimeoutError:
-        raise HTTPException(504, '读取视频信息超时，请稍后重试') from None
+        raise HTTPException(504, 'Timed out reading video info; please try again later') from None
     except PipelineFailure as error:
         raise HTTPException(
             422,
@@ -177,14 +177,14 @@ async def inspect_url(body: InspectUrlBody):
         message = user_visible_error(error)
         if coded:
             raise HTTPException(422, {'error_code': coded, 'message': message}) from None
-        raise HTTPException(422, message or '无法读取视频信息') from None
+        raise HTTPException(422, message or 'Unable to read video info') from None
     route = planning.preview_route(
         meta.get('duration'),
         bool(meta.get('has_manual_subtitle')),
         meta.get('has_audio'),
         mode,
     )
-    return {**meta, **route}
+    return {**meta, **route, 'long_video': range_import.is_long(meta.get('duration'))}
 
 
 
@@ -224,7 +224,7 @@ def test_vision_settings(body: vision_settings.VisionSettingsInput):
         return vision_settings.test(body)
     except Exception as error:
         capture_studio_exception(error, 'vision_test', analysis_mode='visual')
-        raise HTTPException(502, '视觉连接测试失败，请检查接口地址、密钥和模型是否支持图片输入') from None
+        raise HTTPException(502, 'Vision connection test failed; check the endpoint, key, and whether the model supports image input') from None
 
 @router.post('/import')
 async def import_visual(
@@ -250,29 +250,29 @@ async def import_visual(
     db: Session = Depends(get_db),
 ):
     if bool(url) == bool(video):
-        raise HTTPException(422, '请提供一个视频链接或文件')
+        raise HTTPException(422, 'Provide a video link or file')
     from backend.services.studio import readiness
     call(readiness.ensure_analysis_usable)
     if url:
         parsed = urlparse(url)
         host = (parsed.hostname or '').lower()
         if parsed.scheme != 'https' or parsed.username or parsed.password or not any(host == d or host.endswith('.' + d) for d in ('youtube.com', 'youtu.be', 'bilibili.com', 'b23.tv')):
-            raise HTTPException(422, '仅支持 HTTPS 的 B 站或 YouTube 视频链接')
+            raise HTTPException(422, 'Only HTTPS Bilibili or YouTube video links are supported')
     ext = Path(video.filename or '').suffix.lower() if video else '.mp4'
     if ext not in ('.mp4', '.mov', '.mkv', '.webm', '.avi'):
-        raise HTTPException(422, '不支持的视频格式')
+        raise HTTPException(422, 'Unsupported video format')
     first_chunk = await video.read(1024 * 1024) if video else None
     if video and not first_chunk:
         await video.close()
-        raise HTTPException(422, '视频文件为空，请重新选择')
+        raise HTTPException(422, 'The video file is empty; please choose another')
     subtitle_bytes = None
     if subtitle:
         try:
             if Path(subtitle.filename or '').suffix.lower() != '.srt':
-                raise HTTPException(422, '字幕文件仅支持 SRT')
+                raise HTTPException(422, 'Subtitle files must be SRT')
             subtitle_bytes = await subtitle.read(2 * 1024 * 1024 + 1)
             if not subtitle_bytes or len(subtitle_bytes) > 2 * 1024 * 1024:
-                raise HTTPException(422, '字幕文件为空或超过 2 MB')
+                raise HTTPException(422, 'Subtitle file is empty or larger than 2 MB')
         finally:
             await subtitle.close()
     staged = None
@@ -351,6 +351,129 @@ async def import_visual(
             await video.close()
     return {'project_id': pid, 'analysis_run_id': run_id}
 
+def _require_supported_url(url: str) -> None:
+    parsed = urlparse(url)
+    host = (parsed.hostname or '').lower()
+    if parsed.scheme != 'https' or parsed.username or parsed.password or not any(
+        host == d or host.endswith('.' + d) for d in ('youtube.com', 'youtu.be', 'bilibili.com', 'b23.tv')
+    ):
+        raise HTTPException(422, 'Only HTTPS Bilibili or YouTube video links are supported')
+
+
+def _start_clip_project(db: Session, url: str, title: str, options: range_import.ClipOptions, source_range=None):
+    """Create one auto-started project for ``url``: a single downloaded range, or the whole (short) video."""
+    snapshot = options.features if options.features and len(json.dumps(options.features)) <= 4000 else None
+    ranged = source_range is not None
+    goal = 'content' if ranged else 'auto'
+    prefs = ImportOptions(
+        goal=goal, language=options.language, aspect=options.aspect, duration=options.duration, instruction=options.instruction,
+        platforms=options.platforms, auto_start=True, portrait_style=options.portrait_style, html_template=options.html_template,
+        recommended_template=options.recommended_template, branding={'outro_enabled': options.brand_outro_enabled},
+        source_range=source_range.model_dump() if ranged else None,
+    )
+    name = range_import.project_name(title, source_range) if ranged else ((title or 'Smart editing').strip()[:200] or 'Smart editing')
+    project = ProjectService(db).create_project(ProjectCreate(
+        name=name, project_type=ProjectType.DEFAULT, source_url=url,
+        settings={'creative': {'goal': goal}, 'smart_import': prefs.model_dump(), 'import_staging': False,
+                  'creative_browser': options.browser, 'platforms': prefs.platforms, 'brand_outro_enabled': prefs.branding.outro_enabled}))
+    pid = str(project.id)
+    try:
+        (store.directory(pid) / 'raw').mkdir(parents=True, exist_ok=True)
+        run_id = call(jobs.inspect_project, pid, prefs, url, options.browser, features=snapshot)
+    except Exception:
+        project.status = 'failed'
+        db.commit()
+        raise
+    return {'project_id': pid, 'analysis_run_id': run_id}
+
+
+@router.post('/import-ranges')
+def import_ranges(body: range_import.ImportRangesBody, db: Session = Depends(get_db)):
+    """Long-video mode: one project per chosen range. Only those ranges are downloaded, never the whole video."""
+    from backend.services.studio import readiness
+    call(readiness.ensure_analysis_usable)
+    url = body.url.strip()
+    _require_supported_url(url)
+    created, failure = [], None
+    for spec in body.ranges:
+        try:
+            created.append({**_start_clip_project(db, url, body.title, body, spec), 'start': spec.start, 'end': spec.end})
+        except Exception as error:  # noqa: BLE001 - earlier ranges keep running; report this one
+            failure = error
+            break
+    if not created and failure is not None:
+        raise failure
+    return {'projects': created, 'skipped': len(body.ranges) - len(created)}
+
+
+class SearchBody(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    query: str = Field(min_length=2, max_length=200)
+    limit: int = Field(default=12, ge=1, le=25)
+
+
+@router.post('/search')
+async def search_videos(body: SearchBody):
+    """Find videos for a query, most viewed first; the top few come back flagged ``suggested``."""
+    from backend.services.studio import discovery
+    try:
+        results = await asyncio.wait_for(run_in_threadpool(discovery.search_videos, body.query.strip(), body.limit), timeout=40)
+    except asyncio.TimeoutError:
+        raise HTTPException(504, 'The search took too long. Try again in a moment.') from None
+    except Exception as error:  # noqa: BLE001
+        from backend.core.failure_codes import user_visible_error
+        raise HTTPException(422, user_visible_error(error) or 'The search could not be completed.') from None
+    return {'results': results}
+
+
+class SuggestBody(BaseModel):
+    model_config = ConfigDict(extra='forbid')
+    url: str = Field(min_length=8, max_length=2000)
+    browser: Optional[Literal['chrome', 'edge', 'firefox', 'safari']] = None
+
+
+@router.post('/suggest-clips')
+async def suggest_clips(body: SuggestBody):
+    """The parts of a video worth clipping, from YouTube's "Most replayed" graph (chapters as fallback)."""
+    from backend.services.studio import discovery
+    _require_supported_url(body.url.strip())
+    try:
+        return await asyncio.wait_for(run_in_threadpool(discovery.suggest_clips, body.url.strip(), body.browser), timeout=40)
+    except asyncio.TimeoutError:
+        raise HTTPException(504, 'Reading the video took too long. Try again in a moment.') from None
+    except Exception as error:  # noqa: BLE001
+        from backend.core.failure_codes import user_visible_error
+        raise HTTPException(422, user_visible_error(error) or 'The video could not be read.') from None
+
+
+@router.post('/auto-clip')
+def auto_clip(body: range_import.AutoClipBody, db: Session = Depends(get_db)):
+    """Make clips for every approved item: its suggested ranges, or the whole video when it is short enough."""
+    from backend.services.studio import readiness
+    call(readiness.ensure_analysis_usable)
+    created, skipped = [], []
+    for item in body.items:
+        url = item.url.strip()
+        _require_supported_url(url)
+        if not item.ranges:
+            try:
+                if range_import.is_long(jobs.inspect_url(url, body.browser).get('duration')):
+                    skipped.append({'url': url, 'reason': 'This video is longer than 1.5 hours: pick the parts to clip.'})
+                    continue
+            except Exception:  # noqa: BLE001 - an unreadable link is reported, the rest still run
+                skipped.append({'url': url, 'reason': 'The video could not be read.'})
+                continue
+        for spec in item.ranges or [None]:
+            try:
+                made = _start_clip_project(db, url, item.title, body, spec)
+                created.append({**made, 'url': url, **({'start': spec.start, 'end': spec.end} if spec else {})})
+            except Exception as error:  # noqa: BLE001
+                from backend.core.failure_codes import user_visible_error
+                skipped.append({'url': url, 'reason': user_visible_error(error) or 'This clip could not be started.'})
+    if not created and skipped:
+        raise HTTPException(422, skipped[0]['reason'])
+    return {'projects': created, 'skipped': skipped}
+
 
 
 async def stage_upload(video: UploadFile, first_chunk: bytes, ext: str) -> Path:
@@ -379,7 +502,7 @@ async def template_recommend(
         parsed = urlparse(url)
         host = (parsed.hostname or '').lower()
         if parsed.scheme != 'https' or parsed.username or parsed.password or not any(host == domain or host.endswith('.' + domain) for domain in ('youtube.com', 'youtu.be', 'bilibili.com', 'b23.tv')):
-            raise HTTPException(422, '仅支持 HTTPS 的 B 站或 YouTube 视频链接')
+            raise HTTPException(422, 'Only HTTPS Bilibili or YouTube video links are supported')
     blob = None
     if header is not None:
         try:
@@ -387,7 +510,7 @@ async def template_recommend(
         finally:
             await header.close()
     if not url and not blob:
-        raise HTTPException(422, '请提供一个视频链接或文件')
+        raise HTTPException(422, 'Provide a video link or file')
     from backend.services.studio.template_recommend import recommend_template
     return recommend_template(url=url, header=blob)
 
@@ -441,7 +564,7 @@ def title_preview(project_id: str, body: Draft, db: Session = Depends(get_db), l
     info = call(intelligence._probe, call(jobs.source, project_id))
     w,h = {'portrait':(1080,1920),'landscape':(1920,1080)}.get(body.aspect, (info.get('width'),info.get('height')))
     if not w or not h:
-        raise HTTPException(422,'无法读取原视频尺寸')
+        raise HTTPException(422,'Unable to read source video dimensions')
     # Use the same output resolution/font metrics as export; no LLM call or draft mutation.
     w,h = int(w)//2*2, int(h)//2*2
     if layer == 'backdrop':
@@ -473,7 +596,7 @@ def candidates(project_id: str, db: Session = Depends(get_db)):
             continue
         rows.append({**scene.model_dump(), 'id': f'{kind}-{scene.id}', 'kind': kind})
     return {'duration': duration, 'candidates': rows,
-            'warnings': [f'{skipped} 个片段时间无效，已从候选中排除'] if skipped else []}
+            'warnings': [f'{skipped} clip(s) with invalid timing were excluded from candidates'] if skipped else []}
 
 @router.post('/{project_id}/analyze')
 def analyze_again(project_id: str, db: Session = Depends(get_db)):
@@ -488,7 +611,7 @@ def analyze_again(project_id: str, db: Session = Depends(get_db)):
     except FileNotFoundError:
         url = (project.project_metadata or {}).get('source_url')
         if not url:
-            raise HTTPException(404, '原素材不存在，请重新导入')
+            raise HTTPException(404, 'Source footage not found; please re-import')
     if not url:
         from backend.services.studio import preflight
         video = jobs.source(project_id)
@@ -514,7 +637,7 @@ def retry_command(project_id: str, body: RetryCommand, db: Session = Depends(get
     retry = {'parent_attempt_id': body.parent_attempt_id, 'key': body.idempotency_key, 'fresh': bool(body.fresh)}
     if body.scope == 'variant':
         if not body.variant_id:
-            raise HTTPException(422, '缺少成片版本')
+            raise HTTPException(422, 'Missing export version')
         variant = call(jobs.retry_variant, project_id, body.variant_id, retry)
         receipt = attempts.by_key(call(store.read, project_id), body.idempotency_key) or attempts.current(call(store.read, project_id))
         return {'attempt': attempts.public(receipt) if receipt else None, 'variant': variant}
@@ -526,7 +649,7 @@ def retry_command(project_id: str, body: RetryCommand, db: Session = Depends(get
     except FileNotFoundError:
         url = (project.project_metadata or {}).get('source_url')
         if not url:
-            raise HTTPException(404, '原素材不存在，请重新导入')
+            raise HTTPException(404, 'Source footage not found; please re-import')
     run_id = call(jobs.inspect_project, project_id, prefs, url, config.get('creative_browser'), retry=retry)
     receipt = attempts.by_key(call(store.read, project_id), body.idempotency_key)
     return {'ok': True, 'analysis_run_id': run_id, 'attempt': attempts.public(receipt) if receipt else None}
@@ -538,14 +661,14 @@ def correct_plan(project_id: str, body: ImportOptions, db: Session = Depends(get
     # Keep the check, requested preferences and job reservation atomic with other submissions.
     with store.lock:
         if (store.recover(project_id).get('analysis') or {}).get('status') == 'running':
-            raise HTTPException(409, '当前分析尚未结束，完成后可修改方案；已有草稿会保留')
+            raise HTTPException(409, 'Analysis is still running; you can edit the plan once it finishes. Existing drafts are kept')
         url = None
         try:
             jobs.source(project_id)
         except FileNotFoundError:
             url = (project.project_metadata or {}).get('source_url')
             if not url:
-                raise HTTPException(404, '原素材不存在，请重新导入')
+                raise HTTPException(404, 'Source footage not found; please re-import')
         if not url:
             from backend.services.studio import preflight
             video = jobs.source(project_id)
@@ -604,10 +727,10 @@ def _variant_job(project_id: str, variant_id: str):
     state = call(store.read, project_id)
     variant = next((item for item in state.get('output_variants', []) if item['id'] == variant_id), None)
     if not variant:
-        raise HTTPException(404, '成片版本不存在')
+        raise HTTPException(404, 'Export version not found')
     job = next((j for j in state['jobs'] if j['job_id'] == variant.get('render_job_id')), None)
     if not job or job['status'] != 'completed':
-        raise HTTPException(409, '成片尚未生成')
+        raise HTTPException(409, 'Export not generated yet')
     return variant, job
 
 
@@ -618,7 +741,7 @@ def output_variant_cover(project_id: str, variant_id: str, db: Session = Depends
     variant, job = _variant_job(project_id, variant_id)
     path, _ = publish_kit.cover_file(project_id, job['job_id'], variant['strategy_id'])
     if path is None:
-        raise HTTPException(404, '封面尚未生成')
+        raise HTTPException(404, 'Cover not generated yet')
     return FileResponse(path, media_type='image/jpeg', headers={'Cache-Control': 'no-store'})
 
 
@@ -629,12 +752,12 @@ def redesign_output_variant_cover(project_id: str, variant_id: str, db: Session 
     _variant_job(project_id, variant_id)
     cfg = cover.load_config()
     if not (cfg.enabled and cfg.configured):
-        raise HTTPException(409, '请先在设置里开启 AI 封面并选择图像模型')
+        raise HTTPException(409, 'Enable AI covers and choose an image model in Settings first')
     if not cfg.allow_send_frame:
-        raise HTTPException(409, '请先在设置里允许发送参考帧')
+        raise HTTPException(409, 'Allow sending reference frames in Settings first')
     job = call(jobs.request_ai_cover, project_id, variant_id)
     if job is None:
-        raise HTTPException(409, '请先检查 AI 封面设置')
+        raise HTTPException(409, 'Check your AI cover settings first')
     return job
 
 
@@ -660,7 +783,7 @@ def output_variant_kit(project_id: str, variant_id: str, db: Session = Depends(g
     variant, job = _variant_job(project_id, variant_id)
     video = store.directory(project_id) / 'output' / 'studio' / f"{job['job_id']}.mp4"
     if not video.is_file():
-        raise HTTPException(404, '成片文件已移除')
+        raise HTTPException(404, 'Export file has been removed')
     cover, _ = publish_kit.cover_file(project_id, job['job_id'], variant['strategy_id'])
     post = variant.get('post') or {'title': (job.get('result') or {}).get('title', '')}
     strategy = platform_strategy(variant['strategy_id'])
@@ -687,7 +810,7 @@ def create_draft(project_id: str, body: CreateDraft, db: Session = Depends(get_d
     clips = db.query(Clip).filter(Clip.project_id == project_id, Clip.id.in_(body.clip_ids)).all()
     by_id = {str(c.id): c for c in clips}
     if any(cid not in by_id for cid in body.clip_ids):
-        raise HTTPException(404, '所选片段不属于当前项目')
+        raise HTTPException(404, 'The selected clips do not belong to this project')
     scenes = [Scene(id=uuid.uuid4().hex, label=by_id[cid].title, start=by_id[cid].start_time, end=by_id[cid].end_time) for cid in body.clip_ids]
     project = project_or_404(project_id, db)
     prefs = (project.processing_config or {}).get('creative', {})
@@ -705,7 +828,7 @@ def event_draft(project_id: str, event_id: str, db: Session = Depends(get_db)):
     prefs = Preferences.model_validate((project.processing_config or {}).get('creative', {}))
     event = next((e for e in store.read(project_id)['events'] if e['id'] == event_id), None)
     if not event:
-        raise HTTPException(404, '片段不存在')
+        raise HTTPException(404, 'Clip not found')
     draft = Draft(id=uuid.uuid4().hex, title=event['label'], scenes=[Scene.model_validate(event)], aspect=prefs.aspect, layout='crop' if prefs.aspect == 'portrait' else 'fit', language=prefs.language, subtitles=False, origin='visual-highlight')
     call(validate_draft, project_id, draft)
     return call(store.save_draft, project_id, draft, create=True)
@@ -714,7 +837,7 @@ def event_draft(project_id: str, event_id: str, db: Session = Depends(get_db)):
 def save(project_id: str, draft_id: str, body: Draft, db: Session = Depends(get_db)):
     project_or_404(project_id, db)
     if draft_id != body.id:
-        raise HTTPException(422, '草稿 ID 不匹配')
+        raise HTTPException(422, 'Draft ID mismatch')
     call(validate_draft, project_id, body)
     return call(store.save_draft, project_id, body)
 
@@ -722,7 +845,7 @@ def save(project_id: str, draft_id: str, body: Draft, db: Session = Depends(get_
 def duplicate(project_id: str, draft_id: str, body: DuplicateDraft, db: Session = Depends(get_db)):
     project = project_or_404(project_id, db)
     if draft_id != body.draft.id:
-        raise HTTPException(422, '来源草稿 ID 不匹配')
+        raise HTTPException(422, 'Source draft ID mismatch')
     call(validate_draft, project_id, body.draft)
     result = call(store.duplicate_draft, project_id, body)
     project.processing_config = {**(project.processing_config or {}), 'studio_draft_count': len(store.read(project_id)['drafts'])}
@@ -740,14 +863,14 @@ def rewrite(project_id: str, body: RewriteRequest, db: Session = Depends(get_db)
         # only the reply's own shape is judged (not a dict, a missing key, a field the schema
         # rejects); a TypeError from our own code is not caught here and stays local/unexpected.
         if not isinstance(result, dict):
-            raise ModelResponseInvalid('模型返回的改写文案格式无效，请重试')
+            raise ModelResponseInvalid('The model returned an invalid rewritten copy format; please try again')
         try:
             candidate = Draft.model_validate({**body.draft.model_dump(), 'title': result['title'], 'hook': result['hook']})
         except (KeyError, ValueError):  # pydantic's ValidationError is a ValueError
-            raise ModelResponseInvalid('模型返回的改写文案格式无效，请重试') from None
+            raise ModelResponseInvalid('The model returned an invalid rewritten copy format; please try again') from None
     except Exception as error:
         capture_studio_exception(error, 'rewrite')
-        raise HTTPException(502, '生成文案失败，请检查模型设置后重试；原稿未改动') from None
+        raise HTTPException(502, 'Failed to generate copy; check model settings and try again. The original is unchanged') from None
     return candidate
 
 @router.get('/{project_id}/subtitles')
@@ -780,12 +903,12 @@ def auto_frame(project_id: str, body: Draft, db: Session = Depends(get_db)):
     video = call(jobs.source, project_id)
     info = _probe(video)
     if not info.get('width') or not info.get('height'):
-        raise HTTPException(422, '无法读取原视频尺寸')
+        raise HTTPException(422, 'Unable to read source video dimensions')
     try:
         return framing.auto_frame(video, body, int(info['width']), int(info['height']))
     except Exception as error:
         capture_studio_exception(error, 'auto_frame')
-        raise HTTPException(502, '自动取景失败，可手动调整取景位置') from None
+        raise HTTPException(502, 'Auto-framing failed; you can adjust the framing manually') from None
 
 @router.post('/{project_id}/drafts/{draft_id}/export')
 def export(project_id: str, draft_id: str, body: ExportDraftRequest | None = None, db: Session = Depends(get_db)):
@@ -795,7 +918,7 @@ def export(project_id: str, draft_id: str, body: ExportDraftRequest | None = Non
     if not raw:
         raise HTTPException(404, '草稿不存在')
     if body and body.revision != raw['revision']:
-        raise HTTPException(409, '草稿已在另一窗口更新，请重新加载后再导出')
+        raise HTTPException(409, 'The draft was updated in another window; reload before exporting')
     draft = Draft.model_validate(raw)
     call(validate_draft, project_id, draft)
     variant = jobs.export_variant(
@@ -812,10 +935,10 @@ def rendered_video(project_id: str, job_id: str, download: bool = False, db: Ses
     project_or_404(project_id, db)
     job = next((j for j in store.read(project_id)['jobs'] if j['job_id'] == job_id), None)
     if not job:
-        raise HTTPException(404, '导出不存在')
+        raise HTTPException(404, 'Export not found')
     if job['status'] != 'completed':
-        raise HTTPException(409, '导出尚未完成')
+        raise HTTPException(409, 'Export not finished yet')
     path = store.directory(project_id) / 'output' / 'studio' / f'{job_id}.mp4'
     if not path.is_file():
-        raise HTTPException(404, '导出文件已移除')
+        raise HTTPException(404, 'Export file has been removed')
     return FileResponse(path, media_type='video/mp4', filename=path.name if download else None)

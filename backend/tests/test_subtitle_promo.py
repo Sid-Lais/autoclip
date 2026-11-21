@@ -43,7 +43,7 @@ def test_invalid_model_result_is_rejected_atomically(evidence,monkeypatch,respon
 def test_missing_subtitle_evidence_makes_no_model_call(monkeypatch):
     monkeypatch.setattr(promo,'_load_srt_entries',lambda _:[])
     monkeypatch.setattr(intelligence,'text_json',lambda *a:pytest.fail('no evidence'))
-    with pytest.raises(ValueError,match='字幕证据'):promo.make_promos('p',[clip(0,1)],Preferences(),12)
+    with pytest.raises(ValueError,match='subtitle evidence'):promo.make_promos('p',[clip(0,1)],Preferences(),12)
 
 
 def test_subtitle_promo_import_confirmation_and_edit(client,source,evidence,monkeypatch):

@@ -43,8 +43,8 @@ logger = logging.getLogger(__name__)
 
 CONFIG_FILENAME = "cover.json"
 PLATFORMS = {
-    "bilibili": {"width": 1146, "height": 717, "model_w": 1280, "model_h": 720, "label": "B站横屏"},
-    "douyin": {"width": 1080, "height": 1920, "model_w": 720, "model_h": 1280, "label": "竖屏"},
+    "bilibili": {"width": 1146, "height": 717, "model_w": 1280, "model_h": 720, "label": "Bilibili landscape"},
+    "douyin": {"width": 1080, "height": 1920, "model_w": 720, "model_h": 1280, "label": "Portrait"},
 }
 CONTENT_TYPES = ("knowledge", "interview", "game", "vlog", "general")
 _jobs: dict[str, dict[str, Any]] = {}
@@ -176,10 +176,10 @@ def verify_endpoint(cfg: "CoverConfig") -> dict[str, str]:
     if vision.get("base_url") and vision.get("model"):
         return {"provider": "openai", "api_key": vision.get("api_key", ""), "base_url": vision["base_url"], "model": vision["model"]}
     if cfg.source == 'connections':
-        raise ImageError('未选择可用于封面校对的多模态模型，跳过校对')
+        raise ImageError('No multimodal model is selected for cover proofreading; skipping proofreading')
     chosen = default_ocr_model(cfg.provider, cfg.model, cfg.base_url, api_key=cfg.api_key)
     if not chosen:
-        raise ImageError('未选择可用于封面校对的多模态模型，跳过校对')
+        raise ImageError('No multimodal model is selected for cover proofreading; skipping proofreading')
     return {"provider": cfg.provider, "api_key": cfg.api_key, "base_url": cfg.base_url, "model": chosen}
 
 
@@ -409,7 +409,7 @@ def extract_frame_jpeg(video_path: Path, at_sec: float = 0.5, *, max_width: int 
 
     path = Path(video_path)
     if not path.exists() or path.stat().st_size <= 0:
-        raise CoverError("视频是空的")
+        raise CoverError("The video is empty")
     ffmpeg_bin = get_ffmpeg_path() or "ffmpeg"
     import tempfile
 
@@ -430,7 +430,7 @@ def extract_frame_jpeg(video_path: Path, at_sec: float = 0.5, *, max_width: int 
             proc = subprocess.run(cmd, capture_output=True, text=True)
         if proc.returncode != 0 or not out.exists() or out.stat().st_size <= 0:
             detail = (proc.stderr or proc.stdout or "").strip().splitlines()
-            raise CoverError("截帧失败" + (f"：{detail[-1]}" if detail else ""))
+            raise CoverError("Could not capture a frame" + (f": {detail[-1]}" if detail else ""))
         return out.read_bytes()
 
 
@@ -607,8 +607,8 @@ def generate_cover(
     spec = PLATFORMS[platform]
     clip = load_clip_meta(project_id, clip_id)
     title_text = (title if title is not None else (
-        clip.get("generated_title") or clip.get("title") or clip.get("outline") or f"切片 {clip_id}"
-    )).strip() or f"切片 {clip_id}"
+        clip.get("generated_title") or clip.get("title") or clip.get("outline") or f"Clip {clip_id}"
+    )).strip() or f"Clip {clip_id}"
     sub_text = (subtitle if subtitle is not None else "").strip()
     badge_text = (badge if badge is not None else "").strip()
     kind = (content_type or infer_content_type(title_text, sub_text)).strip().lower()
@@ -743,7 +743,7 @@ def generate_cover(
             method = "frame"
             warning = warning or COVER_FRAME_FALLBACK
         else:
-            raise CoverError("封面生成失败，也截不到帧")
+            raise CoverError("The cover could not be generated and no frame could be captured")
 
     if cancel is not None and cancel.is_set():
         raise CoverError("已取消")

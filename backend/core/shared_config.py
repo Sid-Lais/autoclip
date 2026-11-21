@@ -27,49 +27,49 @@ class VideoCategory(str, Enum):
 VIDEO_CATEGORIES_CONFIG = {
     VideoCategory.DEFAULT: {
         "name": "默认",
-        "description": "通用视频内容，适用于大部分场景",
+        "description": "General video content, suitable for most scenarios",
         "icon": "🎬",
         "color": "#4facfe"
     },
     VideoCategory.KNOWLEDGE: {
         "name": "知识科普",
-        "description": "教育、科普、技术分享等知识性内容",
+        "description": "Educational, science-popularization and technical-sharing content",
         "icon": "📚",
         "color": "#52c41a"
     },
     VideoCategory.BUSINESS: {
         "name": "商业财经",
-        "description": "商业分析、财经资讯、投资理财等",
+        "description": "Business analysis, financial news, investing and personal finance",
         "icon": "💼",
         "color": "#faad14"
     },
     VideoCategory.OPINION: {
         "name": "观点评论",
-        "description": "观点表达、评论分析、思辨讨论等",
+        "description": "Opinion pieces, commentary analysis and critical discussion",
         "icon": "💭",
         "color": "#722ed1"
     },
     VideoCategory.EXPERIENCE: {
         "name": "经验分享",
-        "description": "生活经验、技能分享、实用技巧等",
+        "description": "Life experience, skill sharing and practical tips",
         "icon": "🌟",
         "color": "#13c2c2"
     },
     VideoCategory.SPEECH: {
         "name": "演讲脱口秀",
-        "description": "演讲、脱口秀、访谈等口语表达内容",
+        "description": "Speeches, talk shows, interviews and other spoken-word content",
         "icon": "🎤",
         "color": "#eb2f96"
     },
     VideoCategory.CONTENT_REVIEW: {
         "name": "内容解说",
-        "description": "影视解说、游戏解说、作品分析等",
+        "description": "Film and game commentary, work analysis, etc.",
         "icon": "🎭",
         "color": "#f5222d"
     },
     VideoCategory.ENTERTAINMENT: {
         "name": "娱乐内容",
-        "description": "娱乐节目、综艺、表演等轻松内容",
+        "description": "Entertainment shows, variety programs, performances and other light content",
         "icon": "🎪",
         "color": "#fa8c16"
     }
@@ -160,13 +160,13 @@ class Settings(BaseModel):
     @validator('min_score_threshold')
     def validate_score_threshold(cls, v):
         if not 0 <= v <= 1:
-            raise ValueError('评分阈值必须在0-1之间')
+            raise ValueError('Score threshold must be between 0 and 1')
         return v
     
     @validator('chunk_size')
     def validate_chunk_size(cls, v):
         if v <= 0:
-            raise ValueError('分块大小必须大于0')
+            raise ValueError('Chunk size must be greater than 0')
         return v
 
 @dataclass
