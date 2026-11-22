@@ -1,4 +1,5 @@
 {
+  "{{count}} clips queued. They run {{parallel}} at a time, about {{minutes}} min in total. Follow them under My projects.": "{{count}} clips queued. They run {{parallel}} at a time, about {{minutes}} min in total. Follow them under My projects.",
   "Gameplay only": "Gameplay only",
   "The AI looks at the frames and keeps parts with real gameplay. Face-cam reactions around the gameplay stay. Trailer cuts and menus are dropped, and parts with no gameplay are skipped.": "The AI looks at the frames and keeps parts with real gameplay. Face-cam reactions around the gameplay stay. Trailer cuts and menus are dropped, and parts with no gameplay are skipped.",
   "Sign-in link copied.": "Sign-in link copied.",

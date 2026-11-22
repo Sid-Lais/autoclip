@@ -1,4 +1,5 @@
 {
+  "{{count}} clips queued. They run {{parallel}} at a time, about {{minutes}} min in total. Follow them under My projects.": "已排队 {{count}} 个剪辑，每次同时处理 {{parallel}} 个，预计共约 {{minutes}} 分钟。可在「我的项目」中查看进度。",
   "Gameplay only": "仅保留游戏画面",
   "The AI looks at the frames and keeps parts with real gameplay. Face-cam reactions around the gameplay stay. Trailer cuts and menus are dropped, and parts with no gameplay are skipped.": "AI 会逐帧检查，保留有真实游戏画面的片段。穿插在游戏画面中的真人反应会保留；预告片剪辑和菜单画面会被剔除，没有游戏画面的片段会被跳过。",
   "Sign-in link copied.": "登录链接已复制。",

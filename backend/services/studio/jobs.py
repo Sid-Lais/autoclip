@@ -18,7 +18,7 @@ from backend.services.studio.render import render_draft
 from backend.services.studio.templates.spec import HTML_TEMPLATE_IDS
 
 logger = logging.getLogger(__name__)
-executor = ThreadPoolExecutor(max_workers=2, thread_name_prefix='studio')
+executor = ThreadPoolExecutor(max_workers=4, thread_name_prefix='studio')
 
 
 def _generation_route(plan):

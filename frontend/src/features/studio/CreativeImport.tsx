@@ -423,7 +423,7 @@ export default function CreativeImport({ onImported, blocked = false, onBlocked,
     clearPreview(); setUrl('')
     if (skipped > 0) void message.warning(t('{{count}} range(s) could not be started. Add them again from the same link.', { count: skipped }))
     if (ids.length === 1) { navigate(`/project/${ids[0]}`); return }
-    void message.success(t('{{count}} clips are being prepared. They appear in your projects.', { count: ids.length }))
+    void message.success(t('{{count}} clips queued. They run {{parallel}} at a time, about {{minutes}} min in total. Follow them under My projects.', { count: ids.length, parallel: 4, minutes: Math.max(2, Math.ceil(ids.length / 4) * 2) }), 8)
     navigate('/')
   }
   /** A search result that needs hand-picked parts opens in the link flow. */

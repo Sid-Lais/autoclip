@@ -1,4 +1,5 @@
 {
+  "{{count}} clips queued. They run {{parallel}} at a time, about {{minutes}} min in total. Follow them under My projects.": "{{count}} clips en file d'attente. Ils sont traités {{parallel}} à la fois, environ {{minutes}} min au total. Suivez-les dans Mes projets.",
   "Gameplay only": "Gameplay uniquement",
   "The AI looks at the frames and keeps parts with real gameplay. Face-cam reactions around the gameplay stay. Trailer cuts and menus are dropped, and parts with no gameplay are skipped.": "L'IA examine les images et garde les passages avec du vrai gameplay. Les réactions en facecam autour du gameplay sont conservées. Les extraits de bande-annonce et les menus sont écartés, et les passages sans gameplay sont ignorés.",
   "Sign-in link copied.": "Lien de connexion copié.",

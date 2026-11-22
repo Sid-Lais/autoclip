@@ -1,4 +1,5 @@
 {
+  "{{count}} clips queued. They run {{parallel}} at a time, about {{minutes}} min in total. Follow them under My projects.": "클립 {{count}}개를 대기열에 추가했습니다. {{parallel}}개씩 처리하며 총 약 {{minutes}}분 걸립니다. 진행 상황은 \"내 프로젝트\"에서 확인하세요.",
   "Gameplay only": "게임플레이만",
   "The AI looks at the frames and keeps parts with real gameplay. Face-cam reactions around the gameplay stay. Trailer cuts and menus are dropped, and parts with no gameplay are skipped.": "AI가 프레임을 확인해 실제 게임플레이가 있는 구간을 남깁니다. 게임플레이 사이사이의 페이스캠 리액션은 유지됩니다. 트레일러 컷과 메뉴 화면은 제외되며 게임플레이가 없는 구간은 건너뜁니다.",
   "Sign-in link copied.": "로그인 링크를 복사했습니다.",

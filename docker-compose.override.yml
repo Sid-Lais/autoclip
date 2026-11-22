@@ -18,6 +18,11 @@ services:
     # Nothing listens on :3000 in this image; API stays reachable only from this machine (nginx proxies it).
     ports: !override
       - "127.0.0.1:8000:8000"
+    # SQLite (WAL) cannot run on a Windows bind mount: "unable to open database file" under parallel jobs. Use a volume.
+    environment:
+      - DATABASE_URL=sqlite:////app/db/autoclip.db
+    volumes:
+      - db_data:/app/db
 
   redis:
     ports: !override
@@ -31,6 +36,17 @@ services:
   celery-worker:
     healthcheck:
       disable: true
+    environment:
+      - DATABASE_URL=sqlite:////app/db/autoclip.db
+    volumes:
+      - db_data:/app/db
   celery-beat:
     healthcheck:
       disable: true
+    environment:
+      - DATABASE_URL=sqlite:////app/db/autoclip.db
+    volumes:
+      - db_data:/app/db
+
+volumes:
+  db_data:

@@ -1,4 +1,5 @@
 {
+  "{{count}} clips queued. They run {{parallel}} at a time, about {{minutes}} min in total. Follow them under My projects.": "{{count}} 件のクリップをキューに追加しました。{{parallel}} 件ずつ処理し、合計で約 {{minutes}} 分かかります。進行状況は「マイプロジェクト」で確認できます。",
   "Gameplay only": "ゲームプレイのみ",
   "The AI looks at the frames and keeps parts with real gameplay. Face-cam reactions around the gameplay stay. Trailer cuts and menus are dropped, and parts with no gameplay are skipped.": "AIがフレームを確認し、実際のゲームプレイがある部分を残します。ゲームプレイの前後にある顔出しのリアクションは残ります。トレーラー映像とメニュー画面は除外され、ゲームプレイがない部分はスキップされます。",
   "Sign-in link copied.": "ログインリンクをコピーしました。",

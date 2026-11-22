@@ -1,4 +1,5 @@
 {
+  "{{count}} clips queued. They run {{parallel}} at a time, about {{minutes}} min in total. Follow them under My projects.": "{{count}} clips en cola. Se procesan {{parallel}} a la vez, unos {{minutes}} min en total. Síguelos en Mis proyectos.",
   "Gameplay only": "Solo gameplay",
   "The AI looks at the frames and keeps parts with real gameplay. Face-cam reactions around the gameplay stay. Trailer cuts and menus are dropped, and parts with no gameplay are skipped.": "La IA revisa los fotogramas y conserva las partes con gameplay real. Las reacciones con cámara de cara alrededor del gameplay se mantienen. Se descartan los cortes de tráiler y los menús, y se omiten las partes sin gameplay.",
   "Sign-in link copied.": "Enlace de inicio de sesión copiado.",
