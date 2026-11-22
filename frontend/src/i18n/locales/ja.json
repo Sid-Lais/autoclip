@@ -1,4 +1,9 @@
 {
+  "{{count}} part(s) of this video were clipped before. These are the next best parts.": "この動画では {{count}} 件のパートをすでにクリップ済みです。次におすすめのパートを表示しています。",
+  "No more new clips can be made from this video: all {{count}} suggested part(s) are already clipped.": "この動画からはこれ以上新しいクリップを作れません。提案された {{count}} 件のパートはすべてクリップ済みです。",
+  "No more new clips can be made from the selected videos. Select other videos or search for something else.": "選択した動画からはこれ以上新しいクリップを作れません。別の動画を選ぶか、別のキーワードで検索してください。",
+  "{{count}} part(s) were already clipped and left out.": "{{count}} 件のパートはクリップ済みのため除外しました。",
+  "These parts were already clipped. Nothing new to make from them.": "これらのパートはすでにクリップ済みです。新しく作れるものはありません。",
   "Today": "今日",
   "Clip queue": "クリップキュー",
   "running": "処理中",

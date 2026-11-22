@@ -20,7 +20,7 @@ from backend.models.clip import Clip
 from backend.schemas.project import ProjectCreate, ProjectType
 from backend.services.project_service import ProjectService
 from backend.services.platform_strategy import list_platform_strategies
-from backend.services.studio import store, jobs, intelligence, range_import
+from backend.services.studio import store, jobs, intelligence, range_import, ledger
 from backend.services.studio.models import Draft, CreateDraft, DuplicateDraft, ExportDraftRequest, RewriteRequest, Preferences, Language, Scene, ImportOptions, ConfirmPlan, AppendPlatformsRequest, PostCopy
 
 router = APIRouter()
@@ -442,16 +442,21 @@ def import_ranges(body: range_import.ImportRangesBody, db: Session = Depends(get
     call(readiness.ensure_analysis_usable)
     url = body.url.strip()
     _require_supported_url(url)
-    created, failure = [], None
+    created, failure, duplicates = [], None, 0
+    used, _ = ledger.used_parts(db, url, store.read)
     for spec in body.ranges:
+        if ledger.is_repeat(spec.start, spec.end, used):
+            duplicates += 1
+            continue
         try:
             created.append({**_start_clip_project(db, url, body.title, body, spec), 'start': spec.start, 'end': spec.end})
+            used.append((spec.start, spec.end))
         except Exception as error:  # noqa: BLE001 - earlier ranges keep running; report this one
             failure = error
             break
     if not created and failure is not None:
         raise failure
-    return {'projects': created, 'skipped': len(body.ranges) - len(created)}
+    return {'projects': created, 'skipped': len(body.ranges) - len(created) - duplicates, 'duplicates': duplicates}
 
 
 class SearchBody(BaseModel):
@@ -481,12 +486,13 @@ class SuggestBody(BaseModel):
 
 
 @router.post('/suggest-clips')
-async def suggest_clips(body: SuggestBody):
+async def suggest_clips(body: SuggestBody, db: Session = Depends(get_db)):
     """The parts of a video worth clipping, from YouTube's "Most replayed" graph (chapters as fallback)."""
     from backend.services.studio import discovery
     _require_supported_url(body.url.strip())
+    used, whole_used = ledger.used_parts(db, body.url.strip(), store.read)
     try:
-        return await asyncio.wait_for(run_in_threadpool(discovery.suggest_clips, body.url.strip(), body.browser), timeout=40)
+        return await asyncio.wait_for(run_in_threadpool(discovery.suggest_clips, body.url.strip(), body.browser, used, whole_used), timeout=40)
     except asyncio.TimeoutError:
         raise HTTPException(504, 'Reading the video took too long. Try again in a moment.') from None
     except Exception as error:  # noqa: BLE001
@@ -499,10 +505,14 @@ def auto_clip(body: range_import.AutoClipBody, db: Session = Depends(get_db)):
     """Make clips for every approved item: its suggested ranges, or the whole video when it is short enough."""
     from backend.services.studio import readiness
     call(readiness.ensure_analysis_usable)
-    created, skipped = [], []
+    created, skipped, duplicates = [], [], 0
     for item in body.items:
         url = item.url.strip()
         _require_supported_url(url)
+        used, whole_used = ledger.used_parts(db, url, store.read)
+        if not item.ranges and whole_used:
+            duplicates += 1
+            continue
         if not item.ranges:
             try:
                 if range_import.is_long(jobs.inspect_url(url, body.browser).get('duration')):
@@ -512,15 +522,22 @@ def auto_clip(body: range_import.AutoClipBody, db: Session = Depends(get_db)):
                 skipped.append({'url': url, 'reason': 'The video could not be read.'})
                 continue
         for spec in item.ranges or [None]:
+            if spec is not None and ledger.is_repeat(spec.start, spec.end, used):
+                duplicates += 1
+                continue
             try:
                 made = _start_clip_project(db, url, item.title, body, spec)
+                if spec is not None:
+                    used.append((spec.start, spec.end))
                 created.append({**made, 'url': url, **({'start': spec.start, 'end': spec.end} if spec else {})})
             except Exception as error:  # noqa: BLE001
                 from backend.core.failure_codes import user_visible_error
                 skipped.append({'url': url, 'reason': user_visible_error(error) or 'This clip could not be started.'})
     if not created and skipped:
         raise HTTPException(422, skipped[0]['reason'])
-    return {'projects': created, 'skipped': skipped}
+    if not created and duplicates:
+        raise HTTPException(409, 'These parts were already clipped. Nothing new to make from them.')
+    return {'projects': created, 'skipped': skipped, 'duplicates': duplicates}
 
 
 

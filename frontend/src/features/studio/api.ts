@@ -47,9 +47,9 @@ export type ImportRangesResult = { projects: { project_id: string; analysis_run_
 export type SearchResult = { url: string; title: string; channel: string; duration: number; view_count: number | null; thumbnail: string | null; long_video: boolean; suggested: boolean }
 export type ClipMoment = { start: number; end: number; score: number | null; source: 'most_replayed' | 'chapter'; label?: string }
 /** `ranges`: cut these parts; `whole`: the pipeline picks from the whole (short) video; `manual`: too long and nothing to base a cut on. */
-export type SuggestedClips = { url: string; title: string; duration: number; view_count: number | null; mode: 'ranges' | 'whole' | 'manual'; moments: ClipMoment[]; signal: string | null }
+export type SuggestedClips = { url: string; title: string; duration: number; view_count: number | null; mode: 'ranges' | 'whole' | 'manual' | 'exhausted'; moments: ClipMoment[]; signal: string | null; already_clipped: number }
 export type AutoClipRequest = ImportRangesFields & { browser?: string; items: { url: string; title: string; ranges: { start: number; end: number; label: string }[] }[] }
-export type AutoClipResult = { projects: { project_id: string; analysis_run_id?: string; url: string }[]; skipped: { url: string; reason: string }[] }
+export type AutoClipResult = { projects: { project_id: string; analysis_run_id?: string; url: string }[]; skipped: { url: string; reason: string }[]; duplicates?: number }
 export type QueueItem = { project_id: string; name: string; kind: 'queued' | 'running' | 'done' | 'failed' | 'skipped'; stage: string; percent: number; message: string; error: string; created_at: string | null }
 export type QueueView = { items: QueueItem[]; counts: { queued: number; running: number; done: number; failed: number; skipped: number } }
 /** One key per click: the same request re-sent returns the same receipt (backend idempotency). */

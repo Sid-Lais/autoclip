@@ -1,3 +1,4 @@
+import { message } from 'antd'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { getLocale, t } from '../../i18n'
 import { Btn } from '../../ui'
@@ -94,6 +95,8 @@ export default function SearchPanel({ browser, fields, busy, onCreated, onPickPa
     }
     return data.mode === 'whole' ? [{ url: item.url, title: item.title, ranges: [] }] : []
   }), [results, rows])
+  const readyChecked = results.flatMap(item => { const row = rows[item.url]; return row?.checked && row.suggestion?.state === 'ready' ? [row.suggestion.data] : [] })
+  const allExhausted = readyChecked.length > 0 && readyChecked.every(data => data.mode === 'exhausted')
   const clipCount = plan.reduce((sum, item) => sum + Math.max(1, item.ranges.length), 0)
   const disabled = !!busy || creating
 
@@ -103,6 +106,7 @@ export default function SearchPanel({ browser, fields, busy, onCreated, onPickPa
     setError('')
     try {
       const result = await studioApi.autoClip({ ...fields, ...(gameplayOnly ? { visual_focus: 'gameplay' as const } : {}), ...(browser ? { browser } : {}), items: plan.slice(0, MAX_APPROVED) })
+      if (result.duplicates) void message.info(t('{{count}} part(s) were already clipped and left out.', { count: result.duplicates }))
       onCreated(result.projects.map(project => project.project_id), result.skipped.length)
     } catch (failure) {
       setError(t(errorText(failure)))
@@ -165,6 +169,15 @@ export default function SearchPanel({ browser, fields, busy, onCreated, onPickPa
                       ))}
                     </ul>
                   )}
+                  {suggestion?.state === 'ready' && suggestion.data.mode === 'ranges' && suggestion.data.already_clipped > 0 && (
+                    <span className="studio-muted">{t('{{count}} part(s) of this video were clipped before. These are the next best parts.', { count: suggestion.data.already_clipped })}</span>
+                  )}
+                  {suggestion?.state === 'ready' && suggestion.data.mode === 'exhausted' && (
+                    <span className="studio-muted">
+                      {t('No more new clips can be made from this video: all {{count}} suggested part(s) are already clipped.', { count: suggestion.data.already_clipped })}{' '}
+                      <button type="button" className="studio-link" disabled={disabled} onClick={() => onPickParts(item.url)}>{t('Pick the parts yourself')}</button>
+                    </span>
+                  )}
                   {suggestion?.state === 'ready' && suggestion.data.mode === 'whole' && (
                     <span className="studio-muted">{t('No replay data for this video. The AI picks the best parts from the whole video.')}</span>
                   )}
@@ -181,6 +194,7 @@ export default function SearchPanel({ browser, fields, busy, onCreated, onPickPa
         })}
       </ul>
 
+      {allExhausted && <p className="studio-error" role="status">{t('No more new clips can be made from the selected videos. Select other videos or search for something else.')}</p>}
       {results.length > 0 && (
         <div className="studio-actions lv-footer">
           <Btn variant="cta" loading={creating} disabled={disabled || !plan.length} onClick={() => void create()}>

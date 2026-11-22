@@ -12,7 +12,7 @@ from __future__ import annotations
 import re
 from typing import Optional
 
-from backend.services.studio import range_import
+from backend.services.studio import ledger, range_import
 
 MAX_SEARCH_RESULTS = 25
 SUGGESTED_VIDEOS = 5
@@ -73,8 +73,9 @@ def search_videos(query: str, limit: int = 12, min_duration: float = MIN_VIDEO_S
     return results
 
 
-def moments_from_heatmap(heatmap: list[dict], duration: float) -> list[dict]:
-    """Top non-overlapping replay peaks, each as a 30-90 s window around the peak segment."""
+def moments_from_heatmap(heatmap: list[dict], duration: float, used=()) -> list[dict]:
+    """Top non-overlapping replay peaks, each as a 30-90 s window around the peak segment. Parts in ``used`` are left out,
+    so a later run takes the next best peaks."""
     peaks = sorted(
         (seg for seg in heatmap or [] if isinstance(seg.get('value'), (int, float)) and seg['value'] >= MIN_PEAK_VALUE),
         key=lambda seg: seg['value'], reverse=True)
@@ -90,6 +91,8 @@ def moments_from_heatmap(heatmap: list[dict], duration: float) -> list[dict]:
             continue
         if any(window_start < m['end'] and window_end > m['start'] for m in moments):
             continue
+        if ledger.is_repeat(window_start, window_end, used):
+            continue
         moments.append({'start': round(window_start, 1), 'end': round(window_end, 1),
                         'score': round(float(seg['value']), 2), 'source': 'most_replayed'})
         if len(moments) >= MAX_MOMENTS:
@@ -97,7 +100,7 @@ def moments_from_heatmap(heatmap: list[dict], duration: float) -> list[dict]:
     return sorted(moments, key=lambda m: m['start'])
 
 
-def moments_from_chapters(chapters: list[dict], duration: float) -> list[dict]:
+def moments_from_chapters(chapters: list[dict], duration: float, used=()) -> list[dict]:
     """Fallback without a replay graph: the opening stretch of the first few chapters (the part titles promise)."""
     moments = []
     for chapter in chapters or []:
@@ -105,12 +108,14 @@ def moments_from_chapters(chapters: list[dict], duration: float) -> list[dict]:
         end = float(chapter.get('end_time') or duration)
         if end - start < CLIP_MIN_SEC:
             continue
+        if ledger.is_repeat(start, min(end, start + CLIP_MAX_SEC), used):
+            continue
         moments.append({'start': round(start, 1), 'end': round(min(end, start + CLIP_MAX_SEC), 1), 'score': None,
                         'source': 'chapter', 'label': str(chapter.get('title') or '')[:120]})
     return moments[:MAX_MOMENTS]
 
 
-def suggest_clips(url: str, browser: Optional[str] = None) -> dict:
+def suggest_clips(url: str, browser: Optional[str] = None, used=(), whole_used: bool = False) -> dict:
     """What can be clipped from ``url`` and how: ``ranges`` (cut these parts), ``whole`` (let the pipeline choose) or ``manual``."""
     from backend.utils.download_recovery import extract_info_with_recovery
     from backend.utils.ffmpeg_utils import get_ffmpeg_path, ytdlp_js_runtimes
@@ -120,9 +125,11 @@ def suggest_clips(url: str, browser: Optional[str] = None) -> dict:
         options['cookiesfrombrowser'] = (browser,)
     info = extract_info_with_recovery(url, options)
     duration = float(info.get('duration') or 0)
-    moments = moments_from_heatmap(info.get('heatmap') or [], duration)
-    if not moments:
+    moments = moments_from_heatmap(info.get('heatmap') or [], duration, used)
+    if not moments and not used:
         moments = moments_from_chapters(info.get('chapters') or [], duration)
+    elif not moments:
+        moments = moments_from_chapters(info.get('chapters') or [], duration, used)
     views = info.get('view_count')
     if moments:
         mode = 'ranges'
@@ -130,6 +137,8 @@ def suggest_clips(url: str, browser: Optional[str] = None) -> dict:
         mode = 'manual'  # too long to download whole and nothing to base a cut on
     else:
         mode = 'whole'
+    if not moments and (used or whole_used):
+        mode = 'exhausted'  # everything this video can offer has already been clipped
     return {
         'url': url,
         'title': str(info.get('title') or '')[:200],
@@ -138,4 +147,5 @@ def suggest_clips(url: str, browser: Optional[str] = None) -> dict:
         'mode': mode,
         'moments': moments,
         'signal': moments[0]['source'] if moments else None,
+        'already_clipped': len(used) + (1 if whole_used else 0),
     }

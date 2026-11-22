@@ -1,4 +1,9 @@
 {
+  "{{count}} part(s) of this video were clipped before. These are the next best parts.": "{{count}} passage(s) de cette vidéo ont déjà été clippés. Voici les meilleurs suivants.",
+  "No more new clips can be made from this video: all {{count}} suggested part(s) are already clipped.": "Plus aucun nouveau clip possible avec cette vidéo : les {{count}} passage(s) suggérés sont déjà clippés.",
+  "No more new clips can be made from the selected videos. Select other videos or search for something else.": "Plus aucun nouveau clip possible avec les vidéos sélectionnées. Choisissez d'autres vidéos ou cherchez autre chose.",
+  "{{count}} part(s) were already clipped and left out.": "{{count}} passage(s) déjà clippés ont été écartés.",
+  "These parts were already clipped. Nothing new to make from them.": "Ces passages ont déjà été clippés. Rien de nouveau à créer.",
   "Today": "Aujourd'hui",
   "Clip queue": "File des clips",
   "running": "en cours",

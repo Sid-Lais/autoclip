@@ -1,4 +1,9 @@
 {
+  "{{count}} part(s) of this video were clipped before. These are the next best parts.": "이 영상은 {{count}}개 구간을 이미 클립했습니다. 다음으로 좋은 구간입니다.",
+  "No more new clips can be made from this video: all {{count}} suggested part(s) are already clipped.": "이 영상에서는 더 이상 새 클립을 만들 수 없습니다. 추천된 {{count}}개 구간이 모두 클립되었습니다.",
+  "No more new clips can be made from the selected videos. Select other videos or search for something else.": "선택한 영상에서는 더 이상 새 클립을 만들 수 없습니다. 다른 영상을 선택하거나 다른 검색어를 사용하세요.",
+  "{{count}} part(s) were already clipped and left out.": "{{count}}개 구간은 이미 클립되어 제외했습니다.",
+  "These parts were already clipped. Nothing new to make from them.": "이 구간들은 이미 클립되었습니다. 새로 만들 것이 없습니다.",
   "Today": "오늘",
   "Clip queue": "클립 대기열",
   "running": "진행 중",

@@ -149,3 +149,14 @@ def test_queue_rows_show_stage_percent_and_tell_skipped_from_failed():
     skipped = row({'status': 'failed', 'error': 'No gameplay found in this part (it shows a trailer). Skipped.'})
     assert skipped['kind'] == 'skipped' and 'No gameplay' in skipped['error']
     assert row({'status': 'failed', 'error': 'Something broke'})['kind'] == 'failed'
+
+
+def test_ledger_repeat_rule_and_discovery_takes_the_next_best_peaks():
+    from backend.services.studio import discovery, ledger
+    assert ledger.video_key('https://www.youtube.com/watch?v=E4RGVl86E2U&t=5') == ledger.video_key('https://youtu.be/E4RGVl86E2U')
+    assert ledger.is_repeat(100, 130, [(105, 135)]) and not ledger.is_repeat(100, 130, [(200, 230)])
+    heat = [{'start_time': i * 10.0, 'end_time': i * 10.0 + 10, 'value': 1.0 - i * 0.02} for i in range(20)]
+    first = discovery.moments_from_heatmap(heat, 200.0)
+    second = discovery.moments_from_heatmap(heat, 200.0, [(m['start'], m['end']) for m in first])
+    assert first and second
+    assert not any(ledger.is_repeat(m['start'], m['end'], [(f['start'], f['end']) for f in first]) for m in second)
