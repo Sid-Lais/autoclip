@@ -1,6 +1,6 @@
 {
   "Gameplay only": "Somente gameplay",
-  "The AI looks at the frames and keeps only real gameplay. Trailer cuts, face-cams and menus are dropped, and parts with no gameplay are skipped.": "A IA analisa os quadros e mantém apenas o gameplay real. Cortes de trailer, webcam e menus são descartados, e trechos sem gameplay são ignorados.",
+  "The AI looks at the frames and keeps parts with real gameplay. Face-cam reactions around the gameplay stay. Trailer cuts and menus are dropped, and parts with no gameplay are skipped.": "A IA analisa os quadros e mantém as partes com gameplay real. As reações com webcam ao redor do gameplay permanecem. Cortes de trailer e menus são descartados, e trechos sem gameplay são ignorados.",
   "Sign-in link copied.": "Link de login copiado.",
   "Someone else signs in": "Outra pessoa faz login",
   "If the channel owner signs in on their own device: send them the link, they sign in, and Google then shows a page that does not open. They copy that page's full address and send it back; paste it here.": "Se o dono do canal fizer login no próprio dispositivo: envie o link para ele, ele faz login e o Google mostra uma página que não abre. Ele copia o endereço completo dessa página e envia de volta; cole aqui.",

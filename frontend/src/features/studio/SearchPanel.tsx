@@ -116,7 +116,7 @@ export default function SearchPanel({ browser, fields, busy, onCreated, onPickPa
       <p className="lv-intro">{t('Search YouTube. The most viewed videos are suggested; approve the ones you want and clips are made from the parts viewers replay most.')}</p>
       <label className="sp-row" style={{ cursor: 'pointer' }}>
         <input type="checkbox" checked={gameplayOnly} disabled={disabled} onChange={event => setGameplayOnly(event.target.checked)} />
-        <span className="sp-meta"><b>{t('Gameplay only')}</b><span className="studio-muted">{t('The AI looks at the frames and keeps only real gameplay. Trailer cuts, face-cams and menus are dropped, and parts with no gameplay are skipped.')}</span></span>
+        <span className="sp-meta"><b>{t('Gameplay only')}</b><span className="studio-muted">{t('The AI looks at the frames and keeps parts with real gameplay. Face-cam reactions around the gameplay stay. Trailer cuts and menus are dropped, and parts with no gameplay are skipped.')}</span></span>
       </label>
       <form className="sp-form" onSubmit={event => { event.preventDefault(); void search() }}>
         <input className="lv-label" value={query} maxLength={200} disabled={disabled} aria-label={t('Search query')}

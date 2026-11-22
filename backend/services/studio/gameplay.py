@@ -24,6 +24,7 @@ logger = logging.getLogger(__name__)
 SAMPLE_EVERY_SEC = 2.5
 BATCH = 12
 MIN_GAMEPLAY_SEC = 10.0
+MIN_GAMEPLAY_SHARE = 0.4  # of the kept stretch, so a reaction clip still has to be mostly about the game
 FRAME_WIDTH = 512
 REQUEST_TIMEOUT = 90
 LABELS = ('gameplay', 'trailer', 'facecam', 'other')
@@ -31,10 +32,12 @@ LABELS = ('gameplay', 'trailer', 'facecam', 'other')
 PROMPT = (
     'You label video frames from a game video. For EACH image, in order, answer with exactly one label:\n'
     '- "gameplay": live play with a player-controlled camera or character, usually with game HUD (minimap, health, '
-    'wanted stars, ammo, speedometer), driving, shooting, free roaming. Raw in-game footage.\n'
+    'wanted stars, ammo, speedometer), driving, shooting, free roaming. Raw in-game footage, also when a small '
+    'webcam overlay sits in a corner.\n'
     '- "trailer": a pre-rendered or cinematic cut: letterboxed film look, rapid scripted editing, logos, release dates, '
     'title cards, cutscenes, "official trailer" footage.\n'
-    '- "facecam": a person on camera (streamer, reactor, presenter), webcam overlay as the main subject, studio.\n'
+    '- "facecam": a person on camera filling most of the frame (streamer, reactor, presenter, studio) with no game '
+    'footage as the main picture.\n'
     '- "other": menus, maps, slides, text, news graphics, black frames, thumbnails, anything else.\n'
     'Answer only JSON: {"labels": ["gameplay", ...]} with exactly one label per image.'
 )
@@ -91,23 +94,29 @@ def classify(frames: list[bytes], http=requests) -> list[str]:
 
 
 def longest_gameplay(times: list[float], labels: list[str], duration: float) -> tuple[float, float] | None:
-    """The longest run of gameplay frames, padded by half a sample on each side. One stray frame does not split a run."""
-    flags = [label == 'gameplay' for label in labels]
-    for i in range(1, len(flags) - 1):
-        if not flags[i] and flags[i - 1] and flags[i + 1]:
-            flags[i] = True
-    best, run_start = None, None
-    for i, on in enumerate(flags + [False]):
+    """The best stretch of gameplay with reaction face-cam cut-ins allowed.
+
+    A stretch is a run of gameplay / face-cam frames (one stray other frame does not split it), padded by half a sample.
+    It needs real gameplay in it: at least two gameplay frames and ``MIN_GAMEPLAY_SHARE`` of the stretch. The stretch
+    with the most gameplay wins. Trailers, menus and slides end a stretch.
+    """
+    keep = [label in ('gameplay', 'facecam') for label in labels]
+    for i in range(1, len(keep) - 1):
+        if not keep[i] and keep[i - 1] and keep[i + 1]:
+            keep[i] = True
+    best, best_key, run_start = None, None, None
+    for i, on in enumerate(keep + [False]):
         if on and run_start is None:
             run_start = i
         if not on and run_start is not None:
+            frames = labels[run_start:i]
+            play = sum(1 for label in frames if label == 'gameplay')
             span = (max(0.0, times[run_start] - SAMPLE_EVERY_SEC / 2), min(duration, times[i - 1] + SAMPLE_EVERY_SEC / 2))
-            if best is None or span[1] - span[0] > best[1] - best[0]:
-                best = span
+            if (play >= 2 and play / len(frames) >= MIN_GAMEPLAY_SHARE and span[1] - span[0] >= MIN_GAMEPLAY_SEC
+                    and (best_key is None or (play, span[1] - span[0]) > best_key)):
+                best, best_key = span, (play, span[1] - span[0])
             run_start = None
-    if best and best[1] - best[0] >= MIN_GAMEPLAY_SEC:
-        return round(best[0], 2), round(best[1], 2)
-    return None
+    return (round(best[0], 2), round(best[1], 2)) if best else None
 
 
 def find_span(video: Path, duration: float, http=requests) -> tuple[float, float]:
@@ -119,5 +128,5 @@ def find_span(video: Path, duration: float, http=requests) -> tuple[float, float
     labels = classify([frame for _, frame in sampled], http)
     span = longest_gameplay([t for t, _ in sampled], labels, duration)
     if span is None:
-        raise UserFacingError('No gameplay found in this part (it shows a trailer, a face-cam or menus). Skipped.')
+        raise UserFacingError('No gameplay found in this part (it shows a trailer, menus, or only a face-cam). Skipped.')
     return span

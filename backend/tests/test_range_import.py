@@ -107,12 +107,14 @@ def test_a_picked_range_still_becomes_a_clip_when_content_analysis_fails(monkeyp
         jobs._content_drafts('p', {'preferences': {'goal': 'content'}, 'overrides': {}}, 'video.mp4')
 
 
-def test_longest_gameplay_run_ignores_a_stray_frame_and_refuses_short_or_missing_runs():
+def test_gameplay_stretch_keeps_reaction_facecam_around_real_gameplay_and_refuses_the_rest():
     from backend.services.studio import gameplay
     times = [1.25 + 2.5 * i for i in range(12)]
     labels = ['trailer', 'trailer', 'gameplay', 'gameplay', 'other', 'gameplay', 'gameplay', 'gameplay', 'facecam', 'facecam', 'gameplay', 'trailer']
-    assert gameplay.longest_gameplay(times, labels, 30.0) == (5.0, 20.0)
+    assert gameplay.longest_gameplay(times, labels, 30.0) == (5.0, 27.5)  # the face-cam cut-ins stay, the trailer ends are cut
     assert gameplay.longest_gameplay(times, ['trailer'] * 12, 30.0) is None
+    assert gameplay.longest_gameplay(times, ['facecam'] * 12, 30.0) is None  # a pure reaction is not a gameplay clip
+    assert gameplay.longest_gameplay(times, ['facecam'] * 9 + ['gameplay', 'facecam', 'facecam'], 30.0) is None  # one game frame in a talking head
     assert gameplay.longest_gameplay(times, ['gameplay', 'gameplay'] + ['other'] * 10, 30.0) is None  # 5 s is too short to be a clip
 
 

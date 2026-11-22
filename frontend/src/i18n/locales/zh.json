@@ -1,6 +1,6 @@
 {
   "Gameplay only": "仅保留游戏画面",
-  "The AI looks at the frames and keeps only real gameplay. Trailer cuts, face-cams and menus are dropped, and parts with no gameplay are skipped.": "AI 会逐帧检查，只保留真实的游戏画面。预告片剪辑、真人出镜和菜单画面会被剔除，没有游戏画面的片段会被跳过。",
+  "The AI looks at the frames and keeps parts with real gameplay. Face-cam reactions around the gameplay stay. Trailer cuts and menus are dropped, and parts with no gameplay are skipped.": "AI 会逐帧检查，保留有真实游戏画面的片段。穿插在游戏画面中的真人反应会保留；预告片剪辑和菜单画面会被剔除，没有游戏画面的片段会被跳过。",
   "Sign-in link copied.": "登录链接已复制。",
   "Someone else signs in": "由他人登录",
   "If the channel owner signs in on their own device: send them the link, they sign in, and Google then shows a page that does not open. They copy that page's full address and send it back; paste it here.": "如果频道所有者在自己的设备上登录:把链接发给对方,对方登录后,Google 会显示一个无法打开的页面。让对方复制该页面的完整地址并发回给你,然后粘贴到这里。",
