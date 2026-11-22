@@ -4,6 +4,14 @@ import { t } from '../../i18n'
 import { studioApi, type QueueItem, type QueueView } from './api'
 import './clip-queue.css'
 
+/** "Today 14:32" / "21 Nov 14:32" in the viewer's own time zone. */
+function started(iso: string | null): string {
+  if (!iso) return ''
+  const at = new Date(iso)
+  if (Number.isNaN(at.getTime())) return ''
+  const time = at.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+  return at.toDateString() === new Date().toDateString() ? `${t('Today')} ${time}` : `${at.toLocaleDateString([], { day: 'numeric', month: 'short' })} ${time}`
+}
 const FAST_MS = 4000
 const SLOW_MS = 20000
 const FINISHED_SHOWN = 6
@@ -64,7 +72,7 @@ export default function ClipQueue() {
           <li key={item.project_id} className="cq-row" role="link" tabIndex={0}
             onClick={() => navigate(`/project/${item.project_id}`)}
             onKeyDown={event => { if (event.key === 'Enter') navigate(`/project/${item.project_id}`) }}>
-            <span className="cq-name" title={item.name}>{item.name}</span>
+            <span className="cq-name" title={item.name}>{item.name}<span className="cq-time">{started(item.created_at)}</span></span>
             <span className={`cq-state${item.kind === 'failed' ? ' is-failed' : ''}${item.kind === 'done' ? ' is-done' : ''}`}>
               {t(STATE_LABEL[item.stage] || 'Waiting for a free slot')}{item.kind === 'running' ? ` · ${item.percent}%` : ''}
             </span>

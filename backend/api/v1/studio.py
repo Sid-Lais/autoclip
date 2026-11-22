@@ -216,7 +216,7 @@ def _queue_item(project, state: dict) -> dict:
         kind, stage, percent = 'queued', 'queued', 0
     return {'project_id': str(project.id), 'name': project.name, 'kind': kind, 'stage': stage, 'percent': percent,
             'message': str(analysis.get('message') or '')[:160], 'error': error[:200] if kind in ('failed', 'skipped') else '',
-            'created_at': project.created_at.isoformat() if project.created_at else None}
+            'created_at': project.created_at.isoformat() + 'Z' if project.created_at else None}
 
 
 @router.get('/queue')
