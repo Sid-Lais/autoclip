@@ -187,6 +187,53 @@ async def inspect_url(body: InspectUrlBody):
     return {**meta, **route, 'long_video': range_import.is_long(meta.get('duration'))}
 
 
+QUEUE_DAYS = 3
+QUEUE_LIMIT = 60
+
+
+def _queue_item(project, state: dict) -> dict:
+    """One row of the queue: where this project is, in words and as a 0-100 bar."""
+    analysis = state.get('analysis') or {}
+    variants = state.get('output_variants') or []
+    status, phase = analysis.get('status'), analysis.get('phase')
+    error = str(analysis.get('error') or '')
+    if status == 'completed':
+        kind, stage, percent = 'done', 'done', 100
+    elif status == 'failed':
+        skipped = 'No gameplay found' in error
+        kind, stage, percent = ('skipped' if skipped else 'failed'), 'skipped' if skipped else 'failed', 0
+    elif status == 'running':
+        kind = 'running'
+        raw = analysis.get('percent')
+        if phase == 'rendering':
+            stage, percent = 'rendering', 80 if any(v.get('status') in ('queued', 'rendering') for v in variants) else 90
+        elif phase == 'production':
+            stage, percent = 'analyzing', 45
+        else:
+            stage = 'downloading'
+            percent = 5 + round(min(max(float(raw), 0.0), 100.0) * 0.3) if isinstance(raw, (int, float)) else 10
+    else:
+        kind, stage, percent = 'queued', 'queued', 0
+    return {'project_id': str(project.id), 'name': project.name, 'kind': kind, 'stage': stage, 'percent': percent,
+            'message': str(analysis.get('message') or '')[:160], 'error': error[:200] if kind in ('failed', 'skipped') else '',
+            'created_at': project.created_at.isoformat() if project.created_at else None}
+
+
+@router.get('/queue')
+def clip_queue(db: Session = Depends(get_db)):
+    """Recent projects with their live stage, newest first. Powers the queue panel on the home page."""
+    from datetime import datetime, timedelta
+    rows = (db.query(Project).filter(Project.created_at >= datetime.utcnow() - timedelta(days=QUEUE_DAYS))
+            .order_by(Project.created_at.desc()).limit(QUEUE_LIMIT).all())
+    items = []
+    for project in rows:
+        try:
+            state = store.read(str(project.id))
+        except Exception:  # noqa: BLE001 - a project without Studio state (legacy) is not part of the queue
+            continue
+        items.append(_queue_item(project, state))
+    counts = {kind: sum(1 for item in items if item['kind'] == kind) for kind in ('queued', 'running', 'done', 'failed', 'skipped')}
+    return {'items': items, 'counts': counts}
 
 @router.get('/capabilities')
 def capabilities():

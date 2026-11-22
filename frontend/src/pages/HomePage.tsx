@@ -1,3 +1,4 @@
+import ClipQueue from '../features/studio/ClipQueue'
 import { t } from '../i18n'
 import { useTranslation } from 'react-i18next'
 import { useState, useEffect } from 'react'
@@ -221,6 +222,7 @@ export default function HomePage() {
           <FirstRunSetup onStatus={setSetupNeeded} openRequest={setupRequest} />
           <CreativeImport onImported={loadProjects} blocked={setupNeeded === true} onBlocked={() => setSetupRequest(n => n + 1)} onExample={() => void openExample()} exampleBusy={exampleBusy} />
           {pendingImports.length>0&&<div className="studio-import-resume"><b>{t('未完成的导入')}</b>{pendingImports.map(p=><button key={p.id} className="studio-link" onClick={()=>navigate(`/import/${p.id}`)}>{p.name} · {t('继续导入确认')}</button>)}</div>}
+          <ClipQueue />
 
           {/* 项目管理区域 */}
           <div style={{

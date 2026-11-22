@@ -50,6 +50,8 @@ export type ClipMoment = { start: number; end: number; score: number | null; sou
 export type SuggestedClips = { url: string; title: string; duration: number; view_count: number | null; mode: 'ranges' | 'whole' | 'manual'; moments: ClipMoment[]; signal: string | null }
 export type AutoClipRequest = ImportRangesFields & { browser?: string; items: { url: string; title: string; ranges: { start: number; end: number; label: string }[] }[] }
 export type AutoClipResult = { projects: { project_id: string; analysis_run_id?: string; url: string }[]; skipped: { url: string; reason: string }[] }
+export type QueueItem = { project_id: string; name: string; kind: 'queued' | 'running' | 'done' | 'failed' | 'skipped'; stage: string; percent: number; message: string; error: string; created_at: string | null }
+export type QueueView = { items: QueueItem[]; counts: { queued: number; running: number; done: number; failed: number; skipped: number } }
 /** One key per click: the same request re-sent returns the same receipt (backend idempotency). */
 const retryKey = () => `r-${telemetryId()}`
 
@@ -94,6 +96,7 @@ export const studioApi = {
       }
     }, props)
   },
+  queue: (): Promise<QueueView> => api.get('/studio/queue'),
   searchVideos: (body: { query: string; limit?: number }): Promise<{ results: SearchResult[] }> => api.post('/studio/search', body, { timeout: 60000 }),
   suggestClips: (body: { url: string; browser?: string }): Promise<SuggestedClips> => api.post('/studio/suggest-clips', body, { timeout: 60000 }),
   /** Search flow: one project per approved range, or per approved short video. */

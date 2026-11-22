@@ -131,3 +131,21 @@ def test_classify_treats_missing_or_unknown_labels_as_other(monkeypatch):
         def post(self, *a, **k):
             return Resp()
     assert gameplay.classify([b'1', b'2', b'3', b'4'], Http()) == ['gameplay', 'trailer', 'other', 'other']
+
+
+def test_queue_rows_show_stage_percent_and_tell_skipped_from_failed():
+    from types import SimpleNamespace
+    from backend.api.v1.studio import _queue_item
+    project = SimpleNamespace(id='p1', name='Clip', created_at=None)
+    def row(analysis, variants=()):
+        return _queue_item(project, {'analysis': analysis, 'output_variants': list(variants)})
+    assert row({})['kind'] == 'queued'
+    downloading = row({'status': 'running', 'phase': 'screening', 'percent': 50})
+    assert (downloading['stage'], downloading['percent']) == ('downloading', 20)
+    assert row({'status': 'running', 'phase': 'production'})['stage'] == 'analyzing'
+    rendering = row({'status': 'running', 'phase': 'rendering'}, [{'status': 'queued'}])
+    assert (rendering['stage'], rendering['percent']) == ('rendering', 80)
+    assert row({'status': 'completed'})['percent'] == 100
+    skipped = row({'status': 'failed', 'error': 'No gameplay found in this part (it shows a trailer). Skipped.'})
+    assert skipped['kind'] == 'skipped' and 'No gameplay' in skipped['error']
+    assert row({'status': 'failed', 'error': 'Something broke'})['kind'] == 'failed'
