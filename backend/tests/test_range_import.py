@@ -160,3 +160,15 @@ def test_ledger_repeat_rule_and_discovery_takes_the_next_best_peaks():
     second = discovery.moments_from_heatmap(heat, 200.0, [(m['start'], m['end']) for m in first])
     assert first and second
     assert not any(ledger.is_repeat(m['start'], m['end'], [(f['start'], f['end']) for f in first]) for m in second)
+
+
+def test_webcam_overlay_needs_a_steady_face_at_the_side_and_is_laid_out_on_top():
+    from backend.services.studio import facecam
+    cam = [(100.0, 600.0, 160.0, 160.0)]
+    steady = facecam.overlay_region([cam] * 8 + [[]], 1920, 1080)
+    assert steady and steady['x'] < 0.2 and steady['y'] > 0.4
+    wandering = [[(100.0 + 400 * i, 300.0, 160.0, 160.0)] for i in range(9)]  # an in-game character walking
+    assert facecam.overlay_region(wandering, 1920, 1080) is None
+    assert facecam.overlay_region([[(900.0, 300.0, 160.0, 160.0)]] * 9, 1920, 1080) is None  # centre of the picture
+    assert facecam.overlay_region([cam] * 2 + [[]] * 7, 1920, 1080) is None  # seen too rarely
+    assert 'vstack' in facecam.stack_graph(steady, 1920, 1080)

@@ -841,6 +841,15 @@ def _distinct_ranges(picked, bounds):
     return [(picked[i][0], *kept[i]) for i in sorted(kept)]
 
 
+def _all_portrait(platforms) -> bool:
+    """True when every selected platform wants a vertical picture (a stacked layout would not fit a landscape one)."""
+    try:
+        from backend.services.platform_strategy import platform_strategy
+        return bool(platforms) and all(platform_strategy(p).aspect == 'portrait' for p in platforms)
+    except Exception:  # noqa: BLE001
+        return False
+
+
 def _content_drafts(project_id, plan, video, platforms=()):
     """Create drafts once from the selected content route, before platform derivation."""
     route = plan.get('recommended_analysis', 'subtitle')
@@ -880,6 +889,10 @@ def _content_drafts(project_id, plan, video, platforms=()):
             if focus == 'gameplay':
                 from backend.services.studio import gameplay
                 start_at, end_at = gameplay.find_span(video, source_duration)  # refuses a part with no gameplay
+            if _all_portrait(platforms):
+                from backend.services.studio import facecam
+                if facecam.stack_if_overlay(Path(video), start_at, end_at):
+                    logger.info('Streamer webcam found: clip laid out with the streamer on top')
             picked = [(max((item[0] for item in picked), key=_score), start_at, end_at)]
             bounds = [(start_at, end_at)]
         else:
